@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".NovelActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/toolbar"
+        android:background="	#1E90FF	"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_marginTop="9dp"
+            android:layout_marginLeft="10dp"
+            android:text="搜书"
+            android:textColor="	#FFFFFF"
+            android:textSize="30dp" />
+    </androidx.appcompat.widget.Toolbar>
+    <Button
+        android:id="@+id/search"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/toolbar"
+        android:text="搜索" />
+
+    <EditText
+        android:id="@+id/input"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/search"
+        android:layout_below="@+id/toolbar"
+        />
+
+    <ListView
+        android:id="@+id/booklist"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/search"
+        />
+
+</RelativeLayout>

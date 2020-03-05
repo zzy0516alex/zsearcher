@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".NovelShowAcitivity">
+    <WebView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/novelpage"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/past"
+        android:text="上一章"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/next"
+        android:text="下一章"
+        android:layout_toRightOf="@+id/past"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"/>
+    <SeekBar
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/next"
+        android:id="@+id/zoom"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="25dp"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/catalog"
+        android:text="目录"
+        android:layout_toEndOf="@+id/zoom"
+        android:layout_marginTop="10dp"
+        />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="420dp"
+        android:layout_marginLeft="280dp"
+        android:background="@drawable/round2"
+        android:id="@+id/AddBook"
+        android:src="@mipmap/addtoshelf" />
+
+</RelativeLayout>
