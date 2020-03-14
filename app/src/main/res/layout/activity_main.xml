@@ -32,7 +32,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/btn02"
+        android:background="@drawable/main_btn"
+        android:layout_marginTop="5dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginLeft="8dp"
         android:text="垃圾分类查询"
+        android:textSize="18sp"
+        android:textColor="#FFFFFF"
         />
     <LinearLayout
         android:layout_width="match_parent"
@@ -43,6 +49,9 @@
             android:layout_height="wrap_content"
             android:id="@+id/btn03"
             android:layout_weight="1"
+            android:background="@drawable/main_btn2"
+            android:layout_marginTop="5dp"
+            android:layout_marginLeft="8dp"
             android:text="搜书"/>
         <Button
             android:layout_width="wrap_content"
@@ -57,7 +66,6 @@
         android:layout_height="wrap_content"
         android:id="@+id/BTlink"
         android:text="more"/>
-    
 
 
 </LinearLayout>

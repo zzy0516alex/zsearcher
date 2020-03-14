@@ -1,5 +1,6 @@
 package com.example.helloworld;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
@@ -7,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
@@ -15,6 +18,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.io.File;
@@ -36,6 +40,10 @@ public class NovelActivity extends AppCompatActivity {
     private List<String>Contents;
     private Context context;
     BooklistAdapter adapter;
+    RelativeLayout loadView;
+    NovelThread T;
+    Handler handler;
+    final int BOOK_SEARCH_DONE=0X2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,6 +51,7 @@ public class NovelActivity extends AppCompatActivity {
         editText=findViewById(R.id.input);
         button=findViewById(R.id.search);
         booklist=findViewById(R.id.booklist);
+        loadView = (RelativeLayout) findViewById(R.id.Load);
         Novels=new ArrayList<>();
         Contents=new ArrayList<>();
         context=this;
@@ -52,11 +61,25 @@ public class NovelActivity extends AppCompatActivity {
         if(!Folder.exists()){
             Folder.mkdir();
         }
+        loadView.setVisibility(View.GONE);
+        handler=new Handler(){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                if(msg.what==BOOK_SEARCH_DONE){
+                    loadView.setVisibility(View.GONE);
+                    get_result();
+                    adapter=new BooklistAdapter(Novels,context,false,"");
+                    booklist.setAdapter(adapter);
+                    booklist.setOnItemClickListener(new onItemclick());
+                }
+            }
+        };
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                loadView.setVisibility(View.VISIBLE);
                 if((!editText.getText().toString().equals(""))&&(editText.getText().toString().length()>1)){
                     input=editText.getText().toString();
                     startsearch=true;
@@ -72,9 +95,6 @@ public class NovelActivity extends AppCompatActivity {
                 restartActivity(activity);
                 }
                 //Log.e("test2",Contents.get(0));
-                adapter=new BooklistAdapter(Novels,context,false,"");
-                booklist.setAdapter(adapter);
-                booklist.setOnItemClickListener(new onItemclick());
             }
         });
     }
@@ -110,8 +130,12 @@ public class NovelActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         //Log.e("test",code);
-        NovelThread T =new NovelThread(url,code);
+        T =new NovelThread(url,code);
+        T.setHandler(handler);
         T.start();
+    }
+
+    private void get_result() {
         if(T.getError()){
             Log.e("err","getErr1");
             Toast.makeText(context,"请先开启网络链接", Toast.LENGTH_SHORT).show();
@@ -130,6 +154,7 @@ public class NovelActivity extends AppCompatActivity {
             }
         }
     }
+
     private String newUrl;
     private int lastChap;
     private int firstChap;
@@ -138,6 +163,7 @@ public class NovelActivity extends AppCompatActivity {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             Log.e("test2",Contents.get(position));
+            loadView.setVisibility(View.VISIBLE);
             ContentThread thread =new ContentThread(Contents.get(position));
             thread.start();
             if(thread.getContentUrl()!=null) newUrl= (String) thread.getContentUrl();
@@ -151,6 +177,7 @@ public class NovelActivity extends AppCompatActivity {
             intent.putExtras(bundle);
             NovelShowAcitivity.setFloatButtonShow(true);
             startActivity(intent);
+            loadView.setVisibility(View.GONE);
         }
     }
 

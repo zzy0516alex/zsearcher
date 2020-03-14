@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 
 import java.io.File;
 
@@ -34,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
         if(!Folder.exists()){
             Folder.mkdir();
         }
-    }
+}
 
 
     private class OnClick implements View.OnClickListener{

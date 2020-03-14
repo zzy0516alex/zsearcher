@@ -37,6 +37,22 @@
         android:layout_toRightOf="@id/search"
         android:layout_below="@+id/toolbar"
         />
+    <RelativeLayout
+        android:id="@+id/Load"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+        <com.github.ybq.android.spinkit.SpinKitView
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/spin_kit"
+            style="@style/SpinKitView.Large.Circle"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="60dp"
+            android:layout_gravity="center"
+            android:layout_centerInParent="true"
+            app:SpinKit_Color="#87CEFA"/>
+    </RelativeLayout>
 
     <ListView
         android:id="@+id/booklist"

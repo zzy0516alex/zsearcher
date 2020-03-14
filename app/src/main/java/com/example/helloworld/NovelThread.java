@@ -1,6 +1,8 @@
 package com.example.helloworld;
 
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -21,10 +23,18 @@ public class NovelThread extends Thread {
     private Object getcontexts;
     private boolean isError=false;
     private boolean Found=false;
+    private Handler handler;
+
+
     public NovelThread(String url, String code) {
         this.url=url;
         this.code=code;
     }
+
+    public void setHandler(Handler handler) {
+        this.handler = handler;
+    }
+
     @Override
     public void run() {
         super.run();
@@ -74,43 +84,22 @@ public class NovelThread extends Thread {
             Log.e("err1","no internet");
             isError=true;
         }
+        Message message=handler.obtainMessage();
+        message.what=0X2;
+        handler.sendMessage(message);
     }
+
+
     public boolean getError(){
-        try {
-            this.join();
             return isError;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return false;
-        }
     }
     public boolean isFound(){
-        try {
-            this.join();
             return Found;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return false;
-        }
     }
     public Object getNovelnames(){
-        try {
-            this.join();
             return getNovels;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return null;
-        }
-
     }
     public Object getNovelcontents(){
-        try {
-            this.join();
             return  getcontexts;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return null;
-        }
-
     }
 }
