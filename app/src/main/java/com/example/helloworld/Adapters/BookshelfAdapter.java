@@ -1,4 +1,4 @@
-package com.example.helloworld;
+package com.example.helloworld.Adapters;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -11,6 +11,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.example.helloworld.R;
 
 import java.util.List;
 

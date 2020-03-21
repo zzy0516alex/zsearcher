@@ -21,6 +21,10 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.example.helloworld.Adapters.BooklistAdapter;
+import com.example.helloworld.Threads.ContentThread;
+import com.example.helloworld.Threads.NovelThread;
+
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -69,9 +73,6 @@ public class NovelActivity extends AppCompatActivity {
                 if(msg.what==BOOK_SEARCH_DONE){
                     loadView.setVisibility(View.GONE);
                     get_result();
-                    adapter=new BooklistAdapter(Novels,context,false,"");
-                    booklist.setAdapter(adapter);
-                    booklist.setOnItemClickListener(new onItemclick());
                 }
             }
         };
@@ -149,6 +150,9 @@ public class NovelActivity extends AppCompatActivity {
             if (T.isFound()) {
                 if (T.getNovelnames() != null) Novels = (List<String>) T.getNovelnames();
                 if (T.getNovelcontents() != null) Contents = (List<String>) T.getNovelcontents();
+                adapter=new BooklistAdapter(Novels,context,false,"");
+                booklist.setAdapter(adapter);
+                booklist.setOnItemClickListener(new onItemclick());
             } else {
                 Toast.makeText(context, "未找到", Toast.LENGTH_SHORT).show();
             }

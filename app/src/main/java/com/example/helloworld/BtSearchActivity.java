@@ -20,29 +20,25 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import com.example.helloworld.Threads.BTSearchThread;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 public class BtSearchActivity extends AppCompatActivity {
 
-    private ArrayList<String> title_list;
-    private ArrayList<String> type_list;
-    private ArrayList<String> size_list;
-    private ArrayList<String> magnet_list;
+    private HashMap<String,ArrayList<String>>resultBox1;
 
     private EditText searchTarget;
     private ImageButton BTsearch;
     private RelativeLayout loading;
+    Context context;
     BTSearchThread thread;
     Handler handler;
     final int SEARCH_DONE=0X1;
+    final int SEARCH_DONE2=0X3;
+    private int search_counter=0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +48,7 @@ public class BtSearchActivity extends AppCompatActivity {
         BTsearch=findViewById(R.id.BTsearch);
         loading=findViewById(R.id.Load);
         loading.setVisibility(View.GONE);
+        context=this;
         //com.xunlei.downloadprovider
         //doStartApplicationWithPackageName("com.xunlei.downloadprovider");
         handler=new Handler(){
@@ -62,6 +59,17 @@ public class BtSearchActivity extends AppCompatActivity {
                     get_result();
                     loading.setVisibility(View.GONE);
                     searchTarget.setCursorVisible(true);
+                    search_counter++;
+                    Log.e("search","DONE_NO.1");
+                }
+                if(msg.what==SEARCH_DONE2){
+
+                }
+                if(search_counter==1){
+                    Intent intent=new Intent(BtSearchActivity.this,BtResultActivity.class);
+                    BtResultActivity.setResultBox1(resultBox1);
+                    search_counter=0;
+                    startActivity(intent);
                 }
             }
         };
@@ -94,10 +102,7 @@ public class BtSearchActivity extends AppCompatActivity {
             Toast.makeText(this, "连接失败", Toast.LENGTH_SHORT).show();
         } else {
             if (thread.getResultList() != null) {
-                title_list = thread.getResultList().get("TitleList");
-                type_list = thread.getResultList().get("TypeList");
-                size_list = thread.getResultList().get("SizeList");
-                magnet_list = thread.getResultList().get("MagnetList");
+                resultBox1=thread.getResultList();
             }
         }
     }

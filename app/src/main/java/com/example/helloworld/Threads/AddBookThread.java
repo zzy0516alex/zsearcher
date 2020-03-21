@@ -1,10 +1,9 @@
-package com.example.helloworld;
+package com.example.helloworld.Threads;
 
 import android.graphics.Bitmap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.File;

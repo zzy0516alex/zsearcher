@@ -32,7 +32,7 @@
         android:layout_centerHorizontal="true"
         android:id="@+id/searchBox"
         android:layout_marginLeft="30dp"
-        android:layout_marginTop="20dp">
+        android:layout_marginTop="60dp">
         <EditText
             android:layout_width="0dp"
             android:layout_height="40dp"
@@ -52,13 +52,6 @@
             android:src="@mipmap/search"
             android:background="@drawable/back_btn_blue"/>
     </LinearLayout>
-    <ListView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/searchBox"
-        android:id="@+id/ResultBox"
-        android:layout_marginLeft="10dp"
-        android:layout_marginTop="10dp"/>
     <RelativeLayout
         android:id="@+id/Load"
         android:layout_width="match_parent"

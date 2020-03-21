@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/toolbar"
-        android:background="	#1E90FF	"
+        android:background="@drawable/main_btn"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light" >
         <TextView
@@ -32,17 +32,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/btn02"
-        android:background="@drawable/main_btn"
-        android:layout_marginTop="5dp"
+        android:background="@drawable/main_btn2"
+        android:layout_marginTop="7dp"
         android:layout_marginRight="8dp"
         android:layout_marginLeft="8dp"
         android:text="垃圾分类查询"
-        android:textSize="18sp"
+        android:textSize="15sp"
         android:textColor="#FFFFFF"
         />
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginRight="10dp"
+        android:layout_marginLeft="10dp"
         android:orientation="horizontal">
         <Button
             android:layout_width="wrap_content"
@@ -50,14 +52,21 @@
             android:id="@+id/btn03"
             android:layout_weight="1"
             android:background="@drawable/main_btn2"
-            android:layout_marginTop="5dp"
-            android:layout_marginLeft="8dp"
+            android:layout_marginRight="5dp"
+            android:layout_marginTop="7dp"
+            android:textSize="15sp"
+            android:textColor="#FAFAD2"
             android:text="搜书"/>
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="我的书架"
+            android:textColor="#FAFAD2"
+            android:textSize="15sp"
+            android:layout_marginTop="7dp"
+            android:layout_marginLeft="5dp"
+            android:background="@drawable/main_btn2"
             android:id="@+id/MyBookShelf"/>
 
     </LinearLayout>

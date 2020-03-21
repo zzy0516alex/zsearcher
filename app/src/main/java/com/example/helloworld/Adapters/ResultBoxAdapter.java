@@ -1,6 +1,7 @@
-package com.example.helloworld;
+package com.example.helloworld.Adapters;
 
 import android.content.Context;
+import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +9,8 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.example.helloworld.R;
 
 import java.util.ArrayList;
 
@@ -63,6 +66,19 @@ public class ResultBoxAdapter extends BaseAdapter {
         ImageView type=Layout.findViewById(R.id.filetype);
         String Title= (String) getItem(position);
         String Size=getSize(position);
+        title.setText(Title);
+        size.setText(Size);
+        String Type=getType(position);
+        switch(Type){
+            case "[压缩文件]":
+                type.setImageResource(R.drawable.zip);
+                break;
+            case "[影视]":
+                type.setImageResource(R.drawable.mp3);
+                break;
+            default:
+                type.setImageResource(R.drawable.unknown);
+        }
 
         return Layout;
     }

@@ -1,4 +1,4 @@
-package com.example.helloworld;
+package com.example.helloworld.Adapters;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.example.helloworld.R;
 
 import java.util.List;
 import java.util.zip.Inflater;

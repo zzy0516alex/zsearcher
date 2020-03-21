@@ -4,10 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -15,19 +12,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.helloworld.Threads.PictureThread;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 
 public class JsoupActivity extends AppCompatActivity {
     private Button mbtn;
@@ -78,35 +69,6 @@ public class JsoupActivity extends AppCompatActivity {
                         PictureThread T=new PictureThread(url);
                         T.start();
                         if(T.getMyBitmap()!=null)mybitmap= (Bitmap) T.getMyBitmap();
-                        //
-//                        File Folder =new File(getExternalFilesDir(null),"ZsearchRes");
-//                        if(!Folder.exists()){
-//                            Folder.mkdir();
-//                            boolean isFolderMade=Folder.mkdirs();
-//                            if(isFolderMade)Log.d("folder","success");
-//                            else Log.d("folder","fail");
-//                        }
-//                        File pic=new File(getExternalFilesDir(null)+"/ZsearchRes/"+ "鸡蛋"+".png" );
-//                        FileOutputStream fot=null;
-//                        try {
-//                            fot=new FileOutputStream(pic);
-//                        }catch (FileNotFoundException e){
-//                            e.printStackTrace();
-//                        }
-//                        mybitmap.compress(Bitmap.CompressFormat.PNG,100,fot);
-//                        try{
-//                            fot.flush();
-//                        }catch (IOException e){
-//                            e.printStackTrace();
-//                        }finally {
-//                            if(fot!=null){
-//                                try {
-//                                    fot.close();
-//                                }catch (IOException e){
-//                                    e.printStackTrace();
-//                                }
-//                            }
-//                        }
 
                     }else{
                         outputResults="未找到";

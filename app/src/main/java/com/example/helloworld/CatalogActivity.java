@@ -7,12 +7,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import java.net.HttpURLConnection;
+import com.example.helloworld.Adapters.BooklistAdapter;
+
 import java.util.ArrayList;
 import java.util.List;
 

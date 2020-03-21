@@ -20,6 +20,10 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import com.example.helloworld.Threads.AddBookThread;
+import com.example.helloworld.Threads.BottomThread;
+import com.example.helloworld.Threads.CatalogThread;
+
 import java.util.ArrayList;
 import java.util.List;
 

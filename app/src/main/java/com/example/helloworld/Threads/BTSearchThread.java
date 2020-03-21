@@ -1,4 +1,4 @@
-package com.example.helloworld;
+package com.example.helloworld.Threads;
 
 import android.os.Handler;
 import android.os.Message;
@@ -11,6 +11,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +26,11 @@ public class BTSearchThread extends Thread {
     private android.os.Handler mhandler;
 
     public BTSearchThread(String key_word) {
-        this.key_word = key_word;
+        try {
+            this.key_word= URLEncoder.encode(key_word,"UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
     }
 
     public void setMhandler(Handler mhandler) {
@@ -89,10 +95,10 @@ public class BTSearchThread extends Thread {
             ResultList=result_list;
         } catch (IOException e) {
             e.printStackTrace();
-            if(counter<5)run();
-            else ERROR=true;
             counter++;
             Log.d("searchErr","retry"+counter);
+            if(counter<5)run();
+            else ERROR=true;
         }
         Message message=mhandler.obtainMessage();
         message.what=0X1;
