@@ -74,7 +74,17 @@ public class ResultBoxAdapter extends BaseAdapter {
                 type.setImageResource(R.drawable.zip);
                 break;
             case "[影视]":
+            case "动漫":
                 type.setImageResource(R.drawable.mp3);
+                break;
+            case "[图像]":
+                type.setImageResource(R.drawable.picfile);
+                break;
+            case "[音乐]":
+                type.setImageResource(R.drawable.music);
+                break;
+            case "[文档书籍]":
+                type.setImageResource(R.drawable.pdf);
                 break;
             default:
                 type.setImageResource(R.drawable.unknown);

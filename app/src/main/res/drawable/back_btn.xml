@@ -2,7 +2,7 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true">//按压反应
         <shape>
-            <solid android:color="#F5F5F5"/>
+            <solid android:color="#DCDCDC"/>
         </shape>
     </item>
     <item>

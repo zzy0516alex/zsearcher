@@ -74,7 +74,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/BTlink"
-        android:text="more"/>
+        android:text="BT搜索"
+        android:textColor="#FAFAD2"
+        android:textSize="15sp"
+        android:layout_marginTop="7dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginLeft="8dp"
+        android:background="@drawable/main_btn2" />
 
 
 </LinearLayout>

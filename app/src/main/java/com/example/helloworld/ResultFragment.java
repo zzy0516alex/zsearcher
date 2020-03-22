@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -48,7 +49,20 @@ public class ResultFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 MagnetDialog dialog=new MagnetDialog(context);
-                dialog.show();
+                dialog.setMyTitle(title_list.get(position)).setMyMagnet(magnet_list.get(position))
+                        .setCopyListener(new MagnetDialog.OnCopyListener() {
+                            @Override
+                            public void OnCopy(MagnetDialog dialog) {
+                                Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show();
+                                dialog.dismiss();
+                            }
+                        })
+                        .setOpenListener(new MagnetDialog.OnOpenListener() {
+                            @Override
+                            public void OnOpen(MagnetDialog dialog) {
+
+                            }
+                        }).show();
             }
         });
         return myView;
