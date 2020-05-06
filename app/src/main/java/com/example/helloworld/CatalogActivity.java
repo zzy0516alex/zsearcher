@@ -2,6 +2,7 @@ package com.example.helloworld;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.lifecycle.ViewModelProviders;
 
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +13,9 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.example.helloworld.Adapters.BooklistAdapter;
+import com.example.helloworld.NovelRoom.NovelDBTools;
+import com.example.helloworld.NovelRoom.Novels;
+import com.example.helloworld.Threads.ContentTextThread;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,8 +31,12 @@ public class CatalogActivity extends AppCompatActivity {
     private ArrayList<String>Chaps;
     private int firstChap;
     private int lastChap;
+    private String BookName;
+    private int ttlChap;
+    private String BookLink;
     private String currentTitle;
     private int locate;
+    private NovelDBTools novelDBTools;
     Context context;
     private SharedPreferences myInfo;
     @Override
@@ -57,7 +65,11 @@ public class CatalogActivity extends AppCompatActivity {
         firstChap=bundle.getInt("firstChap");
         lastChap=bundle.getInt("lastChap");
         currentTitle=bundle.getString("currentTitle");
-        myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
+        BookName=bundle.getString("BookName");
+        BookLink=bundle.getString("BookLink");
+        ttlChap=bundle.getInt("ttlChap");
+        //myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
+        novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
         BooklistAdapter chapListAdapter=new BooklistAdapter(ChapList,context,true,currentTitle);
         chapList.setAdapter(chapListAdapter);
         for(int i=0;i<=ChapList.size();i++){
@@ -81,9 +93,14 @@ public class CatalogActivity extends AppCompatActivity {
                 intent.putExtras(bundle1);
                 if(NovelShowAcitivity.getIsInShelf()){
                     int book_id=NovelShowAcitivity.getBook_id();
-                    SharedPreferences.Editor editor=myInfo.edit();
-                    editor.putString("BookUrl"+book_id,newUrl);
-                    editor.apply();
+//                    SharedPreferences.Editor editor=myInfo.edit();
+//                    editor.putString("BookUrl"+book_id,newUrl);
+//                    editor.apply();
+                    Novels novel=new Novels(BookName,ttlChap,position,BookLink);
+                    novel.setId(book_id);
+                    novelDBTools.updateNovels(novel);
+                    ContentTextThread t=new ContentTextThread(newUrl,BookName,getExternalFilesDir(null));
+                    t.start();
                     NovelShowAcitivity.setIsInShelf(true);
                     NovelShowAcitivity.setBook_id(book_id);
                 }

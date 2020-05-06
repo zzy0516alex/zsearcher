@@ -64,30 +64,43 @@ public class ResultBoxAdapter extends BaseAdapter {
         TextView title=Layout.findViewById(R.id.BTtitle);
         TextView size=Layout.findViewById(R.id.filesize);
         ImageView type=Layout.findViewById(R.id.filetype);
-        String Title= (String) getItem(position);
-        String Size=getSize(position);
-        title.setText(Title);
-        size.setText(Size);
-        String Type=getType(position);
-        switch(Type){
-            case "[压缩文件]":
-                type.setImageResource(R.drawable.zip);
-                break;
-            case "[影视]":
-            case "动漫":
-                type.setImageResource(R.drawable.mp3);
-                break;
-            case "[图像]":
-                type.setImageResource(R.drawable.picfile);
-                break;
-            case "[音乐]":
-                type.setImageResource(R.drawable.music);
-                break;
-            case "[文档书籍]":
-                type.setImageResource(R.drawable.pdf);
-                break;
-            default:
-                type.setImageResource(R.drawable.unknown);
+        if (title_list.size()!=0) {
+            String Title = (String) getItem(position);
+            title.setText(Title);
+        }
+
+        if (size_list.size()!=0) {
+            String Size = getSize(position);
+            size.setText(Size);
+        }else{
+            size.setText("");
+        }
+        if (type_list.size()!=0) {
+            String Type = getType(position);
+            switch (Type) {
+                case "[压缩文件]":
+                    type.setImageResource(R.drawable.zip);
+                    break;
+                case "[影视]":
+                case "动画":
+                case "Raw":
+                case "周边":
+                    type.setImageResource(R.drawable.mp3);
+                    break;
+                case "[图像]":
+                case "漫画":
+                    type.setImageResource(R.drawable.picfile);
+                    break;
+                case "[音乐]":
+                case "音乐":
+                    type.setImageResource(R.drawable.music);
+                    break;
+                case "[文档书籍]":
+                    type.setImageResource(R.drawable.pdf);
+                    break;
+                default:
+                    type.setImageResource(R.drawable.unknown);
+            }
         }
 
         return Layout;

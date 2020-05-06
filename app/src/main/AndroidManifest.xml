@@ -18,7 +18,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".BtResultActivity"></activity>
+        <activity android:name=".NovelViewerActivity"></activity>
+        <activity android:name=".BtResultActivity" />
         <activity android:name=".BtSearchActivity" />
         <activity android:name=".BookShelfActivity" />
         <activity android:name=".CatalogActivity" />

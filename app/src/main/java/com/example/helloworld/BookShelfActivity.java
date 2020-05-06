@@ -20,11 +20,14 @@ import android.widget.Button;
 import android.widget.GridView;
 
 import com.example.helloworld.Adapters.BookshelfAdapter;
+import com.example.helloworld.myObjects.NovelChap;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -70,12 +73,22 @@ public class BookShelfActivity extends AppCompatActivity {
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     if(!is_item_chosen){
                         //TODO show content
-                        Intent intent=new Intent(BookShelfActivity.this,NovelShowAcitivity.class);
-                        Bundle bundle=new Bundle();
-                        bundle.putString("url",myInfo.getString("BookUrl"+(position+1),""));
-                        bundle.putInt("firstChap",myInfo.getInt("FirstChap"+(position+1),999999));
-                        bundle.putInt("lastChap",myInfo.getInt("LastChap"+(position+1),999999));
-                        intent.putExtras(bundle);
+//                        Intent intent=new Intent(BookShelfActivity.this,NovelShowAcitivity.class);
+//                        Bundle bundle=new Bundle();
+//                        bundle.putString("url",myInfo.getString("BookUrl"+(position+1),""));
+//                        bundle.putInt("firstChap",myInfo.getInt("FirstChap"+(position+1),999999));
+//                        bundle.putInt("lastChap",myInfo.getInt("LastChap"+(position+1),999999));
+//                        intent.putExtras(bundle);
+                        //debug
+                        Intent intent=new Intent(BookShelfActivity.this,NovelViewerActivity.class);
+                        String content="";
+                        try {
+                            content=read_text(BookName.get(position));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        NovelChap chap=new NovelChap("第一章",content);
+                        NovelViewerActivity.setCurrent_chap(chap);
                         //NovelShowAcitivity.setFloatButtonShow(false);
                         startActivity(intent);
                     }else {
@@ -245,5 +258,36 @@ public class BookShelfActivity extends AppCompatActivity {
         c.drawBitmap(originalBitmap, offsetXY[0], offsetXY[1], null);
 
         return shadowImage32;
+    }
+    public String read_text(String bookname) throws IOException {
+        File txtDir=new File(getExternalFilesDir(null)+"/ZsearchRes/BookContents/" + bookname + ".txt");
+        FileInputStream fis=null;
+        StringBuilder sb = new StringBuilder("");
+        try {
+            fis = new FileInputStream(txtDir);
+            InputStreamReader i_reader=new InputStreamReader(fis);
+            BufferedReader b_reader=new BufferedReader(i_reader);
+            String temp="";
+//            byte[] buff = new byte[1024];
+//            int len = 0;
+            //(len = fis.read(buff)) > 0
+            while ((temp=b_reader.readLine())!=null) {
+                sb.append(temp);
+                sb.append("\n");
+            }
+        }catch (FileNotFoundException e){
+            e.printStackTrace();
+            Log.e("error","book_content_not_found");
+        }finally {
+            if (fis!=null){
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return sb.toString();
     }
 }

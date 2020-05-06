@@ -5,10 +5,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.text.Editable;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,6 +26,7 @@ public class JsoupActivity extends AppCompatActivity {
     private Button mbtn;
     private TextView result;
     private EditText input;
+    private ScrollView mScroll;
     private ImageView pic;
     private String search;
     private Bitmap mybitmap;
@@ -37,6 +40,7 @@ public class JsoupActivity extends AppCompatActivity {
         pic=findViewById(R.id.pic);
         result=findViewById(R.id.text_xml);
         input=findViewById(R.id.input);
+        mScroll=findViewById(R.id.garbage_result_scroll);
         mbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -61,9 +65,9 @@ public class JsoupActivity extends AppCompatActivity {
                 try {
                     final String outputResults;
                     Document doc= Jsoup.connect("https://lajifenleiapp.com/"+search).get();
-                    elements =doc.select("div.row");
-                    final String results=elements.get(3).select("h1").text();
-                    String url="https://lajifenleiapp.com"+elements.get(3).select("img").attr("src");
+                    elements =doc.select("div.col-md-offset-1.col-md-10.col-xs-12");
+                    final String results=elements.get(1).select("h1").text();
+                    String url="https://lajifenleiapp.com"+elements.get(1).select("img").attr("src");
                     if(!results.equals("")) {
                         outputResults = results.replace(" ", "");
                         PictureThread T=new PictureThread(url);
@@ -78,6 +82,12 @@ public class JsoupActivity extends AppCompatActivity {
                         public void run() {
                             result.append(outputResults);
                             result.append("\n");
+                            Editable editable = result.getEditableText();
+                            int length = editable.length();
+                            if (length > 50) {
+                                editable.delete(0, length - length/2);
+                            }
+                            mScroll.fullScroll(View.FOCUS_DOWN);
                             pic.setImageBitmap(mybitmap);
                         }
                     });

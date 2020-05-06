@@ -22,7 +22,7 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.helloworld.Adapters.BooklistAdapter;
-import com.example.helloworld.Threads.ContentThread;
+import com.example.helloworld.Threads.ContentURLThread;
 import com.example.helloworld.Threads.NovelThread;
 
 import java.io.File;
@@ -64,6 +64,10 @@ public class NovelActivity extends AppCompatActivity {
         File Folder =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookCovers");
         if(!Folder.exists()){
             Folder.mkdir();
+        }
+        File Folder2 =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookContents");
+        if(!Folder2.exists()){
+            Folder2.mkdir();
         }
         loadView.setVisibility(View.GONE);
         handler=new Handler(){
@@ -162,26 +166,28 @@ public class NovelActivity extends AppCompatActivity {
     private String newUrl;
     private int lastChap;
     private int firstChap;
+    private int ttlChap;
     public class onItemclick implements AdapterView.OnItemClickListener{
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             Log.e("test2",Contents.get(position));
-            loadView.setVisibility(View.VISIBLE);
-            ContentThread thread =new ContentThread(Contents.get(position));
+            ContentURLThread thread =new ContentURLThread(Contents.get(position));
             thread.start();
             if(thread.getContentUrl()!=null) newUrl= (String) thread.getContentUrl();
             if(thread.getFirstchap()!=null) firstChap= (int) thread.getFirstchap();
             if(thread.getLastchap()!=null) lastChap= (int) thread.getLastchap();
+            if(thread.getTtlChaps()!=-1) ttlChap=thread.getTtlChaps();
             Intent intent=new Intent(NovelActivity.this,NovelShowAcitivity.class);
             Bundle bundle=new Bundle();
             bundle.putString("url",newUrl);
             bundle.putInt("firstChap",firstChap);
             bundle.putInt("lastChap",lastChap);
+            bundle.putInt("ttlChap",ttlChap);
             intent.putExtras(bundle);
             NovelShowAcitivity.setFloatButtonShow(true);
+            NovelShowAcitivity.setFirst_load(true);
             startActivity(intent);
-            loadView.setVisibility(View.GONE);
         }
     }
 

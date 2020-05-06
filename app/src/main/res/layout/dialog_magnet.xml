@@ -12,7 +12,8 @@
         android:layout_marginTop="15dp"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
-        android:layout_gravity="center_horizontal"/>
+        android:layout_gravity="center_horizontal"
+        android:textIsSelectable="true"/>
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -23,7 +24,7 @@
         android:layout_marginRight="10dp"
         android:id="@+id/magnet"
         android:textColor="@color/DoderBlue"
-        android:autoLink="web"/>
+        android:textIsSelectable="true"/>
     <View
         android:layout_marginTop="5dp"
         android:layout_width="match_parent"
@@ -70,13 +71,13 @@
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@mipmap/thunder"
+            android:src="@mipmap/open_link"
             android:layout_gravity="center"/>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="用迅雷打开"
+            android:text="打开链接"
             android:id="@+id/open_with_thunder"
             android:textSize="18sp"
             android:layout_marginLeft="8dp"

@@ -20,10 +20,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BTSearchThread extends Thread {
-    private String basic_url="https://www.btdad.buzz/search-XXX-0-0-1.html";
+    private String basic_url="http://www.btdad.buzz/search-XXX-0-0-1.html";
     private String key_word;
     private HashMap<String,ArrayList<String>> ResultList;
     private android.os.Handler mhandler;
+    private int SEARCH_DONE=0X1;
+    private int SEARCH_ERROR_LINK_FAIL=0X10;
+    private int SEARCH_ERROR_NOT_FOUND=0X12;
 
     public BTSearchThread(String key_word) {
         try {
@@ -50,8 +53,19 @@ public class BTSearchThread extends Thread {
         HashMap<String,ArrayList<String>> result_list=new HashMap<>();
         try {
             Document document= Jsoup.connect(url).get();
-            Element pager=document.select("div.pager").get(0);
-            String pages=pager.select("span").first().text();
+            String pages=null;
+            try {
+                Element pager=document.select("div.pager").get(0);
+                pages=pager.select("span").first().text();
+            }catch (IndexOutOfBoundsException e){
+                e.printStackTrace();
+                Log.e("search","T2-NotFound");
+                Message e_message=mhandler.obtainMessage();
+                e_message.what=SEARCH_ERROR_NOT_FOUND;
+                mhandler.sendMessage(e_message);
+                return;
+            }
+
             int num_of_pages = getPage(pages);
             if(num_of_pages>6)num_of_pages=6;
             for (int i = 1; i <=num_of_pages; i++) {
@@ -61,7 +75,7 @@ public class BTSearchThread extends Thread {
                     ArrayList<String>current_filesize;
                     ArrayList<String>current_filesize_reformed=new ArrayList<>();
                     ArrayList<String>current_magnet;
-                    String newurl=url.replace("1",String.valueOf(i));
+                    String newurl=url.replace("-1","-"+i);
                     Document doc= Jsoup.connect(newurl).get();
                     Element element=doc.select("div.tbox").get(2);
                     Elements ele=element.select("div.title").select("a");
@@ -84,24 +98,28 @@ public class BTSearchThread extends Thread {
                     Log.d("search","skip"+i);
                     continue;
                 }
-                Log.d("loop",""+i);
+                Log.d("T1-loop",""+i);
 
+            }
+            if (title_list.size()==0){
+                title_list.add("未找到");
             }
             result_list.put("TitleList",title_list);
             result_list.put("SizeList",file_size);
             result_list.put("MagnetList",magnet);
             result_list.put("TypeList",file_type);
-            Log.d("search","done");
+            Log.d("T1-search","done");
             ResultList=result_list;
         } catch (IOException e) {
             e.printStackTrace();
             counter++;
-            Log.d("searchErr","retry"+counter);
+            Log.d("T1-searchErr","retry"+counter);
             if(counter<5)run();
             else ERROR=true;
         }
         Message message=mhandler.obtainMessage();
-        message.what=0X1;
+        if(!ERROR)message.what=SEARCH_DONE;
+        else message.what=SEARCH_ERROR_LINK_FAIL;
         mhandler.sendMessage(message);
     }
     private int getPage(String pages) {

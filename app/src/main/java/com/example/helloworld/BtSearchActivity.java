@@ -21,6 +21,7 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.helloworld.Threads.BTSearchThread;
+import com.example.helloworld.Threads.BTSearchThread2;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,15 +29,20 @@ import java.util.List;
 
 public class BtSearchActivity extends AppCompatActivity {
 
-    private HashMap<String,ArrayList<String>>resultBox1;
+    private HashMap<String,ArrayList<String>>resultBox1=new HashMap<>();
+    private HashMap<String,ArrayList<String>>resultBox2=new HashMap<>();
 
     private EditText searchTarget;
     private ImageButton BTsearch;
     private RelativeLayout loading;
     Context context;
     BTSearchThread thread;
+    BTSearchThread2 thread2;
     Handler handler;
     final int SEARCH_DONE=0X1;
+    final int SEARCH_ERROR_LINK_FAIL=0X10;
+    final int SEARCH_ERROR_NOT_FOUND2=0X11;
+    final int SEARCH_ERROR_NOT_FOUND1=0X12;
     final int SEARCH_DONE2=0X3;
     private int search_counter=0;
 
@@ -55,19 +61,45 @@ public class BtSearchActivity extends AppCompatActivity {
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
-                if (msg.what==SEARCH_DONE){
-                    get_result();
+                ArrayList<String> title_list=new ArrayList<>();
+                ArrayList<String> file_size=new ArrayList<>();
+                ArrayList<String> file_type=new ArrayList<>();
+                ArrayList<String> magnet=new ArrayList<>();
+                title_list.add("未找到");
+                if (msg.what==SEARCH_ERROR_LINK_FAIL){
                     loading.setVisibility(View.GONE);
                     searchTarget.setCursorVisible(true);
+                    Toast.makeText(context, "连接失败", Toast.LENGTH_SHORT).show();
+                }
+                if (msg.what==SEARCH_ERROR_NOT_FOUND2){
+                    search_counter++;
+                    resultBox2.put("TitleList",title_list);
+                    resultBox2.put("SizeList",file_size);
+                    resultBox2.put("MagnetList",magnet);
+                    resultBox2.put("TypeList",file_type);
+                }else if (msg.what==SEARCH_ERROR_NOT_FOUND1){
+                    search_counter++;
+                    resultBox1.put("TitleList",title_list);
+                    resultBox1.put("SizeList",file_size);
+                    resultBox1.put("MagnetList",magnet);
+                    resultBox1.put("TypeList",file_type);
+                }
+                if (msg.what==SEARCH_DONE){
+                    get_result();
                     search_counter++;
                     Log.e("search","DONE_NO.1");
                 }
                 if(msg.what==SEARCH_DONE2){
-
+                    get_result2();
+                    search_counter++;
+                    Log.e("search","DONE_NO.2");
                 }
-                if(search_counter==1){
+                if(search_counter==2){
+                    loading.setVisibility(View.GONE);
+                    searchTarget.setCursorVisible(true);
                     Intent intent=new Intent(BtSearchActivity.this,BtResultActivity.class);
                     BtResultActivity.setResultBox1(resultBox1);
+                    BtResultActivity.setResultBox2(resultBox2);
                     search_counter=0;
                     startActivity(intent);
                 }
@@ -83,6 +115,7 @@ public class BtSearchActivity extends AppCompatActivity {
                     imm.hideSoftInputFromWindow(searchTarget.getWindowToken(), 0) ;
                     searchTarget.setCursorVisible(false);
                     BtSearch(keyword);
+                    BtSearch2(keyword);
 
                 }else{
                     Toast.makeText(BtSearchActivity.this, "请先输入内容", Toast.LENGTH_SHORT).show();
@@ -97,12 +130,27 @@ public class BtSearchActivity extends AppCompatActivity {
         thread.setMhandler(handler);
         thread.start();
     }
+    private void BtSearch2(String keyword) {
+
+        thread2=new BTSearchThread2(keyword);
+        thread2.setHandler(handler);
+        thread2.start();
+    }
     private void get_result(){
         if (thread.getErr()) {
             Toast.makeText(this, "连接失败", Toast.LENGTH_SHORT).show();
         } else {
             if (thread.getResultList() != null) {
                 resultBox1=thread.getResultList();
+            }
+        }
+    }
+    private void get_result2(){
+        if (thread2.isError()) {
+            Toast.makeText(this, "连接失败", Toast.LENGTH_SHORT).show();
+        } else {
+            if (thread2.getResultList() != null) {
+                resultBox2=thread2.getResultList();
             }
         }
     }

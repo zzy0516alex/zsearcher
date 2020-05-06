@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">helloworld</string>
+    <string name="app_name">Zsearcher</string>
     <string name="title_activity_catalog">CatalogActivity</string>
 </resources>

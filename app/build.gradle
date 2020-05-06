@@ -29,4 +29,13 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
     implementation 'com.github.ybq:Android-SpinKit:1.4.0'
     implementation files('libs/jsoup-1.12.1.jar')
+
+    def room_version = "2.2.5"
+
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version" // For Kotlin use kapt instead of annotationProcessor
+
+    // Test helpers
+    testImplementation "androidx.room:room-testing:$room_version"
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.0.0'
 }

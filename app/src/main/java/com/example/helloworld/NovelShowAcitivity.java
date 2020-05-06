@@ -1,17 +1,24 @@
 package com.example.helloworld;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelProviders;
 
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -20,11 +27,17 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import com.example.helloworld.NovelRoom.NovelDBTools;
+import com.example.helloworld.NovelRoom.NovelDao;
+import com.example.helloworld.NovelRoom.NovelDataBase;
+import com.example.helloworld.NovelRoom.Novels;
 import com.example.helloworld.Threads.AddBookThread;
 import com.example.helloworld.Threads.BottomThread;
 import com.example.helloworld.Threads.CatalogThread;
+import com.example.helloworld.Threads.ContentTextThread;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class NovelShowAcitivity extends AppCompatActivity {
@@ -36,11 +49,16 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private Button catalog;
     private ImageButton AddBook;
     private SharedPreferences myInfo;
+    private NovelDBTools novelDBTools;
+    NovelDao novelDao;
     private int myProgress;
     WebSettings webSettings;
+    private Handler mHandler;
     String url;
     int firstChap;
     int lastChap;
+    int ttlChap;
+    int currentChap=0;
     String nextUrl;
     String pastUrl;
     String catalogUrl;
@@ -49,6 +67,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
     List<String>ChapList;
     List<String>ChapLinkList;
     private boolean istouch=false;
+    private static boolean first_load=true;
     private static boolean isFloatButtonShow=true;
     private static boolean isInShelf=false;
     private static int book_id;
@@ -57,21 +76,47 @@ public class NovelShowAcitivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_novel_show_acitivity);
         Novalshow=this;
+        //get bundle
         final Bundle bundle=this.getIntent().getExtras();
         url=bundle.getString("url");
         firstChap=bundle.getInt("firstChap");
         lastChap=bundle.getInt("lastChap");
+        ttlChap=bundle.getInt("ttlChap");
+
+        //get view
         webView=findViewById(R.id.novelpage);
         seekBar=findViewById(R.id.zoom);
         past=findViewById(R.id.past);
         next=findViewById(R.id.next);
         catalog=findViewById(R.id.catalog);
         AddBook=findViewById(R.id.AddBook);
+
+        //get preferences
         myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
-        //debug
-        // myInfo.edit().clear().apply();
+
         myProgress=myInfo.getInt("Progress",10);
-        //
+
+        //get database
+        novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
+        NovelDataBase dataBase=NovelDataBase.getDataBase(this);
+        novelDao=dataBase.getNovelDao();
+
+        //debug novelDBTools.deleteAll();
+
+        //init handler
+        mHandler=new Handler(){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                HashMap<String,List<String>> result_back= (HashMap<String, List<String>>) msg.obj;
+                ChapList=result_back.get("ChapName");
+                ChapLinkList=result_back.get("ChapLink");
+                currentChap=ChapList.indexOf(currentTitle);
+                catalog.setEnabled(true);
+            }
+        };
+
+        //initiate button
         if(getCurrentChap(url)==firstChap){
             past.setEnabled(false);
         }
@@ -82,6 +127,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
             AddBook.setVisibility(View.INVISIBLE);
             AddBook.setEnabled(false);
         }
+        catalog.setEnabled(false);
         //
         seekBar.setMax(150);
         seekBar.setProgress(myProgress);
@@ -107,34 +153,47 @@ public class NovelShowAcitivity extends AppCompatActivity {
         past.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                restartActivity(NovelShowAcitivity.this,pastUrl,firstChap,lastChap);
                 if(isInShelf){ ;
-                    SharedPreferences.Editor editor=myInfo.edit();
-                    editor.putString("BookUrl"+book_id,pastUrl);
-                    editor.apply();
+//                    SharedPreferences.Editor editor=myInfo.edit();
+//                    editor.putString("BookUrl"+book_id,pastUrl);
+//                    editor.apply();
+                    Novels novel=new Novels(BookName,ttlChap,currentChap-1,getBookLink(url));
+                    novel.setId(book_id);
+                    novelDBTools.updateNovels(novel);
+                    ContentTextThread t=new ContentTextThread(pastUrl,BookName,getExternalFilesDir(null));
+                    t.start();
                 }
+                restartActivity(NovelShowAcitivity.this,pastUrl,firstChap,lastChap,ttlChap);
             }
         });
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                restartActivity(NovelShowAcitivity.this,nextUrl,firstChap,lastChap);
                 if(isInShelf){
-                    SharedPreferences.Editor editor=myInfo.edit();
-                    editor.putString("BookUrl"+book_id,nextUrl);
-                    editor.apply();
+//                    SharedPreferences.Editor editor=myInfo.edit();
+//                    editor.putString("BookUrl"+book_id,nextUrl);
+//                    editor.apply();
+                    Novels novel=new Novels(BookName,ttlChap,currentChap+1,getBookLink(url));
+                    novel.setId(book_id);
+                    novelDBTools.updateNovels(novel);
+                    ContentTextThread t=new ContentTextThread(nextUrl,BookName,getExternalFilesDir(null));
+                    t.start();
                 }
+                restartActivity(NovelShowAcitivity.this,nextUrl,firstChap,lastChap,ttlChap);
             }
         });
         catalog.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getCatalog();
+                //getCatalog();
                 Intent intent=new Intent(NovelShowAcitivity.this,CatalogActivity.class);
                 Bundle bundle1=new Bundle();
                 bundle.putString("url",catalogUrl);
                 bundle.putInt("firstChap",firstChap);
                 bundle.putInt("lastChap",lastChap);
+                bundle.putString("BookName",BookName);
+                bundle.putInt("ttlChap",ttlChap);
+                bundle.putString("BookLink",getBookLink(url));
                 bundle.putString("currentTitle",currentTitle);
                 bundle.putStringArrayList("ChapList", (ArrayList<String>) ChapList);
                 bundle.putStringArrayList("ChapLinkList", (ArrayList<String>) ChapLinkList);
@@ -211,30 +270,67 @@ public class NovelShowAcitivity extends AppCompatActivity {
             }
         });
         webView.loadUrl(url);
-        webView.setWebViewClient(new WebViewClient());
         webSettings=webView.getSettings();
+        webView.setWebViewClient(new WebViewClient(){
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                if(first_load) {
+                    Toast.makeText(NovelShowAcitivity.this, "当前为预览模式，加入书架后可优化阅读", Toast.LENGTH_SHORT).show();
+                    first_load=false;
+                }
+                super.onPageFinished(view, url);
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return true;
+            }
+        });
         webSettings.setUseWideViewPort(true);
         webSettings.setLoadWithOverviewMode(true);
         webSettings.setTextZoom(myProgress+150);
         PastAndNext();
+        getCatalog();
+        //debug ContentTextThread t=new ContentTextThread(url,BookName,getExternalFilesDir(null));
+        //t.start();
         if(isFloatButtonShow)is_in_shelf();
     }
 
-
-    private void is_in_shelf() {
-        int num = myInfo.getInt("bookNum", 0);
-        if (num != 0) {
-            for (int i = 1; i <= num; i++) {
-                if (myInfo.getString("BookName" + i, "").equals(BookName)) {
-                    setFloatButtonShow(false);
+    // notice: Abandoned
+//    private void is_in_shelf() {
+//        int num = myInfo.getInt("bookNum", 0);
+//        if (num != 0) {
+//            for (int i = 1; i <= num; i++) {
+//                if (myInfo.getString("BookName" + i, "").equals(BookName)) {
+//                    setFloatButtonShow(false);
+//                    isInShelf = true;
+//                    book_id = i;
+//                    AddBook.setEnabled(false);
+//                    AddBook.setVisibility(View.INVISIBLE);
+//                    break;
+//                }
+//                else isInShelf=false;
+//            }
+//        }
+//    }
+    private void is_in_shelf(){
+        List<Novels>novels=novelDao.getNovelList();
+        for (Novels novel : novels) {
+            if(novel.getBookName().equals(BookName)){
+                setFloatButtonShow(false);
                     isInShelf = true;
-                    book_id = i;
+                    book_id = novel.getId();
                     AddBook.setEnabled(false);
                     AddBook.setVisibility(View.INVISIBLE);
+                Toast.makeText(Novalshow, "该书已在书架中，建议转至书架阅读", Toast.LENGTH_SHORT).show();
                     break;
-                }
             }
+            else isInShelf=false;
         }
+    }
+
+    public static void setFirst_load(boolean isFirst) {
+        first_load = isFirst;
     }
 
     public static void setFloatButtonShow(boolean floatButtonShow) {
@@ -256,6 +352,10 @@ public class NovelShowAcitivity extends AppCompatActivity {
         return book_id;
     }
 
+    public String getBookName() {
+        return BookName;
+    }
+
     private void IfAddToShelf() {
         AlertDialog.Builder builder=new AlertDialog.Builder(Novalshow);
         builder.setTitle("加入书架")
@@ -270,17 +370,24 @@ public class NovelShowAcitivity extends AppCompatActivity {
                         //TODO: add to shelf
                         isInShelf=true;
                         int bookNum;
-                        bookNum=myInfo.getInt("bookNum",0);
-                        SharedPreferences.Editor editor=myInfo.edit();
-                        editor.putString("BookUrl"+(bookNum+1),url);
-                        editor.putString("BookName"+(bookNum+1),BookName);
-                        editor.putInt("FirstChap"+(bookNum+1),firstChap);
-                        editor.putInt("LastChap"+(bookNum+1),lastChap);
-                        editor.putInt("bookNum",bookNum+1);
-                        editor.apply();
-                        setBook_id(bookNum+1);
+//                        bookNum=myInfo.getInt("bookNum",0);
+//                        SharedPreferences.Editor editor=myInfo.edit();
+//                        editor.putString("BookUrl"+(bookNum+1),url);
+//                        editor.putString("BookName"+(bookNum+1),BookName);
+//                        editor.putInt("FirstChap"+(bookNum+1),firstChap);
+//                        editor.putInt("LastChap"+(bookNum+1),lastChap);
+//                        editor.putInt("bookNum",bookNum+1);
+//                        editor.apply();
+//                        setBook_id(bookNum+1);
+                        Novels novel=new Novels(BookName,ttlChap,currentChap,getBookLink(url));
+                        novelDBTools.insertNovels(novel);
                         AddBookThread thread=new AddBookThread(BookName,getExternalFilesDir(null));
                         thread.start();
+                        ContentTextThread t=new ContentTextThread(url,BookName,getExternalFilesDir(null));
+                        t.start();
+                        CatalogThread t2=new CatalogThread(catalogUrl);
+                        t2.setIf_output(true,BookName,getExternalFilesDir(null));
+                        t2.start();
 
                     }
                 })
@@ -292,11 +399,19 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 }).setCancelable(false).show();
     }
 
+    //notice: Abandoned
+//    private void getCatalog() {
+//        CatalogThread Cthread=new CatalogThread(catalogUrl);
+//        Cthread.setmHandler(mHandler);
+//        Cthread.start();
+//        if (Cthread.getChapList()!=null) ChapList= (List<String>) Cthread.getChapList();
+//        if(Cthread.getChapLinkList()!=null)ChapLinkList= (List<String>) Cthread.getChapLinkList();
+//    }
+
     private void getCatalog() {
         CatalogThread Cthread=new CatalogThread(catalogUrl);
+        Cthread.setmHandler(mHandler);
         Cthread.start();
-        if (Cthread.getChapList()!=null) ChapList= (List<String>) Cthread.getChapList();
-        if(Cthread.getChapLinkList()!=null)ChapLinkList= (List<String>) Cthread.getChapLinkList();
     }
 
     private void PastAndNext() {
@@ -309,7 +424,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         if(thread.getBookName()!=null) BookName= (String) thread.getBookName();
     }
 
-    public static void restartActivity(Activity act,String newUrl,int firstChap,int lastChap){
+    public static void restartActivity(Activity act,String newUrl,int firstChap,int lastChap,int ttlChap){
 
         Intent intent=new Intent();
         intent.setClass(act, act.getClass());
@@ -317,6 +432,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         bundle.putString("url",newUrl);
         bundle.putInt("firstChap",firstChap);
         bundle.putInt("lastChap",lastChap);
+        bundle.putInt("ttlChap",ttlChap);
         intent.putExtras(bundle);
         if(isInShelf){
             setIsInShelf(true);
@@ -330,5 +446,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
         String tail=url.split("\\/")[4];
         String target=tail.split("\\.")[0];
         return Integer.parseInt(target);
+    }
+    public String getBookLink(String url){
+        return url.split("\\/")[3];
     }
 }
