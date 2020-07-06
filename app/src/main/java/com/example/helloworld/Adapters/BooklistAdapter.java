@@ -20,6 +20,7 @@ public class BooklistAdapter extends BaseAdapter {
     private Context context=null;
     private boolean canPaint=false;
     private String item_to_paint;
+    private int text_size;
     public BooklistAdapter(List<String> novels,Context context,boolean canPaint,String item_to_paint) {
         this.Novels=novels;
         this.context=context;
@@ -29,6 +30,16 @@ public class BooklistAdapter extends BaseAdapter {
     public Context getContext(){
         return context;
     }
+
+    public void setItem_to_paint(String item_to_paint) {
+        this.item_to_paint = item_to_paint;
+        notifyDataSetChanged();
+    }
+
+    public void setText_size(int text_size) {
+        this.text_size = text_size;
+    }
+
     @Override
     public int getCount() {
         return Novels.size();
@@ -60,6 +71,7 @@ public class BooklistAdapter extends BaseAdapter {
         else title.setTextColor(Color.parseColor("#000000"));
         String Novelname= (String) getItem(position);
         TextView name=Layout.findViewById(R.id.N_name);
+        name.setTextSize(text_size);
         name.setText(Novelname);
         return Layout;
     }

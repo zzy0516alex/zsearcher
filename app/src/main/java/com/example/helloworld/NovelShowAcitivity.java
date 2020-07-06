@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 
@@ -50,7 +51,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private ImageButton AddBook;
     private SharedPreferences myInfo;
     private NovelDBTools novelDBTools;
-    NovelDao novelDao;
+    //NovelDao novelDao;
     private int myProgress;
     WebSettings webSettings;
     private Handler mHandler;
@@ -66,6 +67,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
     String BookName;
     List<String>ChapList;
     List<String>ChapLinkList;
+    List<Novels> AllNovels;
     private boolean istouch=false;
     private static boolean first_load=true;
     private static boolean isFloatButtonShow=true;
@@ -81,7 +83,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
         url=bundle.getString("url");
         firstChap=bundle.getInt("firstChap");
         lastChap=bundle.getInt("lastChap");
-        ttlChap=bundle.getInt("ttlChap");
 
         //get view
         webView=findViewById(R.id.novelpage);
@@ -98,10 +99,20 @@ public class NovelShowAcitivity extends AppCompatActivity {
 
         //get database
         novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
-        NovelDataBase dataBase=NovelDataBase.getDataBase(this);
-        novelDao=dataBase.getNovelDao();
+        novelDBTools.getAllNovelsLD().observe(this, new Observer<List<Novels>>() {
+            @Override
+            public void onChanged(List<Novels> novels) {
+                AllNovels=novels;
+                SharedPreferences.Editor editor=myInfo.edit();
+                editor.putInt("bookNum",novels.size()).apply();
+                is_in_shelf();
+            }
+        });
+//        NovelDataBase dataBase=NovelDataBase.getDataBase(this);
+//        novelDao=dataBase.getNovelDao();
 
-        //debug novelDBTools.deleteAll();
+        //debug
+        //novelDBTools.deleteAll();
 
         //init handler
         mHandler=new Handler(){
@@ -112,6 +123,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 ChapList=result_back.get("ChapName");
                 ChapLinkList=result_back.get("ChapLink");
                 currentChap=ChapList.indexOf(currentTitle);
+                ttlChap=ChapList.size();
                 catalog.setEnabled(true);
             }
         };
@@ -154,32 +166,26 @@ public class NovelShowAcitivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if(isInShelf){ ;
-//                    SharedPreferences.Editor editor=myInfo.edit();
-//                    editor.putString("BookUrl"+book_id,pastUrl);
-//                    editor.apply();
                     Novels novel=new Novels(BookName,ttlChap,currentChap-1,getBookLink(url));
                     novel.setId(book_id);
                     novelDBTools.updateNovels(novel);
                     ContentTextThread t=new ContentTextThread(pastUrl,BookName,getExternalFilesDir(null));
                     t.start();
                 }
-                restartActivity(NovelShowAcitivity.this,pastUrl,firstChap,lastChap,ttlChap);
+                restartActivity(NovelShowAcitivity.this,pastUrl,firstChap,lastChap);
             }
         });
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(isInShelf){
-//                    SharedPreferences.Editor editor=myInfo.edit();
-//                    editor.putString("BookUrl"+book_id,nextUrl);
-//                    editor.apply();
                     Novels novel=new Novels(BookName,ttlChap,currentChap+1,getBookLink(url));
                     novel.setId(book_id);
                     novelDBTools.updateNovels(novel);
                     ContentTextThread t=new ContentTextThread(nextUrl,BookName,getExternalFilesDir(null));
                     t.start();
                 }
-                restartActivity(NovelShowAcitivity.this,nextUrl,firstChap,lastChap,ttlChap);
+                restartActivity(NovelShowAcitivity.this,nextUrl,firstChap,lastChap);
             }
         });
         catalog.setOnClickListener(new View.OnClickListener() {
@@ -192,7 +198,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 bundle.putInt("firstChap",firstChap);
                 bundle.putInt("lastChap",lastChap);
                 bundle.putString("BookName",BookName);
-                bundle.putInt("ttlChap",ttlChap);
                 bundle.putString("BookLink",getBookLink(url));
                 bundle.putString("currentTitle",currentTitle);
                 bundle.putStringArrayList("ChapList", (ArrayList<String>) ChapList);
@@ -293,39 +298,24 @@ public class NovelShowAcitivity extends AppCompatActivity {
         getCatalog();
         //debug ContentTextThread t=new ContentTextThread(url,BookName,getExternalFilesDir(null));
         //t.start();
-        if(isFloatButtonShow)is_in_shelf();
+
     }
 
-    // notice: Abandoned
-//    private void is_in_shelf() {
-//        int num = myInfo.getInt("bookNum", 0);
-//        if (num != 0) {
-//            for (int i = 1; i <= num; i++) {
-//                if (myInfo.getString("BookName" + i, "").equals(BookName)) {
-//                    setFloatButtonShow(false);
-//                    isInShelf = true;
-//                    book_id = i;
-//                    AddBook.setEnabled(false);
-//                    AddBook.setVisibility(View.INVISIBLE);
-//                    break;
-//                }
-//                else isInShelf=false;
-//            }
-//        }
-//    }
     private void is_in_shelf(){
-        List<Novels>novels=novelDao.getNovelList();
-        for (Novels novel : novels) {
-            if(novel.getBookName().equals(BookName)){
-                setFloatButtonShow(false);
+        if(AllNovels.size()!=0) {
+            for (Novels novel : AllNovels) {
+                if (novel.getBookName().equals(BookName)) {
+                    if(first_load)Toast.makeText(Novalshow, "该书已在书架中，建议转至书架阅读", Toast.LENGTH_SHORT).show();
+                    setFloatButtonShow(false);
                     isInShelf = true;
                     book_id = novel.getId();
                     AddBook.setEnabled(false);
                     AddBook.setVisibility(View.INVISIBLE);
-                Toast.makeText(Novalshow, "该书已在书架中，建议转至书架阅读", Toast.LENGTH_SHORT).show();
                     break;
+                } else isInShelf = false;
             }
-            else isInShelf=false;
+        }else {
+            isInShelf=false;
         }
     }
 
@@ -369,16 +359,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
                         setFloatButtonShow(false);
                         //TODO: add to shelf
                         isInShelf=true;
-                        int bookNum;
-//                        bookNum=myInfo.getInt("bookNum",0);
-//                        SharedPreferences.Editor editor=myInfo.edit();
-//                        editor.putString("BookUrl"+(bookNum+1),url);
-//                        editor.putString("BookName"+(bookNum+1),BookName);
-//                        editor.putInt("FirstChap"+(bookNum+1),firstChap);
-//                        editor.putInt("LastChap"+(bookNum+1),lastChap);
-//                        editor.putInt("bookNum",bookNum+1);
-//                        editor.apply();
-//                        setBook_id(bookNum+1);
                         Novels novel=new Novels(BookName,ttlChap,currentChap,getBookLink(url));
                         novelDBTools.insertNovels(novel);
                         AddBookThread thread=new AddBookThread(BookName,getExternalFilesDir(null));
@@ -399,14 +379,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 }).setCancelable(false).show();
     }
 
-    //notice: Abandoned
-//    private void getCatalog() {
-//        CatalogThread Cthread=new CatalogThread(catalogUrl);
-//        Cthread.setmHandler(mHandler);
-//        Cthread.start();
-//        if (Cthread.getChapList()!=null) ChapList= (List<String>) Cthread.getChapList();
-//        if(Cthread.getChapLinkList()!=null)ChapLinkList= (List<String>) Cthread.getChapLinkList();
-//    }
 
     private void getCatalog() {
         CatalogThread Cthread=new CatalogThread(catalogUrl);
@@ -424,7 +396,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         if(thread.getBookName()!=null) BookName= (String) thread.getBookName();
     }
 
-    public static void restartActivity(Activity act,String newUrl,int firstChap,int lastChap,int ttlChap){
+    public static void restartActivity(Activity act,String newUrl,int firstChap,int lastChap){
 
         Intent intent=new Intent();
         intent.setClass(act, act.getClass());
@@ -432,7 +404,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
         bundle.putString("url",newUrl);
         bundle.putInt("firstChap",firstChap);
         bundle.putInt("lastChap",lastChap);
-        bundle.putInt("ttlChap",ttlChap);
         intent.putExtras(bundle);
         if(isInShelf){
             setIsInShelf(true);

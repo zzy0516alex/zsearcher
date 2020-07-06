@@ -67,7 +67,7 @@ public class CatalogActivity extends AppCompatActivity {
         currentTitle=bundle.getString("currentTitle");
         BookName=bundle.getString("BookName");
         BookLink=bundle.getString("BookLink");
-        ttlChap=bundle.getInt("ttlChap");
+        ttlChap=ChapList.size();
         //myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
         novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
         BooklistAdapter chapListAdapter=new BooklistAdapter(ChapList,context,true,currentTitle);

@@ -1,6 +1,8 @@
 package com.example.helloworld.Threads;
 
 import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Message;
 
 import androidx.annotation.NonNull;
 
@@ -22,6 +24,7 @@ public class ContentTextThread extends Thread {
         this.Dir=Dir;
         this.BookName=book_name;
     }
+
 
     @Override
     public void run() {

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/deepBlue">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="字体调整"
+        android:textColor="#D3D3D3"
+        android:textSize="16sp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:id="@+id/label_text_size"/>
+    <SeekBar
+        android:id="@+id/set_text_size"
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/label_text_size"
+        android:layout_marginStart="5dp"
+        android:paddingTop="13dp"
+
+        android:maxHeight="3dp"
+        android:minHeight="3dp"
+        android:progressDrawable="@drawable/seek_bar_style1"
+        android:thumb="@drawable/seek_bar_btn1" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="亮度调整"
+        android:textColor="#D3D3D3"
+        android:textSize="16sp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_below="@+id/label_text_size"
+        android:id="@+id/label_light"/>
+
+    <SeekBar
+        android:id="@+id/set_light"
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:paddingTop="13dp"
+        android:layout_below="@+id/set_text_size"
+        android:layout_toEndOf="@+id/label_light"
+
+        android:maxHeight="3dp"
+        android:minHeight="3dp"
+        android:progressDrawable="@drawable/seek_bar_style1"
+        android:thumb="@drawable/seek_bar_btn1" />
+
+</RelativeLayout>

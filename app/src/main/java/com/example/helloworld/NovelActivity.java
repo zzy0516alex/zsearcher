@@ -177,13 +177,11 @@ public class NovelActivity extends AppCompatActivity {
             if(thread.getContentUrl()!=null) newUrl= (String) thread.getContentUrl();
             if(thread.getFirstchap()!=null) firstChap= (int) thread.getFirstchap();
             if(thread.getLastchap()!=null) lastChap= (int) thread.getLastchap();
-            if(thread.getTtlChaps()!=-1) ttlChap=thread.getTtlChaps();
             Intent intent=new Intent(NovelActivity.this,NovelShowAcitivity.class);
             Bundle bundle=new Bundle();
             bundle.putString("url",newUrl);
             bundle.putInt("firstChap",firstChap);
             bundle.putInt("lastChap",lastChap);
-            bundle.putInt("ttlChap",ttlChap);
             intent.putExtras(bundle);
             NovelShowAcitivity.setFloatButtonShow(true);
             NovelShowAcitivity.setFirst_load(true);

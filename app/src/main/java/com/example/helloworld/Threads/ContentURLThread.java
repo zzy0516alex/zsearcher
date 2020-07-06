@@ -16,7 +16,6 @@ public class ContentURLThread extends Thread {
     private Object firstchap;
     private Object lastchap;
     private Object newUrl;
-    private int ttlChaps;
     public ContentURLThread(String url) {
         this.url=url;
     }
@@ -29,8 +28,6 @@ public class ContentURLThread extends Thread {
             Elements elements=document.select("div.box_con");
             Element ele=elements.get(1).select("a").first();
             Element ele2=elements.get(1).select("a").last();
-            List<String> chap_names=elements.select("dd").eachText();
-            ttlChaps=chap_names.size();
             String lasturl=ele2.attr("href");
             String contentUrl=ele.attr("href");
             String a=contentUrl.split("\\.")[0];
@@ -75,13 +72,4 @@ public class ContentURLThread extends Thread {
 
     }
 
-    public int getTtlChaps() {
-        try {
-            this.join();
-            return ttlChaps;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
 }

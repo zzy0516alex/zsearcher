@@ -6,13 +6,18 @@ import android.os.Bundle;
 import android.view.WindowManager;
 
 import com.example.helloworld.Fragments.NovelViewFragment;
+import com.example.helloworld.Utils.IOtxt;
 import com.example.helloworld.myObjects.NovelChap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class NovelViewerActivity extends AppCompatActivity {
 
     private static NovelChap current_chap;
+    private HashMap<String,ArrayList<String>>catalog;
+    private ArrayList<String>ChapName;
+    private ArrayList<String>ChapLink;
 
     public static void setCurrent_chap(NovelChap chap) {
         NovelViewerActivity.current_chap = chap;
@@ -26,18 +31,18 @@ public class NovelViewerActivity extends AppCompatActivity {
 
         ArrayList<NovelChap> novelChap =new ArrayList<>();
         novelChap.add(current_chap);
-        /*debug
-        Novel chap1=new Novel("第一章","正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文正文\n正文\n正文\n正文\n正文\n正文\n正文");
-        Novel chap2=new Novel("第二章","正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文正文\n正文\n正文\n正文\n正文\n正文\n正文");
-        Novel chap3=new Novel("第二章","正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文\n正文正文\n正文\n正文\n正文\n正文\n正文\n正文");
-        novel.add(chap1);
-        novel.add(chap2);
-        novel.add(chap3);
-        *
-         */
 
         NovelViewFragment fragment=new NovelViewFragment();
+
+        catalog= IOtxt.read_catalog(current_chap.getBookName(),getExternalFilesDir(null));
+        ChapName=catalog.get("ChapName");
+        ChapLink=catalog.get("ChapLink");
+
         fragment.setChapList(novelChap);
+        fragment.setBookID(current_chap.getBookID());
+        fragment.setBookName(current_chap.getBookName());
+        fragment.setChapName(ChapName);
+        fragment.setChapLink(ChapLink);
         getSupportFragmentManager().beginTransaction().add(R.id.novel_view_container,fragment).commitAllowingStateLoss();
     }
 }

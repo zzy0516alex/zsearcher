@@ -12,7 +12,6 @@ public abstract class NovelDataBase extends RoomDatabase {
     public static synchronized NovelDataBase getDataBase(Context context){
         if (NOVEL_DATABASE == null){
             NOVEL_DATABASE= Room.databaseBuilder(context.getApplicationContext(),NovelDataBase.class,"Novel_DB")
-                    .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
                     .build();
         }

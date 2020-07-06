@@ -28,6 +28,14 @@ public class BookshelfAdapter extends BaseAdapter {
         this.context = context;
     }
 
+    public void setBookNames(List<String> bookNames) {
+        BookNames = bookNames;
+    }
+
+    public void setBookCovers(List<Bitmap> bookCovers) {
+        BookCovers = bookCovers;
+    }
+
     public Context getContext() {
         return context;
     }
