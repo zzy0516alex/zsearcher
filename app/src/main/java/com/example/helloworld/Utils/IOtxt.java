@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -90,5 +91,29 @@ public class IOtxt {
         }
 
         return sb.toString();
+    }
+    public static void WriteTXT(File Dir,String BookName,String content){
+        File mk_txt=new File(Dir+"/ZsearchRes/BookContents/"+ BookName+".txt" );
+        FileOutputStream fot=null;
+        try {
+            fot=new FileOutputStream(mk_txt);
+        }catch (FileNotFoundException e){
+            e.printStackTrace();
+        }
+        try{
+            fot.write(content.getBytes());
+            fot.flush();
+        }catch (IOException e){
+            e.printStackTrace();
+        }finally {
+            if(fot!=null){
+                try {
+                    fot.close();
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 }

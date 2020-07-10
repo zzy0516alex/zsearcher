@@ -17,6 +17,8 @@ public class Novels {
     private int CurrentChap;
     @ColumnInfo(name="book_link")
     private String BookLink;
+    @ColumnInfo(name="offset")
+    private int offset=3;
 
     public Novels(String bookName, int ttlchap, int currentChap,String bookLink) {
         this.BookName = bookName;
@@ -66,5 +68,13 @@ public class Novels {
 
     public void setBookLink(String bookLink) {
         BookLink = bookLink;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
     }
 }

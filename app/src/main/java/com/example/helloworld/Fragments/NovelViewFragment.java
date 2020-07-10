@@ -1,6 +1,7 @@
 package com.example.helloworld.Fragments;
 
 import android.content.ContentResolver;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -25,16 +26,20 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.helloworld.Adapters.BooklistAdapter;
 import com.example.helloworld.Adapters.NovelViewAdapter;
+import com.example.helloworld.NovelRoom.NovelDBTools;
+import com.example.helloworld.NovelRoom.Novels;
 import com.example.helloworld.NovelViewerActivity;
 import com.example.helloworld.R;
 import com.example.helloworld.Threads.ChapGetterThread;
 import com.example.helloworld.Threads.ContentTextThread;
 import com.example.helloworld.Utils.Brightness;
+import com.example.helloworld.Utils.IOtxt;
 import com.example.helloworld.Utils.ScreenSize;
 import com.example.helloworld.myObjects.NovelChap;
 
@@ -42,6 +47,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import static android.content.Context.MODE_PRIVATE;
 
 public class NovelViewFragment extends Fragment {
     RecyclerView mRecyclerView;
@@ -67,13 +74,20 @@ public class NovelViewFragment extends Fragment {
     private ArrayList<String>chapName;
     private int chap_index=0;
     private int current_chap=0;
+    private int offset=3;
+    private int offset_to_save=3;
+    private int myTextSize=20;
     private boolean is_scroll_stop=true;
     private boolean is_toolbar_visible=false;
     private boolean auto_download=false;
+    private boolean has_offset=true;
     private ExecutorService threadPool;
     private Handler LastChapHandler;
     private Handler NextChapHandler;
     private Handler JumpChapHandler;
+    private NovelDBTools novelDBTools;
+    private SharedPreferences myInfo;
+    private File Dir;
 
     public void setChapList(ArrayList<NovelChap> chapList) {
         this.chapList = chapList;
@@ -93,6 +107,13 @@ public class NovelViewFragment extends Fragment {
 
     public void setChapLink(ArrayList<String> chapLink) {
         this.chapLink = chapLink;
+    }
+
+    public void setDir(File file){this.Dir=file;}
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+        has_offset=true;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -120,7 +141,15 @@ public class NovelViewFragment extends Fragment {
         pop_view=getLayoutInflater().inflate(R.layout.pop_settings,null);
         popSettings=new PopupWindow(pop_view,ViewGroup.LayoutParams.MATCH_PARENT,300);
 
+        //初始化设置条
         initSettings();
+
+        //初始化数据库
+        novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
+
+        //初始化偏好文件
+        myInfo=getActivity().getSharedPreferences("UserInfo",MODE_PRIVATE);
+        myTextSize=myInfo.getInt("myTextSize",20);
 
         //初始化handler
         LastChapHandler=new Handler(){
@@ -131,8 +160,16 @@ public class NovelViewFragment extends Fragment {
                 newChap.setCurrent_chapter(current_chap-1);
                 chapList.add(0, newChap);
                 adapter.updateChapList(chapList);
+                int m_offset=0;
+                if (has_offset)
+                {
+                    m_offset=offset;
+                    has_offset=false;
+                }else{
+                    m_offset=3;
+                }
                 LinearLayoutManager linearLayoutManager= (LinearLayoutManager) mRecyclerView.getLayoutManager();
-                linearLayoutManager.scrollToPositionWithOffset(chap_index+1,3);
+                linearLayoutManager.scrollToPositionWithOffset(chap_index+1,m_offset);
                 auto_download=true;
             }
         };
@@ -182,6 +219,7 @@ public class NovelViewFragment extends Fragment {
         booklistAdapter=new BooklistAdapter(chapName,getContext(),true,chapList.get(0).getTitle());
         booklistAdapter.setText_size(18);
         adapter=new NovelViewAdapter(getActivity(),chapList);
+        adapter.setTextSize(myTextSize);
         mRecyclerView.setAdapter(adapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
 
@@ -189,7 +227,7 @@ public class NovelViewFragment extends Fragment {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
-                if (newState == RecyclerView.SCROLL_STATE_IDLE/**滑动停止**/) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE/*滑动停止*/) {
                     is_scroll_stop=true;
                     int item_count=recyclerView.getLayoutManager().getItemCount();
                     Log.d("test", "recyclerView总共的Item个数:" +
@@ -198,7 +236,7 @@ public class NovelViewFragment extends Fragment {
                     //获取可见的最后一个view
                     View lastChildView = recyclerView.getChildAt(
                             recyclerView.getChildCount() - 1);
-
+                    offset_to_save=lastChildView.getTop();
                     //获取可见的最后一个view的位置
                     int lastChildViewPosition = recyclerView.getChildAdapterPosition(lastChildView);
                     if(chap_index!=lastChildViewPosition){
@@ -210,6 +248,7 @@ public class NovelViewFragment extends Fragment {
                     Log.d("viewer","size= "+chapList.size());
                     if (auto_download) {
                         Log.d("viewer","index= "+chap_index);
+
                         if (chap_index == 0) {
                             int top=recyclerView.getLayoutManager().getChildAt(0).getTop();
                             int Y=recyclerView.getScrollY();
@@ -221,7 +260,9 @@ public class NovelViewFragment extends Fragment {
                             NextChapDownloader(chapList.get(chap_index));
                         }
                     }
+
                     Log.d("viewer","cur_chap= "+current_chap);
+
                     if (item_count>12){
                         boolean remove=true;
                         if (chap_index>6)remove=false;
@@ -235,6 +276,15 @@ public class NovelViewFragment extends Fragment {
                                     chapList.remove(i);
                                 }
                             }
+                        }
+                    }
+                    if (item_count>50){
+                        int new_item_top=recyclerView.getLayoutManager().getChildAt(recyclerView.getChildCount()-1).getTop();
+                        if (new_item_top < 0){
+                            Log.d("top", "new item reach top: offset = "+new_item_top);
+                            has_offset=true;
+                            offset=new_item_top;
+                            refreshChap();
                         }
                     }
                 }
@@ -317,6 +367,35 @@ public class NovelViewFragment extends Fragment {
         return view;
     }
 
+    private void refreshChap() {
+        NovelChap refresh_chap=chapList.get(chap_index);
+        chapList.clear();
+        chapList.add(refresh_chap);
+        current_chap=refresh_chap.getCurrent_chapter();
+        chap_index=0;
+        booklistAdapter.setItem_to_paint(refresh_chap.getTitle());
+        adapter.updateChapList(chapList);
+        LastChapDownloader(refresh_chap);
+        NextChapDownloader(refresh_chap);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        //TODO:保存当前章节
+        Novels novel=new Novels(BookName,chapList.size(),current_chap,"");
+        novel.setId(BookID);
+        novel.setOffset(offset_to_save);
+        novelDBTools.updateNovels(novel);
+        Thread thread =new Thread(new Runnable() {
+            @Override
+            public void run() {
+                IOtxt.WriteTXT(Dir,BookName,chapList.get(chap_index).getContent());
+            }
+        });
+        thread.start();
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void initSettings() {
         setTextSize=pop_view.findViewById(R.id.set_text_size);
@@ -324,11 +403,13 @@ public class NovelViewFragment extends Fragment {
 
         setTextSize.setMax(60);
         setTextSize.setMin(10);
-        setTextSize.setProgress(20);
+        setTextSize.setProgress(myTextSize);
+
         setTextSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 adapter.setTextSize(progress);
+                myTextSize=progress;
             }
 
             @Override
@@ -338,7 +419,9 @@ public class NovelViewFragment extends Fragment {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-
+                SharedPreferences.Editor editor=myInfo.edit();
+                editor.putInt("myTextSize",myTextSize);
+                editor.apply();
             }
         });
 

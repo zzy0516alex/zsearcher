@@ -120,6 +120,8 @@ public class BookShelfActivity extends AppCompatActivity {
                         }
                         Novels current_book=AllNovelList.get(position);
                         //Catalog = read_catalog(current_book.getBookName());
+                        intent.putExtra("offset",current_book.getOffset());
+
                         Catalog= IOtxt.read_catalog(current_book.getBookName(),getExternalFilesDir(null));
                         ChapName=Catalog.get("ChapName");
                         ChapLink=Catalog.get("ChapLink");

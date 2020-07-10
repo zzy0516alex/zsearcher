@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -48,6 +49,7 @@ public class NovelActivity extends AppCompatActivity {
     NovelThread T;
     Handler handler;
     final int BOOK_SEARCH_DONE=0X2;
+    InputMethodManager manager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +62,7 @@ public class NovelActivity extends AppCompatActivity {
         Contents=new ArrayList<>();
         context=this;
         final Activity activity= NovelActivity.this;
+        manager= (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
 
         File Folder =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookCovers");
         if(!Folder.exists()){
@@ -76,6 +79,7 @@ public class NovelActivity extends AppCompatActivity {
                 super.handleMessage(msg);
                 if(msg.what==BOOK_SEARCH_DONE){
                     loadView.setVisibility(View.GONE);
+                    editText.setCursorVisible(true);
                     get_result();
                 }
             }
@@ -84,22 +88,41 @@ public class NovelActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loadView.setVisibility(View.VISIBLE);
-                if((!editText.getText().toString().equals(""))&&(editText.getText().toString().length()>1)){
-                    input=editText.getText().toString();
-                    startsearch=true;
-                }
-                else startsearch=false;
-                if (startsearch){
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(editText.getWindowToken(), 0) ;
-                    TimerButton();
-                    NovelSearch();
-                }
-                else {Toast.makeText(NovelActivity.this, "输入的字符必须大于二", Toast.LENGTH_SHORT).show();
-                restartActivity(activity);
-                }
+                search_btn_down(activity);
                 //Log.e("test2",Contents.get(0));
+            }
+        });
+        enter_key_down(activity);
+
+    }
+
+    private void search_btn_down(Activity activity) {
+        loadView.setVisibility(View.VISIBLE);
+        if((!editText.getText().toString().equals(""))&&(editText.getText().toString().length()>1)){
+            input=editText.getText().toString();
+            startsearch=true;
+        }
+        else startsearch=false;
+        if (startsearch){
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(editText.getWindowToken(), 0) ;
+            editText.setCursorVisible(false);
+            TimerButton();
+            NovelSearch();
+        }
+        else {
+            Toast.makeText(NovelActivity.this, "输入的字符必须大于二", Toast.LENGTH_SHORT).show();
+        restartActivity(activity);
+        }
+    }
+    private void enter_key_down(final Activity activity){
+        editText.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (keyCode==KeyEvent.KEYCODE_ENTER && event.getAction()==KeyEvent.ACTION_DOWN){
+                    search_btn_down(activity);
+                }
+                return false;
             }
         });
     }
