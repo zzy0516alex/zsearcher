@@ -1,9 +1,11 @@
 package com.example.helloworld;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,6 +16,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -25,6 +28,7 @@ import com.example.helloworld.Adapters.BookshelfAdapter;
 import com.example.helloworld.NovelRoom.NovelDBTools;
 import com.example.helloworld.NovelRoom.Novels;
 import com.example.helloworld.Utils.IOtxt;
+import com.example.helloworld.Utils.ViberateControl;
 import com.example.helloworld.myObjects.NovelChap;
 
 import java.io.BufferedReader;
@@ -52,6 +56,7 @@ public class BookShelfActivity extends AppCompatActivity {
     private GridView bookShelf;
     private Button delete;
     Context context;
+    Activity activity;
     private boolean is_item_chosen=false;
     private int item_chosen=-1;
     @Override
@@ -66,6 +71,7 @@ public class BookShelfActivity extends AppCompatActivity {
         BookCover=new ArrayList<>();
         BookName=new ArrayList<>();
         context=this;
+        activity=this;
         //init views
         bookShelf=findViewById(R.id.BookShelf);
         delete=findViewById(R.id.delete);
@@ -149,6 +155,7 @@ public class BookShelfActivity extends AppCompatActivity {
                 }
             });
             bookShelf.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                @RequiresApi(api = Build.VERSION_CODES.O)
                 @Override
                 public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                     if(!is_item_chosen) {

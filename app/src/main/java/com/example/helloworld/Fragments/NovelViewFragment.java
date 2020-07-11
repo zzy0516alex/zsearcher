@@ -41,6 +41,7 @@ import com.example.helloworld.Threads.ContentTextThread;
 import com.example.helloworld.Utils.Brightness;
 import com.example.helloworld.Utils.IOtxt;
 import com.example.helloworld.Utils.ScreenSize;
+import com.example.helloworld.Utils.ViberateControl;
 import com.example.helloworld.myObjects.NovelChap;
 
 import java.io.File;
@@ -81,6 +82,7 @@ public class NovelViewFragment extends Fragment {
     private boolean is_toolbar_visible=false;
     private boolean auto_download=false;
     private boolean has_offset=true;
+    private boolean need_save=false;
     private ExecutorService threadPool;
     private Handler LastChapHandler;
     private Handler NextChapHandler;
@@ -229,6 +231,7 @@ public class NovelViewFragment extends Fragment {
                 super.onScrollStateChanged(recyclerView, newState);
                 if (newState == RecyclerView.SCROLL_STATE_IDLE/*滑动停止*/) {
                     is_scroll_stop=true;
+                    need_save=true;
                     int item_count=recyclerView.getLayoutManager().getItemCount();
                     Log.d("test", "recyclerView总共的Item个数:" +
                             String.valueOf(item_count));
@@ -304,6 +307,7 @@ public class NovelViewFragment extends Fragment {
         BackToShelf.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ViberateControl.Vibrate(getActivity(),15);
                 BackToShelf.setImageResource(R.drawable.backarrow_onclick);
                 getActivity().onBackPressed();
             }
@@ -383,6 +387,10 @@ public class NovelViewFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         //TODO:保存当前章节
+        if (need_save)SaveCurrentLine();
+    }
+
+    private void SaveCurrentLine() {
         Novels novel=new Novels(BookName,chapList.size(),current_chap,"");
         novel.setId(BookID);
         novel.setOffset(offset_to_save);
