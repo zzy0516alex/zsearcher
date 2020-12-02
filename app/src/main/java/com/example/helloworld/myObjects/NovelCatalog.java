@@ -1,0 +1,75 @@
+package com.example.helloworld.myObjects;
+
+import android.content.Context;
+
+import com.example.helloworld.NovelShowAcitivity;
+import com.example.helloworld.R;
+import com.example.helloworld.Threads.NovelThread;
+
+import java.util.ArrayList;
+
+public class NovelCatalog {
+    private ArrayList<String> Title;
+    private ArrayList<String> Link;
+    private Context context;
+
+    public NovelCatalog(ArrayList<String> title, ArrayList<String> link) {
+        Title = title;
+        Link = link;
+    }
+
+    public NovelCatalog() {
+        Title=new ArrayList<>();
+        Link=new ArrayList<>();
+    }
+
+    public void setContext(Context context) {
+        this.context = context;
+    }
+
+    public ArrayList<String> getTitle() {
+        return Title;
+    }
+
+    public void setTitle(ArrayList<String> title) {
+        Title = title;
+    }
+
+    public ArrayList<String> getLink() {
+        return Link;
+    }
+
+    public void setLink(ArrayList<String> link) {
+        Link = link;
+    }
+    public void add(String title,String link){
+        Title.add(title);
+        Link.add(link);
+    }
+    public boolean isEmpty(){
+        return Title.isEmpty()||Link.isEmpty();
+    }
+    public void completeCatalog(String book_link, NovelThread.TAG tag){
+        ArrayList<String>newLink=new ArrayList<>();
+        for (String link : Link) {
+            newLink.add(addBasicURL(book_link,link,tag));
+        }
+        Link=newLink;
+    }
+    public int getSize(){
+        return Title.size();
+    }
+    private String addBasicURL(String book_link, String current_chapLink, NovelThread.TAG tag){
+        String newUrl="";
+        switch(tag){
+            case BiQuGe:
+                newUrl=book_link+current_chapLink;
+                break;
+            case SiDaMingZhu:
+                newUrl=context.getString(R.string.book_search_base2)+"/"+current_chapLink;
+                break;
+            default:
+        }
+        return newUrl;
+    }
+}

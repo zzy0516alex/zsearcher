@@ -1,14 +1,15 @@
 package com.example.helloworld;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,6 +20,8 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -29,13 +32,12 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.example.helloworld.NovelRoom.NovelDBTools;
-import com.example.helloworld.NovelRoom.NovelDao;
-import com.example.helloworld.NovelRoom.NovelDataBase;
 import com.example.helloworld.NovelRoom.Novels;
-import com.example.helloworld.Threads.AddBookThread;
-import com.example.helloworld.Threads.BottomThread;
+import com.example.helloworld.Threads.GetCoverThread;
 import com.example.helloworld.Threads.CatalogThread;
 import com.example.helloworld.Threads.ContentTextThread;
+import com.example.helloworld.Threads.NovelThread;
+import com.example.helloworld.myObjects.NovelCatalog;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,6 +50,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private Button past;
     private Button next;
     private Button catalog;
+    private ImageButton web_refresh;
     private ImageButton AddBook;
     private SharedPreferences myInfo;
     private NovelDBTools novelDBTools;
@@ -55,9 +58,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private int myProgress;
     WebSettings webSettings;
     private Handler mHandler;
-    String url;
-    int firstChap;
-    int lastChap;
+    String currentURL;
+    String BaseURL;
     int ttlChap;
     int currentChap=0;
     String nextUrl;
@@ -68,11 +70,14 @@ public class NovelShowAcitivity extends AppCompatActivity {
     List<String>ChapList;
     List<String>ChapLinkList;
     List<Novels> AllNovels;
+    NovelThread.TAG tag;
     private boolean istouch=false;
     private static boolean first_load=true;
     private static boolean isFloatButtonShow=true;
     private static boolean isInShelf=false;
     private static int book_id;
+    private Context context;
+    @SuppressLint({"HandlerLeak", "ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,9 +85,15 @@ public class NovelShowAcitivity extends AppCompatActivity {
         Novalshow=this;
         //get bundle
         final Bundle bundle=this.getIntent().getExtras();
-        url=bundle.getString("url");
-        firstChap=bundle.getInt("firstChap");
-        lastChap=bundle.getInt("lastChap");
+        assert bundle != null;
+        currentURL =bundle.getString("url");
+        currentTitle=bundle.getString("currentTitle");
+        catalogUrl=bundle.getString("CatalogUrl");
+        BookName=bundle.getString("BookName");
+        tag= (NovelThread.TAG) bundle.getSerializable("tag");
+
+        BaseURL=getBaseUrl(currentURL,tag);
+        context=this;
 
         //get view
         webView=findViewById(R.id.novelpage);
@@ -90,6 +101,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         past=findViewById(R.id.past);
         next=findViewById(R.id.next);
         catalog=findViewById(R.id.catalog);
+        web_refresh=findViewById(R.id.web_refresh);
         AddBook=findViewById(R.id.AddBook);
 
         //get preferences
@@ -119,27 +131,29 @@ public class NovelShowAcitivity extends AppCompatActivity {
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
-                HashMap<String,List<String>> result_back= (HashMap<String, List<String>>) msg.obj;
-                ChapList=result_back.get("ChapName");
-                ChapLinkList=result_back.get("ChapLink");
-                currentChap=ChapList.indexOf(currentTitle);
+                NovelCatalog result_back= (NovelCatalog) msg.obj;
+                ChapList=result_back.getTitle();
+                ChapLinkList=result_back.getLink();
                 ttlChap=ChapList.size();
+                PastAndNext();
                 catalog.setEnabled(true);
+                if (currentChap!=ChapList.size()-1)next.setEnabled(true);
+                if (currentChap!=0)past.setEnabled(true);
+                webView.reload();
             }
         };
 
         //initiate button
-        if(getCurrentChap(url)==firstChap){
-            past.setEnabled(false);
-        }
-        if(getCurrentChap(url)==lastChap){
-            next.setEnabled(false);
-        }
+        //ChangeButtonCondition();
+        next.setEnabled(false);
+        past.setEnabled(false);
+
         if(!isFloatButtonShow){
             AddBook.setVisibility(View.INVISIBLE);
             AddBook.setEnabled(false);
         }
         catalog.setEnabled(false);
+        next.setEnabled(false);
         //
         seekBar.setMax(150);
         seekBar.setProgress(myProgress);
@@ -165,27 +179,13 @@ public class NovelShowAcitivity extends AppCompatActivity {
         past.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(isInShelf){ ;
-                    Novels novel=new Novels(BookName,ttlChap,currentChap-1,getBookLink(url));
-                    novel.setId(book_id);
-                    novelDBTools.updateNovels(novel);
-                    ContentTextThread t=new ContentTextThread(pastUrl,BookName,getExternalFilesDir(null));
-                    t.start();
-                }
-                restartActivity(NovelShowAcitivity.this,pastUrl,firstChap,lastChap);
+                webView.loadUrl(pastUrl);
             }
         });
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(isInShelf){
-                    Novels novel=new Novels(BookName,ttlChap,currentChap+1,getBookLink(url));
-                    novel.setId(book_id);
-                    novelDBTools.updateNovels(novel);
-                    ContentTextThread t=new ContentTextThread(nextUrl,BookName,getExternalFilesDir(null));
-                    t.start();
-                }
-                restartActivity(NovelShowAcitivity.this,nextUrl,firstChap,lastChap);
+                webView.loadUrl(nextUrl);
             }
         });
         catalog.setOnClickListener(new View.OnClickListener() {
@@ -193,19 +193,18 @@ public class NovelShowAcitivity extends AppCompatActivity {
             public void onClick(View v) {
                 //getCatalog();
                 Intent intent=new Intent(NovelShowAcitivity.this,CatalogActivity.class);
-                Bundle bundle1=new Bundle();
-                bundle.putString("url",catalogUrl);
-                bundle.putInt("firstChap",firstChap);
-                bundle.putInt("lastChap",lastChap);
-                bundle.putString("BookName",BookName);
-                bundle.putString("BookLink",getBookLink(url));
-                bundle.putString("currentTitle",currentTitle);
-                bundle.putStringArrayList("ChapList", (ArrayList<String>) ChapList);
-                bundle.putStringArrayList("ChapLinkList", (ArrayList<String>) ChapLinkList);
-                intent.putExtras(bundle);
-                startActivity(intent);
+                Bundle bundle_catalog=new Bundle();
+                bundle_catalog.putString("url",catalogUrl);
+                bundle_catalog.putString("currentTitle",currentTitle);
+                bundle_catalog.putStringArrayList("ChapList", (ArrayList<String>) ChapList);
+                bundle_catalog.putStringArrayList("ChapLinkList", (ArrayList<String>) ChapLinkList);
+                bundle_catalog.putSerializable("tag",tag);
+                intent.putExtras(bundle_catalog);
+                startActivityForResult(intent,1);
             }
         });
+
+        //设置浮标
         DisplayMetrics dm = getResources().getDisplayMetrics();
         final int screenWidth = dm.widthPixels;
         final int screenHeight = dm.heightPixels - 50;
@@ -274,16 +273,26 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 }
             }
         });
-        webView.loadUrl(url);
+
+        //
+        webView.loadUrl(currentURL);
         webSettings=webView.getSettings();
         webView.setWebViewClient(new WebViewClient(){
             @Override
             public void onPageFinished(WebView view, String url) {
-                if(first_load) {
+                if(first_load && !isInShelf) {
                     Toast.makeText(NovelShowAcitivity.this, "当前为预览模式，加入书架后可优化阅读", Toast.LENGTH_SHORT).show();
                     first_load=false;
                 }
                 super.onPageFinished(view, url);
+
+                //阅读新章节时：
+                if (!url.equals(currentURL)){
+                    currentURL=url;
+                    ChangeCurrentCondition();
+                    PastAndNext();
+                    if (isInShelf)update_bookshelfINFO();
+                }
             }
 
             @Override
@@ -294,18 +303,54 @@ public class NovelShowAcitivity extends AppCompatActivity {
         webSettings.setUseWideViewPort(true);
         webSettings.setLoadWithOverviewMode(true);
         webSettings.setTextZoom(myProgress+150);
-        PastAndNext();
+
+        //获取目录
         getCatalog();
+
+        //刷新界面
+        web_refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Animation animation = AnimationUtils.loadAnimation(Novalshow, R.anim.rotate_limittime);
+                web_refresh.startAnimation(animation);
+                webView.reload();
+            }
+        });
         //debug ContentTextThread t=new ContentTextThread(url,BookName,getExternalFilesDir(null));
         //t.start();
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode==1 && resultCode==1){
+            String newURL="";
+            assert data != null;
+            Bundle bundle=data.getExtras();
+            assert bundle != null;
+            newURL=bundle.getString("url");
+            webView.loadUrl(newURL);
+        }
+    }
+
+    private void ChangeCurrentCondition() {
+        next.setEnabled(false);
+        past.setEnabled(false);
+        currentChap=ChapLinkList.indexOf(currentURL.replace(BaseURL,""));
+        currentTitle=ChapList.get(currentChap);
+        if (currentChap!=ChapLinkList.size()-1)next.setEnabled(true);
+        if (currentChap!=0)past.setEnabled(true);
     }
 
     private void is_in_shelf(){
         if(AllNovels.size()!=0) {
             for (Novels novel : AllNovels) {
                 if (novel.getBookName().equals(BookName)) {
-                    if(first_load)Toast.makeText(Novalshow, "该书已在书架中，建议转至书架阅读", Toast.LENGTH_SHORT).show();
+                    if(first_load) {
+                        Toast.makeText(Novalshow, "该书已在书架中，建议转至书架阅读", Toast.LENGTH_SHORT).show();
+                        first_load=false;
+                    }
                     setFloatButtonShow(false);
                     isInShelf = true;
                     book_id = novel.getId();
@@ -359,15 +404,18 @@ public class NovelShowAcitivity extends AppCompatActivity {
                         setFloatButtonShow(false);
                         //TODO: add to shelf
                         isInShelf=true;
-                        Novels novel=new Novels(BookName,ttlChap,currentChap,getBookLink(url));
+                        Novels novel=new Novels(BookName,ttlChap,currentChap,catalogUrl);
+                        novel.setTag_inTAG(tag);
                         novelDBTools.insertNovels(novel);
-                        AddBookThread thread=new AddBookThread(BookName,getExternalFilesDir(null));
-                        thread.start();
-                        ContentTextThread t=new ContentTextThread(url,BookName,getExternalFilesDir(null));
-                        t.start();
-                        CatalogThread t2=new CatalogThread(catalogUrl);
-                        t2.setIf_output(true,BookName,getExternalFilesDir(null));
-                        t2.start();
+                        GetCoverThread thread_cover=new GetCoverThread(BookName,getExternalFilesDir(null));
+                        thread_cover.start();
+                        ContentTextThread thread_text=new ContentTextThread(getCurrentURL(),BookName,getExternalFilesDir(null));
+                        thread_text.setTag(tag);
+                        thread_text.setContext(context);
+                        thread_text.start();
+                        CatalogThread thread_catalog=new CatalogThread(catalogUrl,tag);
+                        thread_catalog.setIf_output(true,BookName,getExternalFilesDir(null));
+                        thread_catalog.start();
 
                     }
                 })
@@ -381,44 +429,55 @@ public class NovelShowAcitivity extends AppCompatActivity {
 
 
     private void getCatalog() {
-        CatalogThread Cthread=new CatalogThread(catalogUrl);
+        CatalogThread Cthread=new CatalogThread(catalogUrl,tag);
         Cthread.setmHandler(mHandler);
         Cthread.start();
     }
 
     private void PastAndNext() {
-        BottomThread thread=new BottomThread(url);
-        thread.start();
-        if (thread.getNextURL()!=null) nextUrl= (String) thread.getNextURL();
-        if(thread.getPastURL()!=null) pastUrl= (String) thread.getPastURL();
-        if(thread.getCatalog()!=null) catalogUrl= (String) thread.getCatalog();
-        if(thread.getCTitle()!=null) currentTitle= (String) thread.getCTitle();
-        if(thread.getBookName()!=null) BookName= (String) thread.getBookName();
+        if (currentChap!=ChapLinkList.size()-1)nextUrl=BaseURL+ChapLinkList.get(currentChap+1);
+        if (currentChap!=0)pastUrl=BaseURL+ChapLinkList.get(currentChap-1);
     }
 
-    public static void restartActivity(Activity act,String newUrl,int firstChap,int lastChap){
+    private void update_bookshelfINFO(){
+            Novels novel=new Novels(BookName,ttlChap,currentChap,catalogUrl);
+            novel.setId(book_id);
+            novelDBTools.updateNovels(novel);
+            ContentTextThread t=new ContentTextThread(getCurrentURL(),BookName,getExternalFilesDir(null));
+            t.setTag(tag);
+            t.start();
+    }
 
-        Intent intent=new Intent();
-        intent.setClass(act, act.getClass());
-        Bundle bundle=new Bundle();
-        bundle.putString("url",newUrl);
-        bundle.putInt("firstChap",firstChap);
-        bundle.putInt("lastChap",lastChap);
-        intent.putExtras(bundle);
-        if(isInShelf){
-            setIsInShelf(true);
-            setBook_id(book_id);
+    private String getCurrentURL(){
+        String result="";
+        switch(tag){
+            case BiQuGe:
+                result=currentURL;
+                break;
+            case SiDaMingZhu:
+                result=context.getString(R.string.book_search_base2)+"/"+currentURL.split("\\/")[3];
+                break;
+            default:
         }
-        act.startActivity(intent);
-        act.finish();
 
+        return result;
     }
-    public int getCurrentChap(String url){
-        String tail=url.split("\\/")[4];
-        String target=tail.split("\\.")[0];
-        return Integer.parseInt(target);
-    }
-    public String getBookLink(String url){
-        return url.split("\\/")[3];
+    public String getBaseUrl(String url, NovelThread.TAG tag){
+        String base="";
+        switch(tag){
+            case BiQuGe:{
+                String []unit=url.split("\\/");
+                base=unit[0]+"//"+unit[2]+"/"+unit[3]+"/";
+            }
+                break;
+            case SiDaMingZhu:{
+                String []unit=url.split("\\/");
+                base=unit[0]+"//"+unit[2]+"/";
+            }
+                break;
+            default:
+        }
+
+        return base;
     }
 }

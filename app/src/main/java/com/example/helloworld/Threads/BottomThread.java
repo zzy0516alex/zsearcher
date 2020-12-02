@@ -30,9 +30,10 @@ public class BottomThread extends Thread {
             Elements ele3=elements.get(0).select("a").eq(2);
             Elements booknameElement=document.select("div.bookname");
             Elements booknameEle=booknameElement.get(0).select("h1");
-            Elements name=document.select("div.con_top");
-            Elements namefinal=name.select("a").eq(1);
-            String book_name=namefinal.text();
+            Elements top=document.select("div.con_top");
+            Elements name_list=top.select("a");
+            Elements name=name_list.eq(name_list.size()-1);
+            String book_name=name.text();
             String currentTitle=booknameEle.text();
             String urlPast=ele1.attr("href");
             String urlNext=ele2.attr("href");

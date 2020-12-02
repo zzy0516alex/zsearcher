@@ -33,7 +33,7 @@
         android:layout_centerHorizontal="true"
         android:id="@+id/searchBox"
         android:layout_marginLeft="30dp"
-        android:layout_marginTop="7dp">
+        android:layout_marginTop="18dp">
     <EditText
         android:id="@+id/input"
         android:layout_width="300dp"
@@ -76,13 +76,13 @@
             android:layout_marginTop="60dp"
             android:layout_gravity="center"
             android:layout_centerInParent="true"
-            app:SpinKit_Color="#87CEFA"/>
+            app:SpinKit_Color="@color/blue_gray"/>
     </RelativeLayout>
 
     <ListView
         android:id="@+id/booklist"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_below="@+id/searchBox"
         />
 

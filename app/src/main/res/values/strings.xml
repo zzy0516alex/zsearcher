@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Zsearcher</string>
     <string name="title_activity_catalog">CatalogActivity</string>
+    <string name="book_search_url1">https://www.biquge.info/modules/article/search.php?searchkey=</string>
+    <string name="book_search_base1">https://www.biquge.info</string>
+    <string name="book_search_base2">https://www.sidamingzhu.org</string>
+    <string name="book_read_base2">"https://m.sidamingzhu.org"</string>
 </resources>

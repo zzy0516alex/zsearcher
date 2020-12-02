@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.helloworld.R;
+import com.example.helloworld.myObjects.BookList;
 import com.example.helloworld.myObjects.NovelChap;
 
 import java.util.ArrayList;
@@ -18,6 +19,11 @@ public class NovelViewAdapter extends RecyclerView.Adapter {
     private Context context;
     private ArrayList<NovelChap> mNovelChap;
     private int text_size = 20;
+    public enum DNMod {
+        NIGHT_MOD,
+        DAY_MOD
+    }
+    private DNMod Mod;
 
     public NovelViewAdapter(Context c, ArrayList<NovelChap> n) {
         context = c;
@@ -32,6 +38,10 @@ public class NovelViewAdapter extends RecyclerView.Adapter {
         mNovelChap=novelChaps;
         notifyDataSetChanged();
 
+    }
+    public void setDNMod(DNMod mod){
+        Mod=mod;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -48,7 +58,23 @@ public class NovelViewAdapter extends RecyclerView.Adapter {
         vh.title.setText(chap.getTitle());
         vh.content.setText(chap.getContent());
         vh.content.setTextSize(text_size);
+        vh.title.setTextSize(text_size+6);
+        switch(Mod){
+            case NIGHT_MOD:
+            {
+                vh.title.setTextColor(context.getResources().getColor(R.color.night_text));
+                vh.content.setTextColor(context.getResources().getColor(R.color.night_text));
+            }
+                break;
+            case DAY_MOD:
+            {
+                vh.title.setTextColor(context.getResources().getColor(R.color.black));
+                vh.content.setTextColor(context.getResources().getColor(R.color.black));
+            }
+                break;
+            default:
 
+        }
     }
 
     @Override

@@ -20,6 +20,7 @@ public class Brightness {
         return systemBrightness;
     }
 
+
     /*
     * 更改当前界面亮度
     * */

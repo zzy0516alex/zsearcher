@@ -6,7 +6,15 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".MainActivity">
-
+<com.example.helloworld.views.StatusBarHeightView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_alignParentEnd="true"
+    app:use_type="use_padding_top"
+    android:orientation="vertical"
+    tools:ignore="RtlCompat"
+    android:visibility="visible"
+    android:background="@drawable/main_btn"/>
     <androidx.appcompat.widget.Toolbar
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -28,32 +36,32 @@
 <!--        android:layout_width="match_parent"-->
 <!--        android:layout_height="wrap_content"-->
 <!--        android:id="@+id/btn01"/>-->
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/btn02"
-        android:background="@drawable/main_btn2"
-        android:layout_marginTop="7dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginLeft="8dp"
-        android:text="垃圾分类查询"
-        android:textSize="15sp"
-        android:textColor="#FFFFFF"
-        />
+<!--    <Button-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:id="@+id/btn02"-->
+<!--        android:background="@drawable/main_btn2"-->
+<!--        android:layout_marginTop="15dp"-->
+<!--        android:layout_marginRight="15dp"-->
+<!--        android:layout_marginLeft="15dp"-->
+<!--        android:text="垃圾分类查询"-->
+<!--        android:textSize="15sp"-->
+<!--        android:textColor="#FFFFFF"-->
+<!--        />-->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginRight="10dp"
-        android:layout_marginLeft="10dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginLeft="15dp"
         android:orientation="horizontal">
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/btn03"
+            android:id="@+id/BookSearch"
             android:layout_weight="1"
             android:background="@drawable/main_btn2"
             android:layout_marginRight="5dp"
-            android:layout_marginTop="7dp"
+            android:layout_marginTop="15dp"
             android:textSize="15sp"
             android:textColor="#FAFAD2"
             android:text="搜书"/>
@@ -64,7 +72,7 @@
             android:text="我的书架"
             android:textColor="#FAFAD2"
             android:textSize="15sp"
-            android:layout_marginTop="7dp"
+            android:layout_marginTop="15dp"
             android:layout_marginLeft="5dp"
             android:background="@drawable/main_btn2"
             android:id="@+id/MyBookShelf"/>
@@ -77,10 +85,8 @@
         android:text="BT搜索"
         android:textColor="#FAFAD2"
         android:textSize="15sp"
-        android:layout_marginTop="7dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginLeft="8dp"
+        android:layout_marginTop="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginLeft="15dp"
         android:background="@drawable/main_btn2" />
-
-
 </LinearLayout>

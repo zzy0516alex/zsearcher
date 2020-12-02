@@ -35,6 +35,10 @@ public class BooklistAdapter extends BaseAdapter {
         this.item_to_paint = item_to_paint;
         notifyDataSetChanged();
     }
+    public void updateList(List<String>items){
+        Novels=items;
+        notifyDataSetChanged();
+    }
 
     public void setText_size(int text_size) {
         this.text_size = text_size;

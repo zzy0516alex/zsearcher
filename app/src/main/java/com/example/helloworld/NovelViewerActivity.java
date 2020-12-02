@@ -8,6 +8,8 @@ import android.view.WindowManager;
 
 import com.example.helloworld.Fragments.NovelViewFragment;
 import com.example.helloworld.Utils.IOtxt;
+import com.example.helloworld.Utils.StatusBarUtil;
+import com.example.helloworld.myObjects.NovelCatalog;
 import com.example.helloworld.myObjects.NovelChap;
 
 import java.util.ArrayList;
@@ -16,7 +18,7 @@ import java.util.HashMap;
 public class NovelViewerActivity extends AppCompatActivity {
 
     private static NovelChap current_chap;
-    private HashMap<String,ArrayList<String>>catalog;
+    private NovelCatalog catalog;
     private ArrayList<String>ChapName;
     private ArrayList<String>ChapLink;
 
@@ -36,11 +38,12 @@ public class NovelViewerActivity extends AppCompatActivity {
         NovelViewFragment fragment=new NovelViewFragment();
 
         catalog= IOtxt.read_catalog(current_chap.getBookName(),getExternalFilesDir(null));
-        ChapName=catalog.get("ChapName");
-        ChapLink=catalog.get("ChapLink");
+        ChapName=catalog.getTitle();
+        ChapLink=catalog.getLink();
 
         Intent intent=getIntent();
         fragment.setOffset(intent.getIntExtra("offset",3));
+        fragment.setBookLink(intent.getStringExtra("BookLink"));
 
         fragment.setChapList(novelChap);
         fragment.setBookID(current_chap.getBookID());

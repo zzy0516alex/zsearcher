@@ -10,4 +10,7 @@
     <color name="NavyBlue">#000080</color>
     <color name="deepBlue">#00001E</color>
     <color name="comfortGreen">#CCE8CF</color>
+    <color name="night_text">#FFC8C8C8</color>
+    <color name="night_background">#181818</color>
+    <color name="blue_gray">#6A5ACD</color>
 </resources>

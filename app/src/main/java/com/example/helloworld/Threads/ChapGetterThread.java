@@ -1,7 +1,10 @@
 package com.example.helloworld.Threads;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.example.helloworld.myObjects.NovelChap;
 
@@ -24,6 +27,9 @@ public class ChapGetterThread extends Thread {
     private int current_chap=-1;
     private NovelChap chap;
     private Handler mHandler;
+    private int err_counter=0;
+    public final static int GET_SUCCEED=0;
+    public final static int INTERNET_ERROR=1;
 
     public ChapGetterThread(String url, Handler handler) {
         this.url = url;
@@ -69,25 +75,36 @@ public class ChapGetterThread extends Thread {
             if (current_chap!=-1)chap.setCurrent_chapter(current_chap);
             Message message=mHandler.obtainMessage();
             message.obj=chap;
+            message.what=GET_SUCCEED;
             mHandler.sendMessage(message);
         }catch (IOException e){
             e.printStackTrace();
-            run();
+            Message err_message;
+            err_counter++;
+            if (err_counter<10)run();
+            else {
+                err_message=mHandler.obtainMessage();
+                err_message.what=INTERNET_ERROR;
+                mHandler.sendMessage(err_message);
+            }
+
         }
 
     }
 
     private void grabContent(Document document) {
-            String doc=document.select("div#content").toString();
-            String temp1=doc.replace("\n","");
-            String temp2=temp1.replace("&nbsp;"," ");
-            String[] temp_text=temp2.split("<br>");
-            StringBuilder text=new StringBuilder();
-            for (int i = 2; i < temp_text.length; i=i+2) {
-                text.append(temp_text[i]);
-                text.append('\n');
-            }
-            chap_content=text.toString().replace("</div>","");
+        String doc=document.select("div#content").toString();
+        String temp1=doc.replace("\n","");
+        String temp2=temp1.replace("&nbsp;"," ");
+        String[] temp_text=temp2.split("<br>");
+        StringBuilder text=new StringBuilder();
+        for (int i = 0; i < temp_text.length; i=i+2) {
+            text.append(temp_text[i]);
+            text.append('\n');
+        }
+        String content=text.toString().replace("<!--over--> </div>","");
+        content=content.replace("<div id=\"content\"> <!--go-->","");
+        chap_content=content;
     }
     private void grabChapInfo(Document document){
         Elements elements=document.select("div.bottem");

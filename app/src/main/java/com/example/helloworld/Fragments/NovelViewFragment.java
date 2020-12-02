@@ -1,17 +1,19 @@
 package com.example.helloworld.Fragments;
 
-import android.content.ContentResolver;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -26,26 +28,32 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.helloworld.Adapters.BooklistAdapter;
 import com.example.helloworld.Adapters.NovelViewAdapter;
+import com.example.helloworld.BookShelfActivity;
 import com.example.helloworld.NovelRoom.NovelDBTools;
 import com.example.helloworld.NovelRoom.Novels;
-import com.example.helloworld.NovelViewerActivity;
 import com.example.helloworld.R;
+import com.example.helloworld.Threads.CatalogThread;
 import com.example.helloworld.Threads.ChapGetterThread;
-import com.example.helloworld.Threads.ContentTextThread;
+import com.example.helloworld.Threads.NovelThread;
 import com.example.helloworld.Utils.Brightness;
 import com.example.helloworld.Utils.IOtxt;
 import com.example.helloworld.Utils.ScreenSize;
+import com.example.helloworld.Utils.StatusBarUtil;
 import com.example.helloworld.Utils.ViberateControl;
+import com.example.helloworld.myObjects.NovelCatalog;
 import com.example.helloworld.myObjects.NovelChap;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -59,6 +67,8 @@ public class NovelViewFragment extends Fragment {
     ImageButton BackToShelf;
     ImageButton btnCatalog;
     ImageButton btnSettings;
+    ImageButton Mod_btn;
+    ImageButton Refresh;
     TextView showBookName;
     DrawerLayout drawerLayout;
     ListView catalogList;
@@ -70,6 +80,7 @@ public class NovelViewFragment extends Fragment {
     SeekBar setLight;
     private String BookName;
     private int BookID;
+    private String BookLink;
     private ArrayList<NovelChap> chapList;
     private ArrayList<String>chapLink;
     private ArrayList<String>chapName;
@@ -87,9 +98,12 @@ public class NovelViewFragment extends Fragment {
     private Handler LastChapHandler;
     private Handler NextChapHandler;
     private Handler JumpChapHandler;
+    private Handler chap_update_handler;
     private NovelDBTools novelDBTools;
     private SharedPreferences myInfo;
     private File Dir;
+    private NovelViewAdapter.DNMod currentMod;
+    private Window window;
 
     public void setChapList(ArrayList<NovelChap> chapList) {
         this.chapList = chapList;
@@ -118,6 +132,10 @@ public class NovelViewFragment extends Fragment {
         has_offset=true;
     }
 
+    public void setBookLink(String bookLink) {
+        BookLink = bookLink;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
     @Override
@@ -138,13 +156,17 @@ public class NovelViewFragment extends Fragment {
         drawerLayout=view.findViewById(R.id.drawer_layout);
         catalogList=view.findViewById(R.id.catalog_list);
         current_chap=chapList.get(0).getCurrent_chapter();
+        Mod_btn = view.findViewById(R.id.day_night_switch);
+        Refresh = view.findViewById(R.id.refresh);
 
         //初始化pop window
         pop_view=getLayoutInflater().inflate(R.layout.pop_settings,null);
         popSettings=new PopupWindow(pop_view,ViewGroup.LayoutParams.MATCH_PARENT,300);
 
-        //初始化设置条
-        initSettings();
+        //初始化状态栏
+        window= getActivity().getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN); //显示状态栏
+        window.setStatusBarColor(getResources().getColor(R.color.comfortGreen));
 
         //初始化数据库
         novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
@@ -153,25 +175,42 @@ public class NovelViewFragment extends Fragment {
         myInfo=getActivity().getSharedPreferences("UserInfo",MODE_PRIVATE);
         myTextSize=myInfo.getInt("myTextSize",20);
 
+        //初始化设置条
+        initSettings();
+
         //初始化handler
         LastChapHandler=new Handler(){
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
-                NovelChap newChap= (NovelChap) msg.obj;
-                newChap.setCurrent_chapter(current_chap-1);
-                chapList.add(0, newChap);
-                adapter.updateChapList(chapList);
-                int m_offset=0;
-                if (has_offset)
-                {
-                    m_offset=offset;
-                    has_offset=false;
-                }else{
-                    m_offset=3;
+                switch(msg.what){
+                    case ChapGetterThread.GET_SUCCEED:
+                    {
+                        NovelChap newChap= (NovelChap) msg.obj;
+                        newChap.setCurrent_chapter(current_chap-1);
+                        chapList.add(0, newChap);
+                        adapter.updateChapList(chapList);
+                        int m_offset=0;
+                        if (has_offset)
+                        {
+                            m_offset=offset;
+                            has_offset=false;
+                        }else{
+                            m_offset=3;
+                        }
+                        LinearLayoutManager linearLayoutManager= (LinearLayoutManager) mRecyclerView.getLayoutManager();
+                        linearLayoutManager.scrollToPositionWithOffset(chap_index+1,m_offset);
+                    }
+                        break;
+                    case ChapGetterThread.INTERNET_ERROR:
+                    {
+                        Toast.makeText(getContext(), "无网络", Toast.LENGTH_SHORT).show();
+                        LinearLayoutManager linearLayoutManager= (LinearLayoutManager) mRecyclerView.getLayoutManager();
+                        linearLayoutManager.scrollToPositionWithOffset(0,offset);
+                    }
+                        break;
+                    default:
                 }
-                LinearLayoutManager linearLayoutManager= (LinearLayoutManager) mRecyclerView.getLayoutManager();
-                linearLayoutManager.scrollToPositionWithOffset(chap_index+1,m_offset);
                 auto_download=true;
             }
         };
@@ -179,12 +218,22 @@ public class NovelViewFragment extends Fragment {
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
-                NovelChap newChap= (NovelChap) msg.obj;
-                newChap.setCurrent_chapter(current_chap+1);
-                chapList.add(newChap);
-                adapter.updateChapList(chapList);
-                //LinearLayoutManager linearLayoutManager= (LinearLayoutManager) mRecyclerView.getLayoutManager();
-                //linearLayoutManager.scrollToPositionWithOffset(1,0);
+                switch(msg.what){
+                    case ChapGetterThread.GET_SUCCEED:
+                    {
+                        NovelChap newChap= (NovelChap) msg.obj;
+                        newChap.setCurrent_chapter(current_chap+1);
+                        chapList.add(newChap);
+                        adapter.updateChapList(chapList);
+                    }
+                        break;
+                    case ChapGetterThread.INTERNET_ERROR:
+                    {
+                        Toast.makeText(getContext(), "无网络", Toast.LENGTH_SHORT).show();
+                    }
+                        break;
+                    default:
+                }
                 auto_download=true;
             }
         };
@@ -192,29 +241,67 @@ public class NovelViewFragment extends Fragment {
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
-                NovelChap newChap= (NovelChap) msg.obj;
-                drawerLayout.closeDrawer(view.findViewById(R.id.left_layout));
-                BottomToolBar.setVisibility(View.INVISIBLE);
-                TopToolBar.setVisibility(View.INVISIBLE);
-                chapList.clear();
-                chapList.add(newChap);
-                current_chap=newChap.getCurrent_chapter();
-                chap_index=0;
-                booklistAdapter.setItem_to_paint(newChap.getTitle());
-                adapter.updateChapList(chapList);
+                switch(msg.what){
+                    case ChapGetterThread.GET_SUCCEED:
+                    {
+                        NovelChap newChap= (NovelChap) msg.obj;
+                        drawerLayout.closeDrawer(view.findViewById(R.id.left_layout));
+                        BottomToolBar.setVisibility(View.INVISIBLE);
+                        TopToolBar.setVisibility(View.INVISIBLE);
+                        chapList.clear();
+                        chapList.add(newChap);
+                        current_chap=newChap.getCurrent_chapter();
+                        chap_index=0;
+                        booklistAdapter.setItem_to_paint(newChap.getTitle());
+                        adapter.updateChapList(chapList);
+                        LastChapDownloader(newChap);
+                        NextChapDownloader(newChap);
+                        if (current_chap==0) {
+                            LinearLayoutManager linearLayoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
+                            linearLayoutManager.scrollToPositionWithOffset(chap_index, 3);
+                        }
+                    }
+                        break;
+                    case ChapGetterThread.INTERNET_ERROR:
+                    {
+                        Toast.makeText(getContext(), "无网络", Toast.LENGTH_SHORT).show();
+                    }
+                        break;
+                    default:
+                }
                 auto_download=true;
-                LastChapDownloader(newChap);
-                NextChapDownloader(newChap);
-                if (current_chap==0) {
-                    LinearLayoutManager linearLayoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
-                    linearLayoutManager.scrollToPositionWithOffset(chap_index, 3);
+            }
+        };
+
+        chap_update_handler=new Handler(){
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                super.handleMessage(msg);
+                switch (msg.what) {
+                    case CatalogThread.CATALOG_UPDATED:
+                    {
+                        NovelCatalog catalog;
+                        catalog= IOtxt.read_catalog(BookName,Dir);
+                        chapName=catalog.getTitle();
+                        chapLink=catalog.getLink();
+                        booklistAdapter.updateList(chapName);
+                        Refresh.clearAnimation();
+                        Toast.makeText(getActivity(), "章节同步完成", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                    case CatalogThread.CATALOG_UPDATE_FAILED:{
+                        Refresh.clearAnimation();
+                        Toast.makeText(getActivity(), "章节同步出错", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                    default:
                 }
             }
         };
 
         //初始化线程池
         threadPool= Executors.newFixedThreadPool(2);
-        NovelChap currentChap=chapList.get(0);
+        final NovelChap currentChap=chapList.get(0);
         LastChapDownloader(currentChap);
         NextChapDownloader(currentChap);
 
@@ -222,8 +309,24 @@ public class NovelViewFragment extends Fragment {
         booklistAdapter.setText_size(18);
         adapter=new NovelViewAdapter(getActivity(),chapList);
         adapter.setTextSize(myTextSize);
+        adapter.setDNMod(currentMod);
         mRecyclerView.setAdapter(adapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
+
+        //用户偏好初始化
+        int myDNMod=0;
+        myDNMod=myInfo.getInt("myDNMod",0);
+        switch(myDNMod){
+            case 0:
+                currentMod= NovelViewAdapter.DNMod.DAY_MOD;
+                switch_to_day_mod();
+                break;
+            case 1:
+                currentMod= NovelViewAdapter.DNMod.NIGHT_MOD;
+                switch_to_night_mod();
+                break;
+            default:
+        }
 
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -313,6 +416,31 @@ public class NovelViewFragment extends Fragment {
             }
         });
 
+        //日夜间模式切换
+        Mod_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                switch(currentMod){
+                    case DAY_MOD:
+                    {
+                        //当前日间模式，点击切换为夜间
+                        currentMod= NovelViewAdapter.DNMod.NIGHT_MOD;
+                        switch_to_night_mod();
+                    }
+                        break;
+                    case NIGHT_MOD:
+                    {
+                        //当前夜间模式，点击切换为日间
+                        currentMod= NovelViewAdapter.DNMod.DAY_MOD;
+                        switch_to_day_mod();
+                    }
+                        break;
+                    default:
+                }
+
+            }
+        });
+
         //打开目录
         btnCatalog.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -328,6 +456,7 @@ public class NovelViewFragment extends Fragment {
         btnSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 final int[] windowPos = getPosition(v, pop_view);
                 popSettings.showAtLocation(v, Gravity.TOP|Gravity.START,windowPos[0],windowPos[1]+8);
                 popSettings.setOutsideTouchable(true);
@@ -347,6 +476,18 @@ public class NovelViewFragment extends Fragment {
                 thread.start();
             }
         });
+        //目录刷新点击
+        Refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Animation animation = AnimationUtils.loadAnimation(getActivity(), R.anim.rotate);
+                Refresh.startAnimation(animation);
+                CatalogThread catalogThread=new CatalogThread(getContext().getString(R.string.book_search_base1)+"/"+BookLink+"/", NovelThread.TAG.BiQuGe);
+                catalogThread.setIf_output(true,BookName,Dir);
+                catalogThread.need_update(true,getContext(),chap_update_handler);
+                catalogThread.start();
+            }
+        });
 
         //设置栏显示
         adapter.setRecycleItemClickListener(new NovelViewAdapter.OnRecycleItemClickListener() {
@@ -357,10 +498,14 @@ public class NovelViewFragment extends Fragment {
                         BottomToolBar.setVisibility(View.VISIBLE);
                         TopToolBar.setVisibility(View.VISIBLE);
                         is_toolbar_visible = true;
+                        window.setStatusBarColor(getResources().getColor(R.color.deepBlue));
                     }else {
                         BottomToolBar.setVisibility(View.INVISIBLE);
                         TopToolBar.setVisibility(View.INVISIBLE);
                         is_toolbar_visible=false;
+                        if (currentMod == NovelViewAdapter.DNMod.DAY_MOD)
+                            window.setStatusBarColor(getResources().getColor(R.color.comfortGreen));
+                        else window.setStatusBarColor(getResources().getColor(R.color.night_background));
                     }
                     if (popSettings.isShowing())popSettings.dismiss();
                 }
@@ -369,6 +514,24 @@ public class NovelViewFragment extends Fragment {
         });
 
         return view;
+    }
+
+    private void switch_to_day_mod() {
+        adapter.setDNMod(NovelViewAdapter.DNMod.DAY_MOD);
+        mRecyclerView.setBackgroundColor(getResources().getColor(R.color.comfortGreen));
+        Brightness.changeAppBrightness(getActivity(),Brightness.getSystemBrightness(getActivity().getContentResolver()));
+        setLight.setProgress(Brightness.getSystemBrightness(getActivity().getContentResolver()));
+        Mod_btn.setImageResource(R.drawable.night_mod);
+        if (!is_toolbar_visible)window.setStatusBarColor(getResources().getColor(R.color.comfortGreen));
+    }
+
+    private void switch_to_night_mod() {
+        adapter.setDNMod(NovelViewAdapter.DNMod.NIGHT_MOD);
+        mRecyclerView.setBackgroundColor(getResources().getColor(R.color.night_background));
+        Brightness.changeAppBrightness(getActivity(),120);
+        setLight.setProgress(120);
+        Mod_btn.setImageResource(R.drawable.day_mod);
+        window.setStatusBarColor(getResources().getColor(R.color.deepBlue));
     }
 
     private void refreshChap() {
@@ -388,10 +551,29 @@ public class NovelViewFragment extends Fragment {
         super.onDestroy();
         //TODO:保存当前章节
         if (need_save)SaveCurrentLine();
+        SharedPreferences.Editor editor=myInfo.edit();
+        int myDNMod=0;
+        switch(currentMod){
+            case DAY_MOD:
+                myDNMod=0;
+                break;
+            case NIGHT_MOD:
+                myDNMod=1;
+                break;
+            default:
+        }
+        editor.putInt("myDNMod", myDNMod);
+        editor.apply();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (need_save)SaveCurrentLine();
     }
 
     private void SaveCurrentLine() {
-        Novels novel=new Novels(BookName,chapList.size(),current_chap,"");
+        Novels novel=new Novels(BookName,chapName.size(),current_chap,BookLink);
         novel.setId(BookID);
         novel.setOffset(offset_to_save);
         novelDBTools.updateNovels(novel);
@@ -487,4 +669,5 @@ public class NovelViewFragment extends Fragment {
             threadPool.execute(thread);
         }
     }
+
 }
