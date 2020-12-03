@@ -1,5 +1,6 @@
 package com.example.helloworld.Fragments;
 
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
@@ -60,30 +61,32 @@ import java.util.concurrent.Executors;
 import static android.content.Context.MODE_PRIVATE;
 
 public class NovelViewFragment extends Fragment {
-    RecyclerView mRecyclerView;
-    NovelViewAdapter adapter;
-    LinearLayout BottomToolBar;
-    LinearLayout TopToolBar;
-    ImageButton BackToShelf;
-    ImageButton btnCatalog;
-    ImageButton btnSettings;
-    ImageButton Mod_btn;
-    ImageButton Refresh;
-    TextView showBookName;
-    DrawerLayout drawerLayout;
-    ListView catalogList;
-    BooklistAdapter booklistAdapter;
-    View view;
-    View pop_view;
-    PopupWindow popSettings;
-    SeekBar setTextSize;
-    SeekBar setLight;
+    private RecyclerView mRecyclerView;
+    private NovelViewAdapter adapter;
+    private LinearLayout BottomToolBar;
+    private LinearLayout TopToolBar;
+    private ImageButton BackToShelf;
+    private ImageButton btnCatalog;
+    private ImageButton btnSettings;
+    private ImageButton Mod_btn;
+    private ImageButton Refresh;
+    private TextView showBookName;
+    private DrawerLayout drawerLayout;
+    private ListView catalogList;
+    private BooklistAdapter booklistAdapter;
+    private View view;
+    private View pop_view;
+    private PopupWindow popSettings;
+    private SeekBar setTextSize;
+    private SeekBar setLight;
     private String BookName;
     private int BookID;
+    private NovelThread.TAG BookTag;
     private String BookLink;
     private ArrayList<NovelChap> chapList;
     private ArrayList<String>chapLink;
     private ArrayList<String>chapName;
+    private NovelCatalog catalog;
     private int chap_index=0;
     private int current_chap=0;
     private int offset=3;
@@ -125,6 +128,10 @@ public class NovelViewFragment extends Fragment {
         this.chapLink = chapLink;
     }
 
+    public void setCatalog(NovelCatalog catalog) {
+        this.catalog = catalog;
+    }
+
     public void setDir(File file){this.Dir=file;}
 
     public void setOffset(int offset) {
@@ -134,6 +141,10 @@ public class NovelViewFragment extends Fragment {
 
     public void setBookLink(String bookLink) {
         BookLink = bookLink;
+    }
+
+    public void setBookTag(NovelThread.TAG bookTag) {
+        BookTag = bookTag;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -180,6 +191,7 @@ public class NovelViewFragment extends Fragment {
 
         //初始化handler
         LastChapHandler=new Handler(){
+            @SuppressLint("HandlerLeak")
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
@@ -187,7 +199,7 @@ public class NovelViewFragment extends Fragment {
                     case ChapGetterThread.GET_SUCCEED:
                     {
                         NovelChap newChap= (NovelChap) msg.obj;
-                        newChap.setCurrent_chapter(current_chap-1);
+                        //newChap.setCurrent_chapter(current_chap-1);
                         chapList.add(0, newChap);
                         adapter.updateChapList(chapList);
                         int m_offset=0;
@@ -215,6 +227,7 @@ public class NovelViewFragment extends Fragment {
             }
         };
         NextChapHandler=new Handler(){
+            @SuppressLint("HandlerLeak")
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
@@ -222,7 +235,7 @@ public class NovelViewFragment extends Fragment {
                     case ChapGetterThread.GET_SUCCEED:
                     {
                         NovelChap newChap= (NovelChap) msg.obj;
-                        newChap.setCurrent_chapter(current_chap+1);
+                        //newChap.setCurrent_chapter(current_chap+1);
                         chapList.add(newChap);
                         adapter.updateChapList(chapList);
                     }
@@ -280,11 +293,11 @@ public class NovelViewFragment extends Fragment {
                 switch (msg.what) {
                     case CatalogThread.CATALOG_UPDATED:
                     {
-                        NovelCatalog catalog;
+                        //NovelCatalog catalog;
                         catalog= IOtxt.read_catalog(BookName,Dir);
-                        chapName=catalog.getTitle();
-                        chapLink=catalog.getLink();
-                        booklistAdapter.updateList(chapName);
+                        //chapName=catalog.getTitle();
+                        //chapLink=catalog.getLink();
+                        booklistAdapter.updateList(catalog.getTitle());
                         Refresh.clearAnimation();
                         Toast.makeText(getActivity(), "章节同步完成", Toast.LENGTH_SHORT).show();
                     }
@@ -305,7 +318,7 @@ public class NovelViewFragment extends Fragment {
         LastChapDownloader(currentChap);
         NextChapDownloader(currentChap);
 
-        booklistAdapter=new BooklistAdapter(chapName,getContext(),true,chapList.get(0).getTitle());
+        booklistAdapter=new BooklistAdapter(catalog.getTitle(),getContext(),true,chapList.get(0).getTitle());
         booklistAdapter.setText_size(18);
         adapter=new NovelViewAdapter(getActivity(),chapList);
         adapter.setTextSize(myTextSize);
@@ -313,6 +326,10 @@ public class NovelViewFragment extends Fragment {
         mRecyclerView.setAdapter(adapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
 
+        if (current_chap==0) {
+            LinearLayoutManager linearLayoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
+            linearLayoutManager.scrollToPositionWithOffset(0, offset);
+        }
         //用户偏好初始化
         int myDNMod=0;
         myDNMod=myInfo.getInt("myDNMod",0);
@@ -470,9 +487,11 @@ public class NovelViewFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 auto_download=false;
-                ChapGetterThread thread=new ChapGetterThread(chapLink.get(position),JumpChapHandler);
-                thread.setCurrent_chap(position);
-                thread.setChapState(NovelChap.getLinkType(position,chapLink.size()));
+                NovelChap newChap=new NovelChap(catalog.getTitle().get(position),BookTag);
+                newChap.setCurrent_chapter(position);
+                ChapGetterThread thread=new ChapGetterThread(catalog.getLink().get(position),newChap,JumpChapHandler);
+                thread.setChapState(NovelChap.getLinkType(position,catalog.getSize()));
+                thread.setCatalog(catalog);
                 thread.start();
             }
         });
@@ -482,7 +501,7 @@ public class NovelViewFragment extends Fragment {
             public void onClick(View v) {
                 Animation animation = AnimationUtils.loadAnimation(getActivity(), R.anim.rotate);
                 Refresh.startAnimation(animation);
-                CatalogThread catalogThread=new CatalogThread(getContext().getString(R.string.book_search_base1)+"/"+BookLink+"/", NovelThread.TAG.BiQuGe);
+                CatalogThread catalogThread=new CatalogThread(BookLink,BookTag);
                 catalogThread.setIf_output(true,BookName,Dir);
                 catalogThread.need_update(true,getContext(),chap_update_handler);
                 catalogThread.start();
@@ -573,9 +592,10 @@ public class NovelViewFragment extends Fragment {
     }
 
     private void SaveCurrentLine() {
-        Novels novel=new Novels(BookName,chapName.size(),current_chap,BookLink);
+        Novels novel=new Novels(BookName,catalog.getSize(),current_chap,BookLink);
         novel.setId(BookID);
         novel.setOffset(offset_to_save);
+        novel.setTag_inTAG(BookTag);
         novelDBTools.updateNovels(novel);
         Thread thread =new Thread(new Runnable() {
             @Override
@@ -656,16 +676,22 @@ public class NovelViewFragment extends Fragment {
     private void LastChapDownloader(NovelChap currentChap) {
         if(currentChap.hasLastLink()){
             auto_download=false;
-            ChapGetterThread thread=new ChapGetterThread(currentChap.getLast_link(),LastChapHandler);
-            thread.setChapState(currentChap.getFurtherLinkType(chapName.size()));
+            NovelChap newChap=new NovelChap(catalog.getTitle().get(current_chap-1),BookTag);//章节名，标签
+            newChap.setCurrent_chapter(current_chap-1);
+            ChapGetterThread thread=new ChapGetterThread(currentChap.getLast_link(),newChap,LastChapHandler);
+            thread.setChapState(currentChap.getFurtherLinkType(catalog.getSize()));
+            thread.setCatalog(catalog);
             threadPool.execute(thread);
         }
     }
     private void NextChapDownloader(NovelChap currentChap) {
         if(currentChap.hasNextLink()){
             auto_download=false;
-            ChapGetterThread thread=new ChapGetterThread(currentChap.getNext_link(),NextChapHandler);
-            thread.setChapState(currentChap.getFurtherLinkType(chapName.size()));
+            NovelChap newChap=new NovelChap(catalog.getTitle().get(current_chap+1),BookTag);//章节名，标签
+            newChap.setCurrent_chapter(current_chap+1);
+            ChapGetterThread thread=new ChapGetterThread(currentChap.getNext_link(),newChap,NextChapHandler);
+            thread.setChapState(currentChap.getFurtherLinkType(catalog.getSize()));
+            thread.setCatalog(catalog);
             threadPool.execute(thread);
         }
     }

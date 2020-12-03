@@ -1,11 +1,14 @@
 package com.example.helloworld.myObjects;
 
+import com.example.helloworld.Threads.NovelThread;
+
 public class NovelChap {
     private String title;
     private String content;
-    private int current_chapter;
-    private int ttl_chapter;
+    private int current_chapter;//当前章节号
+    private int ttl_chapter;//总章节数
     private int BookID;
+    private NovelThread.TAG tag;
     private String BookName;
     private String last_link="";
     private String next_link="";
@@ -14,6 +17,10 @@ public class NovelChap {
     public static final int NEXT_LINK_ONLY=2;
     public static final int NO_LINK_AVAILABLE=3;
 
+    public NovelChap(String title, NovelThread.TAG tag){
+        this.title=title;
+        this.tag=tag;
+    }
     public NovelChap(String title, String content) {
         this.title = title;
         this.content = content;
@@ -106,6 +113,14 @@ public class NovelChap {
 
     public void setLast_link(String last_link) {
         this.last_link = last_link;
+    }
+
+    public NovelThread.TAG getTag() {
+        return tag;
+    }
+
+    public void setTag(NovelThread.TAG tag) {
+        this.tag = tag;
     }
 
     public boolean hasLastLink(){

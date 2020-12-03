@@ -48,8 +48,10 @@ public class NovelViewerActivity extends AppCompatActivity {
         fragment.setChapList(novelChap);
         fragment.setBookID(current_chap.getBookID());
         fragment.setBookName(current_chap.getBookName());
-        fragment.setChapName(ChapName);
-        fragment.setChapLink(ChapLink);
+        fragment.setBookTag(current_chap.getTag());
+        //fragment.setChapName(ChapName);
+        //fragment.setChapLink(ChapLink);
+        fragment.setCatalog(catalog);
         fragment.setDir(getExternalFilesDir(null));
         getSupportFragmentManager().beginTransaction().add(R.id.novel_view_container,fragment).commitAllowingStateLoss();
     }

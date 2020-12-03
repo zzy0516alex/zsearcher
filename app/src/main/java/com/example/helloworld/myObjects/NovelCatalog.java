@@ -11,7 +11,8 @@ import java.util.ArrayList;
 public class NovelCatalog {
     private ArrayList<String> Title;
     private ArrayList<String> Link;
-    private Context context;
+    //NOTICE:sting value here
+    private final String BASIC2="https://www.sidamingzhu.org";
 
     public NovelCatalog(ArrayList<String> title, ArrayList<String> link) {
         Title = title;
@@ -21,10 +22,6 @@ public class NovelCatalog {
     public NovelCatalog() {
         Title=new ArrayList<>();
         Link=new ArrayList<>();
-    }
-
-    public void setContext(Context context) {
-        this.context = context;
     }
 
     public ArrayList<String> getTitle() {
@@ -66,7 +63,7 @@ public class NovelCatalog {
                 newUrl=book_link+current_chapLink;
                 break;
             case SiDaMingZhu:
-                newUrl=context.getString(R.string.book_search_base2)+"/"+current_chapLink;
+                newUrl=BASIC2+"/"+current_chapLink;
                 break;
             default:
         }

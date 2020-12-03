@@ -73,7 +73,7 @@ public class ContentTextThread extends Thread {
 
     }
 
-    private String getContent1(Document document) {
+    public static String getContent1(Document document) {
         String doc=document.select("div#content").toString();
         String temp1=doc.replace("\n","");
         String temp2=temp1.replace("&nbsp;"," ");
@@ -88,13 +88,12 @@ public class ContentTextThread extends Thread {
         return content;
     }
 
-    private String getContent2(Document document){
+    public static String getContent2(Document document){
         StringBuilder text=new StringBuilder();
         Elements main_content=document.select("div.p-content");
         List<String>paragraph=main_content.select("p").eachText();
         for (String unit:paragraph) {
-            text.append("\t");
-            text.append("\t");
+            text.append("       ");
             text.append(unit);
             text.append("\n");
             text.append("\n");

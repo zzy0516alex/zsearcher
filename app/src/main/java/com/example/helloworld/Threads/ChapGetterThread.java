@@ -6,6 +6,7 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.helloworld.myObjects.NovelCatalog;
 import com.example.helloworld.myObjects.NovelChap;
 
 import org.jsoup.Jsoup;
@@ -14,14 +15,16 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 
+import static com.example.helloworld.Threads.ContentTextThread.getContent1;
+import static com.example.helloworld.Threads.ContentTextThread.getContent2;
+
 
 public class ChapGetterThread extends Thread {
     private boolean has_lastChap;
     private boolean has_nextChap;
     private int LinkType;
     private String url;
-    private String last_link;
-    private String next_link;
+    private NovelCatalog catalog;
     private String chap_title;
     private String chap_content;
     private int current_chap=-1;
@@ -31,9 +34,10 @@ public class ChapGetterThread extends Thread {
     public final static int GET_SUCCEED=0;
     public final static int INTERNET_ERROR=1;
 
-    public ChapGetterThread(String url, Handler handler) {
+    public ChapGetterThread(String url, NovelChap newChap ,Handler handler) {
         this.url = url;
         mHandler=handler;
+        this.chap=newChap;
     }
 
     public void setChapState(int link_type) {
@@ -58,8 +62,9 @@ public class ChapGetterThread extends Thread {
 
     }
 
-    public void setCurrent_chap(int current_chap) {
-        this.current_chap = current_chap;
+
+    public void setCatalog(NovelCatalog catalog) {
+        this.catalog = catalog;
     }
 
     @Override
@@ -67,12 +72,16 @@ public class ChapGetterThread extends Thread {
         super.run();
         try {
             Document document= Jsoup.connect(url).get();
-            grabContent(document);
-            grabChapInfo(document);
-            chap=new NovelChap(chap_title,chap_content);
-            if (has_lastChap)chap.setLast_link(last_link);
-            if (has_nextChap)chap.setNext_link(next_link);
-            if (current_chap!=-1)chap.setCurrent_chapter(current_chap);
+            grabContent(document,chap.getTag());
+            chap.setContent(chap_content);
+            if (has_lastChap){
+                String last_link = catalog.getLink().get(chap.getCurrent_chapter() - 1);
+                chap.setLast_link(last_link);
+            }
+            if (has_nextChap){
+                String next_link = catalog.getLink().get(chap.getCurrent_chapter() + 1);
+                chap.setNext_link(next_link);
+            }
             Message message=mHandler.obtainMessage();
             message.obj=chap;
             message.what=GET_SUCCEED;
@@ -92,29 +101,15 @@ public class ChapGetterThread extends Thread {
 
     }
 
-    private void grabContent(Document document) {
-        String doc=document.select("div#content").toString();
-        String temp1=doc.replace("\n","");
-        String temp2=temp1.replace("&nbsp;"," ");
-        String[] temp_text=temp2.split("<br>");
-        StringBuilder text=new StringBuilder();
-        for (int i = 0; i < temp_text.length; i=i+2) {
-            text.append(temp_text[i]);
-            text.append('\n');
+    private void grabContent(Document document, NovelThread.TAG tag) {
+        switch(tag){
+            case BiQuGe:
+                chap_content=getContent1(document);
+                break;
+            case SiDaMingZhu:
+                chap_content=getContent2(document);
+                break;
+            default:
         }
-        String content=text.toString().replace("<!--over--> </div>","");
-        content=content.replace("<div id=\"content\"> <!--go-->","");
-        chap_content=content;
-    }
-    private void grabChapInfo(Document document){
-        Elements elements=document.select("div.bottem");
-        Elements ele1=elements.get(0).select("a").eq(1);
-        Elements ele2=elements.get(0).select("a").eq(3);
-        Elements booknameElement=document.select("div.bookname");
-        Elements booknameEle=booknameElement.get(0).select("h1");
-        String currentTitle=booknameEle.text();
-        if (has_lastChap)last_link=ele1.attr("href");
-        if (has_nextChap)next_link=ele2.attr("href");
-        chap_title=currentTitle;
     }
 }

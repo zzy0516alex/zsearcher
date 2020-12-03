@@ -31,6 +31,7 @@ public class CatalogThread extends Thread {
     private NovelThread.TAG tag;
     private ArrayList<String> ChapList;
     private ArrayList<String> ChapLinkList;
+    NovelCatalog result;
     private boolean if_output=false;
     private boolean need_update=false;
     private String BookName;
@@ -39,6 +40,7 @@ public class CatalogThread extends Thread {
     private Context context;
     public static final int CATALOG_UPDATED=0;
     public static final int CATALOG_UPDATE_FAILED=1;
+    public static final int CATALOG_GAIN_FAILED=2;
     int reserve_count=0;
     public CatalogThread(String url, NovelThread.TAG tag) {
         this.url=url;
@@ -85,7 +87,7 @@ public class CatalogThread extends Thread {
                     break;
                 default:
             }
-            NovelCatalog result = new NovelCatalog(ChapList, ChapLinkList);
+            result = new NovelCatalog(ChapList, ChapLinkList);
             if(!if_output){
                 Message message=mHandler.obtainMessage();
                 message.obj= result;
@@ -98,14 +100,20 @@ public class CatalogThread extends Thread {
                 run();
             else {
                 if (if_output)if_output=false;
+                if (mHandler!=null && !need_update){
+                    Message message = mHandler.obtainMessage();
+                    message.what = CATALOG_GAIN_FAILED;
+                    mHandler.sendMessage(message);
+                }
             }
         }
         if(if_output){
             StringBuilder content=new StringBuilder();
-            for (int i = 0; i < ChapList.size(); i++) {
-                content.append(ChapList.get(i));
+            result.completeCatalog(url,tag);
+            for (int i = 0; i < result.getSize(); i++) {
+                content.append(result.getTitle().get(i));
                 content.append('\n');
-                content.append(url+ChapLinkList.get(i));
+                content.append(result.getLink().get(i));
                 if(i!=ChapList.size()-1)content.append('\n');
             }
             IOtxt.WriteCatalog(Dir,BookName,content.toString());

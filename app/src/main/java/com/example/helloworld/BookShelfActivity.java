@@ -228,6 +228,7 @@ public class BookShelfActivity extends AppCompatActivity {
         chap.setBookID(current_book.getId());
         chap.setBookName(current_book.getBookName());
         chap.setCurrent_chapter(current_book.getCurrentChap());
+        chap.setTag(current_book.getTag_in_TAG());
         NovelViewerActivity.setCurrent_chap(chap);
         startActivity(intent);
     }
@@ -419,9 +420,10 @@ public class BookShelfActivity extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             BookShelfActivity activity = mActivity.get();
+            if (msg.what==CatalogThread.CATALOG_GAIN_FAILED)
+                Toast.makeText(activity, "无网络", Toast.LENGTH_SHORT).show();
             if (activity != null && msg.obj!=null) {
                 NovelCatalog catalog= (NovelCatalog) msg.obj;
-                catalog.setContext(activity.context);
                 catalog.completeCatalog(activity.getCurrent_book().getBookLink(),activity.getCurrent_book().getTag_in_TAG());
                 IOtxt.WriteCatalog(activity.getExternalFilesDir(null),activity.getCurrent_book().getBookName(),catalog);
                 activity.setCatalog(catalog);
