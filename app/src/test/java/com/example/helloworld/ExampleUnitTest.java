@@ -1,8 +1,12 @@
 package com.example.helloworld;
 
 import com.example.helloworld.Utils.StringUtils;
+import com.example.helloworld.Utils.TimeUtil;
 
 import org.junit.Test;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 import static org.junit.Assert.*;
 
@@ -15,7 +19,13 @@ public class ExampleUnitTest {
     @Test
     public void addition_isCorrect() {
         //assertEquals(4, 2 + 2);
-        double a=StringUtils.compareStrings("三国演义","三国演义(精修版)");
-        System.out.println("a = " + a);
+        try {
+            long d= TimeUtil.getDifference(new SimpleDateFormat(
+                    "yyyy-MM-dd HH:mm:ss").parse("2020-12-12 13:51:00"),TimeUtil.getCurrentTimeInDate(),1);
+            System.out.println("d = " + d);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
     }
 }

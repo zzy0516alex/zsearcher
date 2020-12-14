@@ -32,22 +32,18 @@
             android:textColor="	#FFFFFF"
             android:textSize="30dp" />
     </androidx.appcompat.widget.Toolbar>
-<!--    <Button-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:id="@+id/btn01"/>-->
-<!--    <Button-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:id="@+id/btn02"-->
-<!--        android:background="@drawable/main_btn2"-->
-<!--        android:layout_marginTop="15dp"-->
-<!--        android:layout_marginRight="15dp"-->
-<!--        android:layout_marginLeft="15dp"-->
-<!--        android:text="垃圾分类查询"-->
-<!--        android:textSize="15sp"-->
-<!--        android:textColor="#FFFFFF"-->
-<!--        />-->
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btntest"
+        android:background="@drawable/main_btn2"
+        android:layout_marginTop="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginLeft="15dp"
+        android:text="test"
+        android:textSize="15sp"
+        android:textColor="#FFFFFF"
+     />
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -78,15 +74,4 @@
             android:id="@+id/MyBookShelf"/>
 
     </LinearLayout>
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/BTlink"
-        android:text="BT搜索"
-        android:textColor="#FAFAD2"
-        android:textSize="15sp"
-        android:layout_marginTop="15dp"
-        android:layout_marginRight="15dp"
-        android:layout_marginLeft="15dp"
-        android:background="@drawable/main_btn2" />
 </LinearLayout>

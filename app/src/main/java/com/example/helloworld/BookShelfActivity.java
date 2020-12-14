@@ -4,6 +4,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -36,6 +37,7 @@ import com.example.helloworld.NovelRoom.NovelDBTools;
 import com.example.helloworld.NovelRoom.Novels;
 import com.example.helloworld.Threads.CatalogThread;
 import com.example.helloworld.Utils.IOtxt;
+import com.example.helloworld.Utils.TimeUtil;
 import com.example.helloworld.myObjects.NovelCatalog;
 import com.example.helloworld.myObjects.NovelChap;
 
@@ -56,18 +58,18 @@ public class BookShelfActivity extends AppCompatActivity {
     List<String> BookName;
     List<Novels> AllNovelList;
     NovelCatalog Catalog;
-    ArrayList<String>ChapName;
-    ArrayList<String>ChapLink;
     private SharedPreferences myInfo;
     private NovelDBTools novelDBTools;
     private BookshelfAdapter adapter;
     private GridView bookShelf;
+    private SwipeRefreshLayout swipeRefresh;
     private Button delete;
     private RelativeLayout update;
     private Dialog wait_dialog;
+    private Date updateTime;
     Context context;
     Activity activity;
-    private CatalogUpdaterHandler updaterHandler;
+    private CatalogThread.CatalogUpdaterHandler<BookShelfActivity> updaterHandler;
     private CatalogReloadHandler reloadHandler;
     private boolean is_item_chosen=false;
     private int item_chosen=-1;
@@ -86,24 +88,40 @@ public class BookShelfActivity extends AppCompatActivity {
         BookName=new ArrayList<>();
         context=this;
         activity=this;
-        updaterHandler =new CatalogUpdaterHandler(this);
+        updaterHandler =new CatalogThread.CatalogUpdaterHandler<>(this);
         reloadHandler=new CatalogReloadHandler(this);
         content="";
+        updateTime=new Date();
         //init views
         bookShelf=findViewById(R.id.BookShelf);
         delete=findViewById(R.id.delete);
         delete.setVisibility(View.INVISIBLE);
         update=(RelativeLayout) findViewById(R.id.wait_update);
         update.setVisibility(View.GONE);
+        swipeRefresh=findViewById(R.id.swipe_update);
         initWaitView();
+
         //init preference
         myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
         final int num = myInfo.getInt("bookNum",0);
-        final String update_time = myInfo.getString("UpdateTime","");
-        //get current time
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault());
-        Date currentDate = new Date(System.currentTimeMillis());
-        final String current_time = formatter.format(currentDate);
+        long update_time = myInfo.getLong("update_time", 0);
+        updateTime.setTime(update_time);
+
+        // init handler
+        updaterHandler.setOverride(new CatalogThread.CatalogUpdaterHandler.MyHandle() {
+            @Override
+            public void handle(Message msg, int Success, int Fail) {
+                if (num == Success + Fail) {
+                    if (swipeRefresh != null)swipeRefresh.setRefreshing(false);
+                        String feedback = "成功：" + Success + "\t 失败：" + Fail;
+                        Toast.makeText(context, "章节同步完成, " + feedback, Toast.LENGTH_SHORT).show();
+                    }
+            }
+        });
+
+        //init time
+        final Date current_time=TimeUtil.getCurrentTimeInDate();
+
         //init database
         novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
         novelDBTools.getAllNovelsLD().observe(this, new Observer<List<Novels>>() {
@@ -114,17 +132,13 @@ public class BookShelfActivity extends AppCompatActivity {
                 editor.putInt("bookNum",novels.size()).apply();
                 BookName.clear();
                 BookCover.clear();
-                updaterHandler.setCounter(novels.size());
                 for (Novels novel : novels) {
                     BookName.add(novel.getBookName());
                     BookCover.add(getImage(novel.getBookName()));
-                    if (!update_time.equals(current_time)){
-                        update.setVisibility(View.VISIBLE);
-                        update_catalog(novel);
-                    }
                 }
-                SharedPreferences.Editor editor2=myInfo.edit();
-                editor2.putString("UpdateTime",current_time).apply();
+                if (TimeUtil.getDifference(updateTime,current_time,3)>1){
+                    swipeRefresh.setRefreshing(true);
+                }
                 if(num!=0) {
                     adapter.setBookNames(BookName);
                     adapter.setBookCovers(BookCover);
@@ -140,6 +154,7 @@ public class BookShelfActivity extends AppCompatActivity {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     if(!is_item_chosen){
+                        if (swipeRefresh.isRefreshing())swipeRefresh.setRefreshing(false);
                         //TODO show content
                         content=IOtxt.read_line(BookName.get(position),getExternalFilesDir(null));
                         current_book=AllNovelList.get(position);
@@ -151,8 +166,8 @@ public class BookShelfActivity extends AppCompatActivity {
                         }else{
                             //重新下载catalog
                             wait_dialog.show();
-                            CatalogThread Cthread=new CatalogThread(current_book.getBookLink(),current_book.getTag_in_TAG());
-                            Cthread.setmHandler(reloadHandler);
+                            CatalogThread Cthread=new CatalogThread(current_book.getBookLink(),current_book.getTag_in_TAG(),false,true);
+                            Cthread.setHandler(reloadHandler);
                             Cthread.start();
                         }
                     }else {
@@ -209,7 +224,30 @@ public class BookShelfActivity extends AppCompatActivity {
                 }
             });
         }
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                Date current_time=TimeUtil.getCurrentTimeInDate();
+                if (TimeUtil.getDifference(updateTime,current_time,0)>30) {
+                    updateTime=current_time;
+                    //update catalog
+                    for (Novels novel : AllNovelList) {
+                        update_catalog(novel);
+                    }
+                }else {
+                    Toast.makeText(context, "刷新过于频繁", Toast.LENGTH_SHORT).show();
+                    swipeRefresh.setRefreshing(false);
+                }
+            }
+        });
 
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        SharedPreferences.Editor editor=myInfo.edit();
+        editor.putLong("update_time",updateTime.getTime()).apply();
     }
 
     private void startReadPage(String content, Novels current_book, ArrayList<String> chapName, ArrayList<String> chapLink) {
@@ -234,9 +272,9 @@ public class BookShelfActivity extends AppCompatActivity {
     }
 
     private void update_catalog(Novels novel) {
-        CatalogThread catalogThread=new CatalogThread(novel.getBookLink(), novel.getTag_in_TAG());
-        catalogThread.setIf_output(true,novel.getBookName(),getExternalFilesDir(null));
-        catalogThread.need_update(true,context, updaterHandler);
+        CatalogThread catalogThread=new CatalogThread(novel.getBookLink(), novel.getTag_in_TAG(),true,false);
+        catalogThread.setOutputParams(novel.getBookName(),getExternalFilesDir(null));
+        catalogThread.setHandler(updaterHandler);
         catalogThread.start();
     }
 
@@ -375,52 +413,18 @@ public class BookShelfActivity extends AppCompatActivity {
         wait_dialog.getWindow().setAttributes(lp);
     }
 
-    public static class CatalogUpdaterHandler extends Handler {
-        private final WeakReference<BookShelfActivity> mActivity;
-        private int counter;
-
-        public CatalogUpdaterHandler(BookShelfActivity activity) {
-            mActivity = new WeakReference<BookShelfActivity>(activity);
-        }
-
-        public void setCounter(int counter) {
-            this.counter = counter;
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            BookShelfActivity activity = mActivity.get();
-            if (activity != null) {
-                switch (msg.what) {
-                    case CatalogThread.CATALOG_UPDATED:
-                        counter--;
-                        break;
-                    case CatalogThread.CATALOG_UPDATE_FAILED: {
-                        activity.update.setVisibility(View.GONE);
-                        Toast.makeText(activity, "章节同步出错", Toast.LENGTH_SHORT).show();
-                    }
-                        break;
-                    default:
-                }
-                if (counter==0){
-                    activity.update.setVisibility(View.GONE);
-                    Toast.makeText(activity, "章节同步完成", Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-    }
     public static class CatalogReloadHandler extends Handler {
         private final WeakReference<BookShelfActivity> mActivity;
         private int counter;
 
-        public CatalogReloadHandler(BookShelfActivity activity) {
-            mActivity = new WeakReference<BookShelfActivity>(activity);
+        CatalogReloadHandler(BookShelfActivity activity) {
+            mActivity = new WeakReference<>(activity);
         }
 
         @Override
         public void handleMessage(Message msg) {
             BookShelfActivity activity = mActivity.get();
-            if (msg.what==CatalogThread.CATALOG_GAIN_FAILED)
+            if (msg.what==CatalogThread.CATALOG_UPDATE_FAILED)
                 Toast.makeText(activity, "无网络", Toast.LENGTH_SHORT).show();
             if (activity != null && msg.obj!=null) {
                 NovelCatalog catalog= (NovelCatalog) msg.obj;
@@ -429,6 +433,7 @@ public class BookShelfActivity extends AppCompatActivity {
                 activity.setCatalog(catalog);
                 activity.startReadPage(activity.getContent(),activity.getCurrent_book(),catalog.getTitle(),catalog.getLink());
             }
+            assert activity != null;
             activity.wait_dialog.dismiss();
         }
     }

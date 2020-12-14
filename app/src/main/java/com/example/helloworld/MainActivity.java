@@ -1,34 +1,30 @@
 package com.example.helloworld;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.helloworld.Utils.StatusBarUtil;
 import com.example.helloworld.myObjects.BookList;
-
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import com.zlylib.fileselectorlib.FileSelector;
+import com.zlylib.fileselectorlib.utils.Const;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     //在此处添加变量
     private Button NovelSearch;
     private Button MyBookShelf;
-    private Button BtSearch;
+    private Button test;
     OnClick onclick=new OnClick();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,10 +33,21 @@ public class MainActivity extends AppCompatActivity {
         //在下面定义自己的变量
         NovelSearch =findViewById(R.id.BookSearch);
         MyBookShelf=findViewById(R.id.MyBookShelf);
-        BtSearch=findViewById(R.id.BTlink);
+        test=findViewById(R.id.btntest);
         MyBookShelf.setOnClickListener(onclick);
         NovelSearch.setOnClickListener(onclick);
-        BtSearch.setOnClickListener(onclick);
+        test.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                FileSelector.from(MainActivity.this)
+//                .onlyShowFolder()  //只能选择文件夹
+//                .setSortType(FileSelector.BY_TIME_ASC)
+//                .requestCode(1) //设置返回码
+//                .start();
+//                int[]a=new int[2];
+//                System.out.println(a[3]);
+            }
+        });
         File Folder =new File(getExternalFilesDir(null),"ZsearchRes");
         if(!Folder.exists()){
             Folder.mkdir();
@@ -52,34 +59,6 @@ public class MainActivity extends AppCompatActivity {
         //true=黑色字体  false=白色
         StatusBarUtil.setStatusBarDarkTheme(this, false);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String encode="";
-                String base="https://www.sidamingzhu.org";
-                try {
-                    encode=URLEncoder.encode("三国","utf-8");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                Connection connect = Jsoup.connect("https://www.sidamingzhu.org/search?searchkey="+encode);
-                connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
-                // 带参数结束
-                try {
-                    Document document = connect.get();
-                    Elements book_list = document.select("div.content_list");
-                    Elements book_list_used=book_list.select("h3");
-                    List<String>book_name=book_list_used.eachText();
-                    List<String>book_link=new ArrayList<>();
-                    for (Element li : book_list_used) {
-                        book_link.add(base+li.select("a").attr("href"));
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
     }
 
 
@@ -96,10 +75,6 @@ public class MainActivity extends AppCompatActivity {
                     intent=new Intent(MainActivity.this, NovelActivity.class);
                     break;
                 }
-                case R.id.BTlink:{
-                    intent=new Intent(MainActivity.this,BtSearchActivity.class);
-                    break;
-                }
                 default:{}
 
             }
@@ -107,5 +82,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
+//    FileSelector.from(MainActivity.this)
+//            .onlySelectFolder()  //只能选择文件夹
+//                .requestCode(1) //设置返回码
+//                .start();
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//        if (resultCode == RESULT_OK) {
+//            if (requestCode == 1) {
+//                ArrayList<String> essFileList = data.getStringArrayListExtra(Const.EXTRA_RESULT_SELECTION);
+//                StringBuilder builder = new StringBuilder();
+//                for (String file :
+//                        essFileList) {
+//                    builder.append(file).append("\n");
+//                }
+//                Toast.makeText(this, builder.toString(), Toast.LENGTH_SHORT).show();
+//            }
+//        }
+//    }
 }

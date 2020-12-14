@@ -41,22 +41,27 @@
     </androidx.appcompat.widget.Toolbar>
 
 
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/swipe_update"
+        android:layout_below="@+id/toolbar"
+        android:layout_marginTop="10dp" >
     <GridView
         android:id="@+id/BookShelf"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:numColumns="3"
         android:horizontalSpacing="10dp"
-        android:verticalSpacing="10dp"
-        android:layout_below="@+id/toolbar"
-        android:layout_marginTop="10dp" />
+        android:verticalSpacing="10dp" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:id="@+id/delete"
         android:text="删除"
-        android:background="@drawable/back_btn"
+        android:background="@drawable/back_btn_white"
         android:textColor="@color/red"/>
 
 

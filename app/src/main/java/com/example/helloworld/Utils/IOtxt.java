@@ -11,6 +11,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -96,52 +99,37 @@ public class IOtxt {
     }
     public static void WriteTXT(File Dir,String BookName,String content){
         File mk_txt=new File(Dir+"/ZsearchRes/BookContents/"+ BookName+".txt" );
-        FileOutputStream fot=null;
+        writeToFile(content, mk_txt,false);
+
+    }
+
+    private static void writeToFile(String content, File mk_txt,boolean append) {
+        FileOutputStream fot = null;
         try {
-            fot=new FileOutputStream(mk_txt);
-        }catch (FileNotFoundException e){
+            fot = new FileOutputStream(mk_txt,append);
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        try{
+        try {
+            assert fot != null;
             fot.write(content.getBytes());
             fot.flush();
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
-        }finally {
-            if(fot!=null){
+        } finally {
+            if (fot != null) {
                 try {
                     fot.close();
-                }catch (IOException e){
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
-
     }
 
     public static void WriteCatalog(File Dir,String BookName,String content){
         File mk_txt=new File(Dir+"/ZsearchRes/BookContents/"+ BookName+"_catalog.txt" );
-        FileOutputStream fot=null;
-        try {
-            fot=new FileOutputStream(mk_txt);
-        }catch (FileNotFoundException e){
-            e.printStackTrace();
-        }
-        try{
-            fot.write(content.getBytes());
-            fot.flush();
-        }catch (IOException e){
-            e.printStackTrace();
-        }finally {
-            if(fot!=null){
-                try {
-                    fot.close();
-                }catch (IOException e){
-                    e.printStackTrace();
-                }
-            }
-        }
-
+        writeToFile(content, mk_txt,false);
     }
     public static void WriteCatalog(File Dir,String BookName,NovelCatalog novelCatalog){
         StringBuilder content=new StringBuilder();
@@ -153,26 +141,30 @@ public class IOtxt {
         }
         String content_string=content.toString();
         File mk_txt=new File(Dir+"/ZsearchRes/BookContents/"+ BookName+"_catalog.txt" );
-        FileOutputStream fot=null;
-        try {
-            fot=new FileOutputStream(mk_txt);
-        }catch (FileNotFoundException e){
-            e.printStackTrace();
-        }
-        try{
-            fot.write(content_string.getBytes());
-            fot.flush();
-        }catch (IOException e){
-            e.printStackTrace();
-        }finally {
-            if(fot!=null){
-                try {
-                    fot.close();
-                }catch (IOException e){
-                    e.printStackTrace();
-                }
-            }
-        }
+        writeToFile(content_string, mk_txt,false);
 
+    }
+    public static void WriteErrReport(File Dir,Throwable e){
+        File Folder =new File(Dir,"Errors");
+        if(!Folder.exists()){
+            Folder.mkdir();
+        }
+        File mk_txt=new File(Dir+"/Errors/"+TimeUtil.getCurrentDateInString()+"_crashLog.txt" );
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append('\n');
+        stringBuilder.append(TimeUtil.getCurrentTimeInString());
+        stringBuilder.append('\n');
+        Writer writer = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(writer);
+        e.printStackTrace(printWriter);
+        Throwable cause = e.getCause();
+        while (cause != null) {
+            cause.printStackTrace(printWriter);
+            cause = cause.getCause();
+        }
+        printWriter.close();
+        stringBuilder.append(writer.toString());
+        stringBuilder.append("-----------------------------------\n");
+        writeToFile(stringBuilder.toString(), mk_txt,true);
     }
 }

@@ -19,8 +19,6 @@ public class NovelViewerActivity extends AppCompatActivity {
 
     private static NovelChap current_chap;
     private NovelCatalog catalog;
-    private ArrayList<String>ChapName;
-    private ArrayList<String>ChapLink;
 
     public static void setCurrent_chap(NovelChap chap) {
         NovelViewerActivity.current_chap = chap;
@@ -38,8 +36,6 @@ public class NovelViewerActivity extends AppCompatActivity {
         NovelViewFragment fragment=new NovelViewFragment();
 
         catalog= IOtxt.read_catalog(current_chap.getBookName(),getExternalFilesDir(null));
-        ChapName=catalog.getTitle();
-        ChapLink=catalog.getLink();
 
         Intent intent=getIntent();
         fragment.setOffset(intent.getIntExtra("offset",3));
@@ -49,8 +45,6 @@ public class NovelViewerActivity extends AppCompatActivity {
         fragment.setBookID(current_chap.getBookID());
         fragment.setBookName(current_chap.getBookName());
         fragment.setBookTag(current_chap.getTag());
-        //fragment.setChapName(ChapName);
-        //fragment.setChapLink(ChapLink);
         fragment.setCatalog(catalog);
         fragment.setDir(getExternalFilesDir(null));
         getSupportFragmentManager().beginTransaction().add(R.id.novel_view_container,fragment).commitAllowingStateLoss();

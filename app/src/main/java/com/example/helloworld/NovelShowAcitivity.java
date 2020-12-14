@@ -413,8 +413,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
                         thread_text.setTag(tag);
                         thread_text.setContext(context);
                         thread_text.start();
-                        CatalogThread thread_catalog=new CatalogThread(catalogUrl,tag);
-                        thread_catalog.setIf_output(true,BookName,getExternalFilesDir(null));
+                        CatalogThread thread_catalog=new CatalogThread(catalogUrl,tag,true,false);
+                        thread_catalog.setOutputParams(BookName,getExternalFilesDir(null));
                         thread_catalog.start();
 
                     }
@@ -429,8 +429,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
 
 
     private void getCatalog() {
-        CatalogThread Cthread=new CatalogThread(catalogUrl,tag);
-        Cthread.setmHandler(mHandler);
+        CatalogThread Cthread=new CatalogThread(catalogUrl,tag,false,true);
+        Cthread.setHandler(mHandler);
         Cthread.start();
     }
 

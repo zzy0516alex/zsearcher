@@ -45,7 +45,7 @@ public class CatalogActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);//左侧添加一个默认的返回图标
         getSupportActionBar().setHomeButtonEnabled(true); //设置返回键可用
         getSupportActionBar().setDisplayShowTitleEnabled(false);//隐藏标题
-        toolbar.setNavigationIcon(R.drawable.backarrow);       //加载图标
+        toolbar.setNavigationIcon(R.mipmap.backarrow);       //加载图标
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

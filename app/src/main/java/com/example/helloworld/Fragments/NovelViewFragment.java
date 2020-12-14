@@ -36,7 +36,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.helloworld.Adapters.BooklistAdapter;
 import com.example.helloworld.Adapters.NovelViewAdapter;
-import com.example.helloworld.BookShelfActivity;
 import com.example.helloworld.NovelRoom.NovelDBTools;
 import com.example.helloworld.NovelRoom.Novels;
 import com.example.helloworld.R;
@@ -52,9 +51,8 @@ import com.example.helloworld.myObjects.NovelCatalog;
 import com.example.helloworld.myObjects.NovelChap;
 
 import java.io.File;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -84,8 +82,6 @@ public class NovelViewFragment extends Fragment {
     private NovelThread.TAG BookTag;
     private String BookLink;
     private ArrayList<NovelChap> chapList;
-    private ArrayList<String>chapLink;
-    private ArrayList<String>chapName;
     private NovelCatalog catalog;
     private int chap_index=0;
     private int current_chap=0;
@@ -101,7 +97,7 @@ public class NovelViewFragment extends Fragment {
     private Handler LastChapHandler;
     private Handler NextChapHandler;
     private Handler JumpChapHandler;
-    private Handler chap_update_handler;
+    private CatalogThread.CatalogUpdaterHandler<FragmentActivity> chap_update_handler;
     private NovelDBTools novelDBTools;
     private SharedPreferences myInfo;
     private File Dir;
@@ -118,14 +114,6 @@ public class NovelViewFragment extends Fragment {
 
     public void setBookID(int bookID) {
         BookID = bookID;
-    }
-
-    public void setChapName(ArrayList<String> chapName) {
-        this.chapName = chapName;
-    }
-
-    public void setChapLink(ArrayList<String> chapLink) {
-        this.chapLink = chapLink;
     }
 
     public void setCatalog(NovelCatalog catalog) {
@@ -175,9 +163,9 @@ public class NovelViewFragment extends Fragment {
         popSettings=new PopupWindow(pop_view,ViewGroup.LayoutParams.MATCH_PARENT,300);
 
         //初始化状态栏
-        window= getActivity().getWindow();
+        window= Objects.requireNonNull(getActivity()).getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN); //显示状态栏
-        window.setStatusBarColor(getResources().getColor(R.color.comfortGreen));
+        StatusBarLightTheme();
 
         //初始化数据库
         novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
@@ -261,6 +249,7 @@ public class NovelViewFragment extends Fragment {
                         drawerLayout.closeDrawer(view.findViewById(R.id.left_layout));
                         BottomToolBar.setVisibility(View.INVISIBLE);
                         TopToolBar.setVisibility(View.INVISIBLE);
+                        StatusBarLightTheme();
                         chapList.clear();
                         chapList.add(newChap);
                         current_chap=newChap.getCurrent_chapter();
@@ -286,31 +275,21 @@ public class NovelViewFragment extends Fragment {
             }
         };
 
-        chap_update_handler=new Handler(){
+        chap_update_handler=new CatalogThread.CatalogUpdaterHandler<>(getActivity());
+        chap_update_handler.setOverride(new CatalogThread.CatalogUpdaterHandler.MyHandle() {
             @Override
-            public void handleMessage(@NonNull Message msg) {
-                super.handleMessage(msg);
-                switch (msg.what) {
-                    case CatalogThread.CATALOG_UPDATED:
-                    {
-                        //NovelCatalog catalog;
-                        catalog= IOtxt.read_catalog(BookName,Dir);
-                        //chapName=catalog.getTitle();
-                        //chapLink=catalog.getLink();
-                        booklistAdapter.updateList(catalog.getTitle());
-                        Refresh.clearAnimation();
-                        Toast.makeText(getActivity(), "章节同步完成", Toast.LENGTH_SHORT).show();
-                    }
-                    break;
-                    case CatalogThread.CATALOG_UPDATE_FAILED:{
-                        Refresh.clearAnimation();
-                        Toast.makeText(getActivity(), "章节同步出错", Toast.LENGTH_SHORT).show();
-                    }
-                    break;
-                    default:
+            public void handle(Message msg, int Success, int Fail) {
+                if (Success==1){
+                    catalog= IOtxt.read_catalog(BookName,Dir);
+                    booklistAdapter.updateList(catalog.getTitle());
+                    Refresh.clearAnimation();
+                    Toast.makeText(getActivity(), "章节同步完成", Toast.LENGTH_SHORT).show();
+                }else{
+                    Refresh.clearAnimation();
+                    Toast.makeText(getActivity(), "章节同步出错", Toast.LENGTH_SHORT).show();
                 }
             }
-        };
+        });
 
         //初始化线程池
         threadPool= Executors.newFixedThreadPool(2);
@@ -328,6 +307,7 @@ public class NovelViewFragment extends Fragment {
 
         if (current_chap==0) {
             LinearLayoutManager linearLayoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
+            assert linearLayoutManager != null;
             linearLayoutManager.scrollToPositionWithOffset(0, offset);
         }
         //用户偏好初始化
@@ -352,9 +332,9 @@ public class NovelViewFragment extends Fragment {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE/*滑动停止*/) {
                     is_scroll_stop=true;
                     need_save=true;
-                    int item_count=recyclerView.getLayoutManager().getItemCount();
+                    int item_count= Objects.requireNonNull(recyclerView.getLayoutManager()).getItemCount();
                     Log.d("test", "recyclerView总共的Item个数:" +
-                            String.valueOf(item_count));
+                            item_count);
 
                     //获取可见的最后一个view
                     View lastChildView = recyclerView.getChildAt(
@@ -373,7 +353,7 @@ public class NovelViewFragment extends Fragment {
                         Log.d("viewer","index= "+chap_index);
 
                         if (chap_index == 0) {
-                            int top=recyclerView.getLayoutManager().getChildAt(0).getTop();
+                            int top= Objects.requireNonNull(recyclerView.getLayoutManager().getChildAt(0)).getTop();
                             int Y=recyclerView.getScrollY();
                             if(top==Y){
                                 Log.d("viewer","reach");
@@ -427,7 +407,7 @@ public class NovelViewFragment extends Fragment {
         BackToShelf.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ViberateControl.Vibrate(getActivity(),15);
+                ViberateControl.Vibrate(Objects.requireNonNull(getActivity()),15);
                 BackToShelf.setImageResource(R.drawable.backarrow_onclick);
                 getActivity().onBackPressed();
             }
@@ -501,9 +481,9 @@ public class NovelViewFragment extends Fragment {
             public void onClick(View v) {
                 Animation animation = AnimationUtils.loadAnimation(getActivity(), R.anim.rotate);
                 Refresh.startAnimation(animation);
-                CatalogThread catalogThread=new CatalogThread(BookLink,BookTag);
-                catalogThread.setIf_output(true,BookName,Dir);
-                catalogThread.need_update(true,getContext(),chap_update_handler);
+                CatalogThread catalogThread=new CatalogThread(BookLink,BookTag,true,false);
+                catalogThread.setOutputParams(BookName,Dir);
+                catalogThread.setHandler(chap_update_handler);
                 catalogThread.start();
             }
         });
@@ -517,14 +497,14 @@ public class NovelViewFragment extends Fragment {
                         BottomToolBar.setVisibility(View.VISIBLE);
                         TopToolBar.setVisibility(View.VISIBLE);
                         is_toolbar_visible = true;
-                        window.setStatusBarColor(getResources().getColor(R.color.deepBlue));
+                        StatusBarDarkTheme();
                     }else {
                         BottomToolBar.setVisibility(View.INVISIBLE);
                         TopToolBar.setVisibility(View.INVISIBLE);
                         is_toolbar_visible=false;
-                        if (currentMod == NovelViewAdapter.DNMod.DAY_MOD)
-                            window.setStatusBarColor(getResources().getColor(R.color.comfortGreen));
-                        else window.setStatusBarColor(getResources().getColor(R.color.night_background));
+                        if (currentMod == NovelViewAdapter.DNMod.DAY_MOD) {
+                            StatusBarLightTheme();
+                        } else StatusBarDarkTheme();
                     }
                     if (popSettings.isShowing())popSettings.dismiss();
                 }
@@ -535,22 +515,32 @@ public class NovelViewFragment extends Fragment {
         return view;
     }
 
+    private void StatusBarLightTheme() {
+        window.setStatusBarColor(getResources().getColor(R.color.comfortGreen));
+        StatusBarUtil.setStatusBarDarkTheme(getActivity(),true);
+    }
+
+    private void StatusBarDarkTheme() {
+        window.setStatusBarColor(getResources().getColor(R.color.deepBlue));
+        StatusBarUtil.setStatusBarDarkTheme(getActivity(),false);
+    }
+
     private void switch_to_day_mod() {
         adapter.setDNMod(NovelViewAdapter.DNMod.DAY_MOD);
         mRecyclerView.setBackgroundColor(getResources().getColor(R.color.comfortGreen));
-        Brightness.changeAppBrightness(getActivity(),Brightness.getSystemBrightness(getActivity().getContentResolver()));
+        Brightness.changeAppBrightness(Objects.requireNonNull(getActivity()),Brightness.getSystemBrightness(getActivity().getContentResolver()));
         setLight.setProgress(Brightness.getSystemBrightness(getActivity().getContentResolver()));
         Mod_btn.setImageResource(R.drawable.night_mod);
-        if (!is_toolbar_visible)window.setStatusBarColor(getResources().getColor(R.color.comfortGreen));
+        if (!is_toolbar_visible)StatusBarLightTheme();
     }
 
     private void switch_to_night_mod() {
         adapter.setDNMod(NovelViewAdapter.DNMod.NIGHT_MOD);
         mRecyclerView.setBackgroundColor(getResources().getColor(R.color.night_background));
-        Brightness.changeAppBrightness(getActivity(),120);
+        Brightness.changeAppBrightness(Objects.requireNonNull(getActivity()),120);
         setLight.setProgress(120);
         Mod_btn.setImageResource(R.drawable.day_mod);
-        window.setStatusBarColor(getResources().getColor(R.color.deepBlue));
+        StatusBarDarkTheme();
     }
 
     private void refreshChap() {
@@ -636,11 +626,11 @@ public class NovelViewFragment extends Fragment {
         });
 
         setLight.setMax(4095);
-        setLight.setProgress(Brightness.getSystemBrightness(getActivity().getContentResolver()));
+        setLight.setProgress(Brightness.getSystemBrightness(Objects.requireNonNull(getActivity()).getContentResolver()));
         setLight.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                Brightness.changeAppBrightness(getActivity(),progress);
+                Brightness.changeAppBrightness(Objects.requireNonNull(getActivity()),progress);
             }
 
             @Override
