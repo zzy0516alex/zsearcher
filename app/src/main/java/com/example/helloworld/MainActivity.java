@@ -39,11 +39,11 @@ public class MainActivity extends AppCompatActivity {
         test.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                FileSelector.from(MainActivity.this)
-//                .onlyShowFolder()  //只能选择文件夹
-//                .setSortType(FileSelector.BY_TIME_ASC)
-//                .requestCode(1) //设置返回码
-//                .start();
+                FileSelector.from(MainActivity.this)
+                .onlyShowFolder()  //只能选择文件夹
+                .setSortType(FileSelector.BY_TIME_ASC)
+                .requestCode(1) //设置返回码
+                .start();
 //                int[]a=new int[2];
 //                System.out.println(a[3]);
             }

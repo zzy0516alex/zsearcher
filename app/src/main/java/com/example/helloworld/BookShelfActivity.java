@@ -24,11 +24,15 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -37,6 +41,7 @@ import com.example.helloworld.NovelRoom.NovelDBTools;
 import com.example.helloworld.NovelRoom.Novels;
 import com.example.helloworld.Threads.CatalogThread;
 import com.example.helloworld.Utils.IOtxt;
+import com.example.helloworld.Utils.StatusBarUtil;
 import com.example.helloworld.Utils.TimeUtil;
 import com.example.helloworld.myObjects.NovelCatalog;
 import com.example.helloworld.myObjects.NovelChap;
@@ -51,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class BookShelfActivity extends AppCompatActivity {
@@ -64,13 +70,16 @@ public class BookShelfActivity extends AppCompatActivity {
     private GridView bookShelf;
     private SwipeRefreshLayout swipeRefresh;
     private Button delete;
-    private RelativeLayout update;
     private Dialog wait_dialog;
     private Date updateTime;
+    private Window window;
+    private ImageView menu;
+    private LinearLayout searchBar;
     Context context;
     Activity activity;
     private CatalogThread.CatalogUpdaterHandler<BookShelfActivity> updaterHandler;
     private CatalogReloadHandler reloadHandler;
+    private SwipeRefreshLayout.OnRefreshListener onRefreshListener;
     private boolean is_item_chosen=false;
     private int item_chosen=-1;
     private Novels current_book;
@@ -96,11 +105,20 @@ public class BookShelfActivity extends AppCompatActivity {
         bookShelf=findViewById(R.id.BookShelf);
         delete=findViewById(R.id.delete);
         delete.setVisibility(View.INVISIBLE);
-        update=(RelativeLayout) findViewById(R.id.wait_update);
-        update.setVisibility(View.GONE);
         swipeRefresh=findViewById(R.id.swipe_update);
+        menu=findViewById(R.id.menu);
+        searchBar=findViewById(R.id.search_bar);
+        searchBar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent_novel_search=new Intent(BookShelfActivity.this,NovelActivity.class);
+                startActivity(intent_novel_search);
+            }
+        });
+        initMenu();
         initWaitView();
-
+        initSwipeRefresh();
+        initStatusBar();
         //init preference
         myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
         final int num = myInfo.getInt("bookNum",0);
@@ -136,8 +154,9 @@ public class BookShelfActivity extends AppCompatActivity {
                     BookName.add(novel.getBookName());
                     BookCover.add(getImage(novel.getBookName()));
                 }
-                if (TimeUtil.getDifference(updateTime,current_time,3)>1){
+                if (TimeUtil.getDifference(updateTime,current_time,3)>=1){
                     swipeRefresh.setRefreshing(true);
+                    onRefreshListener.onRefresh();
                 }
                 if(num!=0) {
                     adapter.setBookNames(BookName);
@@ -224,10 +243,36 @@ public class BookShelfActivity extends AppCompatActivity {
                 }
             });
         }
-        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+
+    }
+
+    private void initMenu() {
+        menu.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(event.getAction() == MotionEvent.ACTION_DOWN){
+                    menu.setImageDrawable(getDrawable(R.mipmap.menu_onclick));
+                }else if(event.getAction() == MotionEvent.ACTION_UP){
+                    menu.setImageDrawable(getDrawable(R.mipmap.menu));
+                    //Toast.makeText(context, "点击", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+        });
+    }
+
+    private void initStatusBar() {
+        window= this.getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN); //显示状态栏
+        window.setStatusBarColor(getResources().getColor(R.color.DoderBlue));
+        StatusBarUtil.setStatusBarDarkTheme(this,false);
+    }
+
+    private void initSwipeRefresh() {
+        onRefreshListener = new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                Date current_time=TimeUtil.getCurrentTimeInDate();
+                Date current_time= TimeUtil.getCurrentTimeInDate();
                 if (TimeUtil.getDifference(updateTime,current_time,0)>30) {
                     updateTime=current_time;
                     //update catalog
@@ -239,8 +284,8 @@ public class BookShelfActivity extends AppCompatActivity {
                     swipeRefresh.setRefreshing(false);
                 }
             }
-        });
-
+        };
+        swipeRefresh.setOnRefreshListener(onRefreshListener);
     }
 
     @Override

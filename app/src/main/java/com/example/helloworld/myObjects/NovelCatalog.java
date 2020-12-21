@@ -58,15 +58,19 @@ public class NovelCatalog {
     }
     private String addBasicURL(String book_link, String current_chapLink, NovelThread.TAG tag){
         String newUrl="";
-        switch(tag){
-            case BiQuGe:
-                newUrl=book_link+current_chapLink;
-                break;
-            case SiDaMingZhu:
-                newUrl=BASIC2+"/"+current_chapLink;
-                break;
-            default:
+        if (current_chapLink.contains("http")){
+            return current_chapLink;
+        }else {
+            switch (tag) {
+                case BiQuGe:
+                    newUrl = book_link + current_chapLink;
+                    break;
+                case SiDaMingZhu:
+                    newUrl = BASIC2 + "/" + current_chapLink;
+                    break;
+                default:
+            }
+            return newUrl;
         }
-        return newUrl;
     }
 }

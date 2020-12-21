@@ -24,19 +24,25 @@
         android:theme="@style/AppTheme"
         tools:targetApi="q">
         <activity android:name=".NovelViewerActivity"
-                    android:screenOrientation="portrait">
+            android:screenOrientation="portrait">
         </activity>
         <activity android:name=".BookShelfActivity"
-            android:screenOrientation="portrait"/>
-        <activity android:name=".CatalogActivity" />
-        <activity android:name=".NovelShowAcitivity" />
-        <activity android:name=".NovelActivity" />
-        <activity android:name=".MainActivity">
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name=".CatalogActivity" />
+        <activity android:name=".NovelShowAcitivity" />
+        <activity android:name=".NovelActivity" />
+        <activity android:name=".MainActivity">
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
         </activity>
     </application>
 

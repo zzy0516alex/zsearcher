@@ -6,47 +6,68 @@
     android:layout_height="match_parent"
     tools:context=".BookShelfActivity">
 
-    <androidx.appcompat.widget.Toolbar
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/toolbar"
-        android:background="#1E90FF"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" >
-        <TextView
-            android:id="@+id/shelf_title"
+        android:layout_height="60dp"
+        android:background="@color/DoderBlue"
+        android:id="@+id/top_layout">
+        <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="9dp"
-            android:layout_marginLeft="10dp"
-            android:text="我的书架"
-            android:textColor="	#FFFFFF"
-            android:textSize="30dp" />
-        <RelativeLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/wait_update">
-            <com.github.ybq.android.spinkit.SpinKitView
-                xmlns:app="http://schemas.android.com/apk/res-auto"
-                android:id="@+id/spin_kit"
-                style="@style/SpinKitView.WanderingCubes"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_marginTop="30dp"
-                android:layout_gravity="center"
-                android:layout_centerInParent="true"
-                app:SpinKit_Color="#FFFFFF"/>
-        </RelativeLayout>
-    </androidx.appcompat.widget.Toolbar>
+            android:src="@mipmap/my_ic_launcher_foreground"
+            android:paddingStart="-20dp"
+            android:paddingEnd="0dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="160dp"
+            android:layout_marginTop="20dp"
+            android:id="@+id/search_bar"
+            android:background="@drawable/edit2"
+            android:orientation="horizontal">
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/search_icon"
+                android:layout_marginStart="10dp"
+                android:src="@mipmap/search_blue"
+                android:layout_gravity="center"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="搜索想看的书"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="8dp"/>
 
+         </LinearLayout>
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/menu"
+            android:src="@mipmap/menu"
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="30dp"/>
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#808080"
+        android:layout_below="@id/top_layout"
+        android:id="@+id/separator"
+        android:backgroundTint="@color/skyBlue"/>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/swipe_update"
-        android:layout_below="@+id/toolbar"
-        android:layout_marginTop="10dp" >
+        android:layout_below="@+id/separator"
+        android:layout_marginTop="15dp"
+        android:layout_marginStart="15dp"
+        android:layout_centerHorizontal="true">
     <GridView
         android:id="@+id/BookShelf"
         android:layout_width="match_parent"

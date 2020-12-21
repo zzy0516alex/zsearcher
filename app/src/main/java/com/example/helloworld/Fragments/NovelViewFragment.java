@@ -247,9 +247,7 @@ public class NovelViewFragment extends Fragment {
                     {
                         NovelChap newChap= (NovelChap) msg.obj;
                         drawerLayout.closeDrawer(view.findViewById(R.id.left_layout));
-                        BottomToolBar.setVisibility(View.INVISIBLE);
-                        TopToolBar.setVisibility(View.INVISIBLE);
-                        StatusBarLightTheme();
+                        SetToolBarInvisible();
                         chapList.clear();
                         chapList.add(newChap);
                         current_chap=newChap.getCurrent_chapter();
@@ -393,11 +391,7 @@ public class NovelViewFragment extends Fragment {
                 }
                 else {
                     is_scroll_stop=false;
-                    if (is_toolbar_visible){
-                        BottomToolBar.setVisibility(View.INVISIBLE);
-                        TopToolBar.setVisibility(View.INVISIBLE);
-                        is_toolbar_visible=false;
-                    }
+                    SetToolBarInvisible();
                 }
 
             }
@@ -497,14 +491,9 @@ public class NovelViewFragment extends Fragment {
                         BottomToolBar.setVisibility(View.VISIBLE);
                         TopToolBar.setVisibility(View.VISIBLE);
                         is_toolbar_visible = true;
-                        StatusBarDarkTheme();
+                        StatusBarDeepBlue();
                     }else {
-                        BottomToolBar.setVisibility(View.INVISIBLE);
-                        TopToolBar.setVisibility(View.INVISIBLE);
-                        is_toolbar_visible=false;
-                        if (currentMod == NovelViewAdapter.DNMod.DAY_MOD) {
-                            StatusBarLightTheme();
-                        } else StatusBarDarkTheme();
+                        SetToolBarInvisible();
                     }
                     if (popSettings.isShowing())popSettings.dismiss();
                 }
@@ -515,12 +504,26 @@ public class NovelViewFragment extends Fragment {
         return view;
     }
 
+    private void SetToolBarInvisible() {
+        if (is_toolbar_visible) {
+            BottomToolBar.setVisibility(View.INVISIBLE);
+            TopToolBar.setVisibility(View.INVISIBLE);
+            if (currentMod == NovelViewAdapter.DNMod.DAY_MOD) StatusBarLightTheme();
+            else StatusBarDarkTheme();
+            is_toolbar_visible = false;
+        }
+    }
+
     private void StatusBarLightTheme() {
         window.setStatusBarColor(getResources().getColor(R.color.comfortGreen));
         StatusBarUtil.setStatusBarDarkTheme(getActivity(),true);
     }
 
     private void StatusBarDarkTheme() {
+        window.setStatusBarColor(getResources().getColor(R.color.night_background));
+        StatusBarUtil.setStatusBarDarkTheme(getActivity(),false);
+    }
+    private void StatusBarDeepBlue() {
         window.setStatusBarColor(getResources().getColor(R.color.deepBlue));
         StatusBarUtil.setStatusBarDarkTheme(getActivity(),false);
     }
@@ -540,7 +543,7 @@ public class NovelViewFragment extends Fragment {
         Brightness.changeAppBrightness(Objects.requireNonNull(getActivity()),120);
         setLight.setProgress(120);
         Mod_btn.setImageResource(R.drawable.day_mod);
-        StatusBarDarkTheme();
+        if (!is_toolbar_visible)StatusBarDarkTheme();
     }
 
     private void refreshChap() {
@@ -560,19 +563,21 @@ public class NovelViewFragment extends Fragment {
         super.onDestroy();
         //TODO:保存当前章节
         if (need_save)SaveCurrentLine();
-        SharedPreferences.Editor editor=myInfo.edit();
-        int myDNMod=0;
-        switch(currentMod){
-            case DAY_MOD:
-                myDNMod=0;
-                break;
-            case NIGHT_MOD:
-                myDNMod=1;
-                break;
-            default:
+        if (myInfo!=null) {
+            SharedPreferences.Editor editor = myInfo.edit();
+            int myDNMod = 0;
+            switch (currentMod) {
+                case DAY_MOD:
+                    myDNMod = 0;
+                    break;
+                case NIGHT_MOD:
+                    myDNMod = 1;
+                    break;
+                default:
+            }
+            editor.putInt("myDNMod", myDNMod);
+            editor.apply();
         }
-        editor.putInt("myDNMod", myDNMod);
-        editor.apply();
     }
 
     @Override

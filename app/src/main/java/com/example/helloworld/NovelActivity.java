@@ -1,6 +1,7 @@
 package com.example.helloworld;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
@@ -12,33 +13,30 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.Display;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.helloworld.Adapters.BooklistAdapter;
-import com.example.helloworld.NovelRoom.Novels;
-import com.example.helloworld.Threads.CatalogThread;
-import com.example.helloworld.Threads.ContentTextThread;
 import com.example.helloworld.Threads.ContentURLThread;
-import com.example.helloworld.Threads.GetCoverThread;
 import com.example.helloworld.Threads.NovelThread;
+import com.example.helloworld.Utils.ViberateControl;
 import com.example.helloworld.myObjects.BookList;
 import com.example.helloworld.myObjects.NovelCatalog;
 import com.example.helloworld.myObjects.NovelSearchResult;
@@ -48,14 +46,16 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class NovelActivity extends AppCompatActivity {
 
     private String url;
     private String url2;
-    private EditText editText;
-    private Button button;
+    private EditText search_key;
+    private Button search_start;
     private ListView booklist;
+    private ImageButton back;
     private String input;
     private String code;
     private boolean startsearch;
@@ -74,15 +74,18 @@ public class NovelActivity extends AppCompatActivity {
     int not_find_count =0;
     int find_count=0;
     int internet_err=0;
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_novel);
-        editText=findViewById(R.id.input);
-        button=findViewById(R.id.search);
+        search_key =findViewById(R.id.input);
+        search_key.requestFocus();
+        search_start =findViewById(R.id.search);
         booklist=findViewById(R.id.booklist);
         loadView = (RelativeLayout) findViewById(R.id.Load);
+        back=findViewById(R.id.back);
         Novels=new ArrayList<>();
         Links =new ArrayList<>();
         context=this;
@@ -123,7 +126,10 @@ public class NovelActivity extends AppCompatActivity {
         if(!Folder2.exists()){
             Folder2.mkdir();
         }
+
         loadView.setVisibility(View.GONE);
+
+
         handler=new Handler(){
             @Override
             public void handleMessage(@NonNull Message msg) {
@@ -150,7 +156,7 @@ public class NovelActivity extends AppCompatActivity {
                     not_find_count=0;
                     internet_err=0;
                 }
-                editText.setCursorVisible(true);
+                search_key.setCursorVisible(true);
             }
         };
         contentURL_handler=new Handler(){
@@ -163,10 +169,18 @@ public class NovelActivity extends AppCompatActivity {
             }
         };
 
-        button.setOnClickListener(new View.OnClickListener() {
+        search_start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 search_btn_down(activity);
+            }
+        });
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ViberateControl.Vibrate(activity,15);
+                back.setImageResource(R.drawable.backarrow_onclick);
+                activity.onBackPressed();
             }
         });
         enter_key_down(activity);
@@ -182,15 +196,15 @@ public class NovelActivity extends AppCompatActivity {
 
     private void search_btn_down(Activity activity) {
         loadView.setVisibility(View.VISIBLE);
-        if((!editText.getText().toString().equals(""))){
-            input=editText.getText().toString();
+        if((!search_key.getText().toString().equals(""))){
+            input= search_key.getText().toString();
             startsearch=true;
         }
         else startsearch=false;
         if (startsearch){
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(editText.getWindowToken(), 0) ;
-            editText.setCursorVisible(false);
+            imm.hideSoftInputFromWindow(search_key.getWindowToken(), 0) ;
+            search_key.setCursorVisible(false);
             if (adapter!=null){
                 BookList.clear();
                 Novels.clear();
@@ -206,7 +220,7 @@ public class NovelActivity extends AppCompatActivity {
         }
     }
     private void enter_key_down(final Activity activity){
-        editText.setOnKeyListener(new View.OnKeyListener() {
+        search_key.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if (keyCode==KeyEvent.KEYCODE_ENTER && event.getAction()==KeyEvent.ACTION_DOWN){
@@ -218,17 +232,17 @@ public class NovelActivity extends AppCompatActivity {
     }
 
     private void TimerButton() {
-        button.setEnabled(false);
+        search_start.setEnabled(false);
         new CountDownTimer(5000 + 1000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                button.setText(millisUntilFinished/1000+"s");
+                search_start.setText(millisUntilFinished/1000+"s");
             }
 
             @Override
             public void onFinish() {
-                button.setEnabled(true);
-                button.setText("搜索");
+                search_start.setEnabled(true);
+                search_start.setText("搜索");
             }
         }.start();
     }
