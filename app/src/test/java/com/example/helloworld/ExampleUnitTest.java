@@ -1,5 +1,8 @@
 package com.example.helloworld;
 
+import androidx.lifecycle.ViewModelProviders;
+
+import com.example.helloworld.NovelRoom.NovelDBTools;
 import com.example.helloworld.Utils.StringUtils;
 import com.example.helloworld.Utils.TimeUtil;
 
@@ -19,13 +22,5 @@ public class ExampleUnitTest {
     @Test
     public void addition_isCorrect() {
         //assertEquals(4, 2 + 2);
-        try {
-            long d= TimeUtil.getDifference(new SimpleDateFormat(
-                    "yyyy-MM-dd HH:mm:ss").parse("2020-12-12 13:51:00"),TimeUtil.getCurrentTimeInDate(),1);
-            System.out.println("d = " + d);
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-
     }
 }

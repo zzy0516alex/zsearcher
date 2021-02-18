@@ -24,6 +24,7 @@ public class ContentURLThread extends Thread {
     private Handler handler;
     private Context context;
     private NovelThread.TAG tag;
+    private int currentChapIndex;
     public ContentURLThread(String url) {
         this.url=url;
     }
@@ -38,6 +39,10 @@ public class ContentURLThread extends Thread {
 
     public void setTag(NovelThread.TAG tag) {
         this.tag = tag;
+    }
+
+    public void setCurrentChapIndex(int currentChapIndex) {
+        this.currentChapIndex = currentChapIndex;
     }
 
     @Override
@@ -70,14 +75,14 @@ public class ContentURLThread extends Thread {
 
     private void processor1(Document document) {
         Elements element=document.select("div.box_con");
-        Element ele_firstchap=element.get(1).select("a").first();
+        Element ele_firstchap=element.get(1).select("a").get(currentChapIndex);
         String firsturl=ele_firstchap.attr("href");
         newUrl=url+firsturl;
         FirstTitle=ele_firstchap.text();
     }
     private void processor2(Document document) {
         Elements element=document.select("div.info_mulu");
-        Element ele_firstchap=element.get(0).select("a").first();
+        Element ele_firstchap=element.get(0).select("a").get(currentChapIndex);
         String firsturl=ele_firstchap.attr("href");
         newUrl=context.getString(R.string.book_read_base2)+firsturl;
         FirstTitle=ele_firstchap.text()+"(1)";

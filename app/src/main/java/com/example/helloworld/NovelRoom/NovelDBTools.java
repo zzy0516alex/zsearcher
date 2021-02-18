@@ -32,6 +32,9 @@ public class NovelDBTools extends AndroidViewModel {
     public void deleteAll(){
         new DeleteAllAsyncTask(Noveldao).execute();
     }
+    public void QueryNovelsByName(String name,QueryResultListener resultListener){
+        new QueryByNameAsyncTask(Noveldao, name, resultListener).execute();
+    }
 
     public LiveData<List<Novels>> getAllNovelsLD() {
         return allNovelsLD;
@@ -94,6 +97,32 @@ public class NovelDBTools extends AndroidViewModel {
             novelDao.DeleteAll();
             return null;
         }
+    }
+
+    static class QueryByNameAsyncTask extends AsyncTask<Void,Void,List<Novels>>{
+        private NovelDao novelDao;
+        private QueryResultListener resultListener;
+        private String novel_name;
+
+        public QueryByNameAsyncTask(NovelDao novelDao,String novel_name,QueryResultListener resultListener) {
+            this.novelDao = novelDao;
+            this.resultListener=resultListener;
+            this.novel_name=novel_name;
+        }
+
+        @Override
+        protected List<Novels> doInBackground(Void... voids) {
+            return novelDao.getNovelByName(novel_name);
+        }
+
+        @Override
+        protected void onPostExecute(List<Novels> novels) {
+            resultListener.onQueryFinish(novels);
+        }
+    }
+
+    public interface QueryResultListener{
+        void onQueryFinish(List<Novels> novels);
     }
 
 }

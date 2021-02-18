@@ -37,6 +37,7 @@ import com.example.helloworld.Threads.GetCoverThread;
 import com.example.helloworld.Threads.CatalogThread;
 import com.example.helloworld.Threads.ContentTextThread;
 import com.example.helloworld.Threads.NovelThread;
+import com.example.helloworld.Utils.StringUtils;
 import com.example.helloworld.myObjects.NovelCatalog;
 
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class NovelShowAcitivity extends AppCompatActivity {
-    public static Activity Novalshow;
+    public Activity Novalshow;
     private WebView webView;
     private SeekBar seekBar;
     private Button past;
@@ -72,8 +73,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
     List<Novels> AllNovels;
     NovelThread.TAG tag;
     private boolean istouch=false;
-    private static boolean first_load=true;
-    private static boolean isFloatButtonShow=true;
+    private boolean first_load=true;
+    private boolean isFloatButtonShow=true;
     private static boolean isInShelf=false;
     private static int book_id;
     private Context context;
@@ -117,11 +118,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 AllNovels=novels;
                 SharedPreferences.Editor editor=myInfo.edit();
                 editor.putInt("bookNum",novels.size()).apply();
-                is_in_shelf();
             }
         });
-//        NovelDataBase dataBase=NovelDataBase.getDataBase(this);
-//        novelDao=dataBase.getNovelDao();
 
         //debug
         //novelDBTools.deleteAll();
@@ -135,10 +133,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 ChapList=result_back.getTitle();
                 ChapLinkList=result_back.getLink();
                 ttlChap=ChapList.size();
-                PastAndNext();
+                ChangeCurrentCondition();
                 catalog.setEnabled(true);
-                if (currentChap!=ChapList.size()-1)next.setEnabled(true);
-                if (currentChap!=0)past.setEnabled(true);
                 webView.reload();
             }
         };
@@ -148,7 +144,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         next.setEnabled(false);
         past.setEnabled(false);
 
-        if(!isFloatButtonShow){
+        if(isInShelf){
             AddBook.setVisibility(View.INVISIBLE);
             AddBook.setEnabled(false);
         }
@@ -280,17 +276,17 @@ public class NovelShowAcitivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClient(){
             @Override
             public void onPageFinished(WebView view, String url) {
-                if(first_load && !isInShelf) {
-                    Toast.makeText(NovelShowAcitivity.this, "当前为预览模式，加入书架后可优化阅读", Toast.LENGTH_SHORT).show();
+                if(first_load) {
+                    if (isInShelf)Toast.makeText(Novalshow, "该书已在书架中，建议转至书架阅读", Toast.LENGTH_SHORT).show();
+                    else Toast.makeText(NovelShowAcitivity.this, "当前为预览模式，加入书架后可优化阅读", Toast.LENGTH_SHORT).show();
                     first_load=false;
                 }
                 super.onPageFinished(view, url);
 
                 //阅读新章节时：
-                if (!url.equals(currentURL)){
+                if (!StringUtils.UrlStingCompare(url,currentURL)){
                     currentURL=url;
                     ChangeCurrentCondition();
-                    PastAndNext();
                     if (isInShelf)update_bookshelfINFO();
                 }
             }
@@ -337,38 +333,14 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private void ChangeCurrentCondition() {
         next.setEnabled(false);
         past.setEnabled(false);
-        currentChap=ChapLinkList.indexOf(currentURL.replace(BaseURL,""));
-        currentTitle=ChapList.get(currentChap);
+        currentChap = ChapLinkList.indexOf(currentURL.replace(BaseURL, ""));
+        currentTitle = ChapList.get(currentChap);
+        PastAndNext();
         if (currentChap!=ChapLinkList.size()-1)next.setEnabled(true);
         if (currentChap!=0)past.setEnabled(true);
     }
 
-    private void is_in_shelf(){
-        if(AllNovels.size()!=0) {
-            for (Novels novel : AllNovels) {
-                if (novel.getBookName().equals(BookName)) {
-                    if(first_load) {
-                        Toast.makeText(Novalshow, "该书已在书架中，建议转至书架阅读", Toast.LENGTH_SHORT).show();
-                        first_load=false;
-                    }
-                    setFloatButtonShow(false);
-                    isInShelf = true;
-                    book_id = novel.getId();
-                    AddBook.setEnabled(false);
-                    AddBook.setVisibility(View.INVISIBLE);
-                    break;
-                } else isInShelf = false;
-            }
-        }else {
-            isInShelf=false;
-        }
-    }
-
-    public static void setFirst_load(boolean isFirst) {
-        first_load = isFirst;
-    }
-
-    public static void setFloatButtonShow(boolean floatButtonShow) {
+    public void setFloatButtonShow(boolean floatButtonShow) {
         isFloatButtonShow = floatButtonShow;
     }
 

@@ -15,6 +15,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class IOtxt {
@@ -144,7 +145,7 @@ public class IOtxt {
         writeToFile(content_string, mk_txt,false);
 
     }
-    public static void WriteErrReport(File Dir,Throwable e){
+    public static void WriteErrReport(File Dir,Throwable e,String ...fromURL){
         File Folder =new File(Dir,"Errors");
         if(!Folder.exists()){
             Folder.mkdir();
@@ -153,6 +154,9 @@ public class IOtxt {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append('\n');
         stringBuilder.append(TimeUtil.getCurrentTimeInString());
+        stringBuilder.append('\n');
+        stringBuilder.append("URL=");
+        stringBuilder.append(Arrays.toString(fromURL));
         stringBuilder.append('\n');
         Writer writer = new StringWriter();
         PrintWriter printWriter = new PrintWriter(writer);

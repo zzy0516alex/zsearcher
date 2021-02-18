@@ -34,6 +34,8 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.helloworld.Adapters.BooklistAdapter;
+import com.example.helloworld.NovelRoom.NovelDBTools;
+import com.example.helloworld.NovelRoom.Novels;
 import com.example.helloworld.Threads.ContentURLThread;
 import com.example.helloworld.Threads.NovelThread;
 import com.example.helloworld.Utils.ViberateControl;
@@ -163,7 +165,6 @@ public class NovelActivity extends AppCompatActivity {
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
-                //loadView.setVisibility(View.GONE);
                 wait_dialog.dismiss();
                 launchNovelShow((NovelCatalog) msg.obj);
             }
@@ -317,13 +318,7 @@ public class NovelActivity extends AppCompatActivity {
             CatalogUrl=Links.get(position);
             BookName=current_book.getBookNameWithoutWriter();
             current_tag=current_book.getTag();
-            Log.e("book_chose", CatalogUrl);
-            ContentURLThread thread =new ContentURLThread(CatalogUrl);
-            thread.setContext(context);
-            thread.setHandler(contentURL_handler);
-            thread.setTag(BookList.get(position).getTag());
-            thread.start();
-            //loadView.setVisibility(View.VISIBLE);
+            is_in_shelf();
             initWaitView();
             wait_dialog.show();
 
@@ -339,9 +334,29 @@ public class NovelActivity extends AppCompatActivity {
         bundle.putString("BookName",BookName);
         bundle.putSerializable("tag",current_tag);
         intent.putExtras(bundle);
-        NovelShowAcitivity.setFloatButtonShow(true);
-        NovelShowAcitivity.setFirst_load(true);
         startActivity(intent);
+    }
+
+    private void is_in_shelf(){
+        NovelDBTools novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
+        novelDBTools.QueryNovelsByName(BookName, new NovelDBTools.QueryResultListener() {
+            @Override
+            public void onQueryFinish(List<com.example.helloworld.NovelRoom.Novels> novels) {
+                ContentURLThread thread =new ContentURLThread(CatalogUrl);
+                if (novels.size()!=0){
+                    thread.setCurrentChapIndex(novels.get(0).getCurrentChap());
+                    NovelShowAcitivity.setIsInShelf(true);
+                    NovelShowAcitivity.setBook_id(novels.get(0).getId());
+                }else{
+                    thread.setCurrentChapIndex(0);
+                    NovelShowAcitivity.setIsInShelf(false);
+                }
+                thread.setContext(context);
+                thread.setHandler(contentURL_handler);
+                thread.setTag(current_tag);
+                thread.start();
+            }
+        });
     }
 
 

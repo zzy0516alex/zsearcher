@@ -17,6 +17,7 @@ import org.jsoup.select.Elements;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
 public class CatalogThread extends Thread {
@@ -78,9 +79,18 @@ public class CatalogThread extends Thread {
                 message.obj= result;
                 mHandler.sendMessage(message);
             }
-        } catch (Exception e) {
+        }catch (SocketTimeoutException e){
+            IOtxt.WriteErrReport(Dir,e,url);
+            if (isOutput) isOutput =false;
+            if (mHandler!=null){
+                Message message = mHandler.obtainMessage();
+                message.what = CATALOG_UPDATE_FAILED;
+                mHandler.sendMessage(message);
+            }
+        }
+        catch (Exception e) {
             e.printStackTrace();
-            IOtxt.WriteErrReport(Dir,e);
+            IOtxt.WriteErrReport(Dir,e,url);
             reserve_count++;
             if (reserve_count<3) {
                 try {
@@ -102,6 +112,7 @@ public class CatalogThread extends Thread {
             }
         }
         if(isOutput){
+            isOutput=false;
             StringBuilder content=new StringBuilder();
             result.completeCatalog(url,tag);
             for (int i = 0; i < result.getSize(); i++) {
@@ -155,6 +166,10 @@ public class CatalogThread extends Thread {
 
         public void setOverride(MyHandle myHandle) {
             this.myHandle=myHandle;
+        }
+        public void clearCounter(){
+            fail_counter=0;
+            success_counter=0;
         }
 
         @Override

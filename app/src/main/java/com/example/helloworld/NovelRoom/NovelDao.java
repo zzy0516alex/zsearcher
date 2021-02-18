@@ -29,4 +29,7 @@ public interface NovelDao {
     @Query("SELECT * FROM NOVELS ORDER BY ID")
     List<Novels> getNovelList();
 
+    @Query("SELECT * FROM NOVELS WHERE book_name=:name")
+    List<Novels> getNovelByName(String name);
+
 }

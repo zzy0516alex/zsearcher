@@ -20,6 +20,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -45,6 +46,8 @@ import com.example.helloworld.Utils.StatusBarUtil;
 import com.example.helloworld.Utils.TimeUtil;
 import com.example.helloworld.myObjects.NovelCatalog;
 import com.example.helloworld.myObjects.NovelChap;
+import com.z.fileselectorlib.FileSelectorActivity;
+import com.z.fileselectorlib.FileSelectorSettings;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -84,13 +87,22 @@ public class BookShelfActivity extends AppCompatActivity {
     private int item_chosen=-1;
     private Novels current_book;
     String content;
+    private boolean refresh_TimeUp=false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_book_shelf);
-        File Folder =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookCovers");
-        if(!Folder.exists()){
-            Folder.mkdir();
+        File Folder1 =new File(getExternalFilesDir(null),"ZsearchRes");
+        if(!Folder1.exists()){
+            Folder1.mkdir();
+        }
+        File Folder2 =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookCovers");
+        if(!Folder2.exists()){
+            Folder2.mkdir();
+        }
+        File Folder3 =new File(FileSelectorSettings.getSystemRootPath() +"/download/","ZsearcherDownloads");
+        if(!Folder3.exists()){
+            Folder3.mkdir();
         }
         //init basic params
         BookCover=new ArrayList<>();
@@ -129,7 +141,7 @@ public class BookShelfActivity extends AppCompatActivity {
         updaterHandler.setOverride(new CatalogThread.CatalogUpdaterHandler.MyHandle() {
             @Override
             public void handle(Message msg, int Success, int Fail) {
-                if (num == Success + Fail) {
+                if (AllNovelList.size() == Success + Fail || refresh_TimeUp) {
                     if (swipeRefresh != null)swipeRefresh.setRefreshing(false);
                         String feedback = "成功：" + Success + "\t 失败：" + Fail;
                         Toast.makeText(context, "章节同步完成, " + feedback, Toast.LENGTH_SHORT).show();
@@ -254,7 +266,7 @@ public class BookShelfActivity extends AppCompatActivity {
                     menu.setImageDrawable(getDrawable(R.mipmap.menu_onclick));
                 }else if(event.getAction() == MotionEvent.ACTION_UP){
                     menu.setImageDrawable(getDrawable(R.mipmap.menu));
-                    //Toast.makeText(context, "点击", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(BookShelfActivity.this,SettingsActivity.class));
                 }
                 return true;
             }
@@ -274,11 +286,14 @@ public class BookShelfActivity extends AppCompatActivity {
             public void onRefresh() {
                 Date current_time= TimeUtil.getCurrentTimeInDate();
                 if (TimeUtil.getDifference(updateTime,current_time,0)>30) {
+                    updaterHandler.clearCounter();
                     updateTime=current_time;
                     //update catalog
                     for (Novels novel : AllNovelList) {
                         update_catalog(novel);
                     }
+                    refresh_TimeUp=false;
+                    timerStart(10000);
                 }else {
                     Toast.makeText(context, "刷新过于频繁", Toast.LENGTH_SHORT).show();
                     swipeRefresh.setRefreshing(false);
@@ -286,6 +301,20 @@ public class BookShelfActivity extends AppCompatActivity {
             }
         };
         swipeRefresh.setOnRefreshListener(onRefreshListener);
+    }
+
+    private void timerStart(int time) {
+        new CountDownTimer(time + 1000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+
+            }
+
+            @Override
+            public void onFinish() {
+                refresh_TimeUp=true;
+            }
+        }.start();
     }
 
     @Override

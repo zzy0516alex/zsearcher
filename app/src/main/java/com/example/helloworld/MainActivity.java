@@ -13,9 +13,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.helloworld.Utils.StatusBarUtil;
-import com.example.helloworld.myObjects.BookList;
-import com.zlylib.fileselectorlib.FileSelector;
-import com.zlylib.fileselectorlib.utils.Const;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -36,18 +33,6 @@ public class MainActivity extends AppCompatActivity {
         test=findViewById(R.id.btntest);
         MyBookShelf.setOnClickListener(onclick);
         NovelSearch.setOnClickListener(onclick);
-        test.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FileSelector.from(MainActivity.this)
-                .onlyShowFolder()  //只能选择文件夹
-                .setSortType(FileSelector.BY_TIME_ASC)
-                .requestCode(1) //设置返回码
-                .start();
-//                int[]a=new int[2];
-//                System.out.println(a[3]);
-            }
-        });
         File Folder =new File(getExternalFilesDir(null),"ZsearchRes");
         if(!Folder.exists()){
             Folder.mkdir();

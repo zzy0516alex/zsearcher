@@ -43,4 +43,30 @@ public class StringUtils {
         }
         return allPairs;
     }
+
+    /**
+     * 判断URL是否相等
+     * @param url1
+     * @param url2
+     * @return true/false
+     */
+    public static boolean UrlStingCompare(String url1,String url2){
+        String newurl1,newurl2;
+        newurl1=http2https(url1);
+        newurl2=http2https(url2);
+        return newurl1.equals(newurl2);
+    }
+
+    private static String http2https(String url) {
+        String newurl=url;
+        int i1=url.indexOf("http");
+        if (i1!=-1){
+            if ('s'!=url.charAt(i1+4)){
+                newurl=url.replace("http","https");
+            }
+        }else {
+            throw new IllegalArgumentException("invalid url");
+        }
+        return newurl;
+    }
 }
