@@ -1,41 +1,26 @@
 package com.Z.NovelReader.Fragments;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.AdapterView;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.view.GestureDetectorCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.Z.NovelReader.Adapters.BooklistAdapter;
 import com.Z.NovelReader.Adapters.NovelViewAdapter;
 import com.Z.NovelReader.Dialog.ViewerSettingDialog;
 import com.Z.NovelReader.Global.OnReadingListener;
@@ -46,12 +31,9 @@ import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.R;
 import com.Z.NovelReader.Threads.CatalogThread;
 import com.Z.NovelReader.Threads.ChapGetterThread;
-import com.Z.NovelReader.Threads.NovelThread;
-import com.Z.NovelReader.Utils.Brightness;
-import com.Z.NovelReader.Utils.IOtxt;
-import com.Z.NovelReader.Utils.StatusBarUtil;
-import com.Z.NovelReader.Utils.ViberateControl;
-import com.Z.NovelReader.myObjects.NovelCatalog;
+import com.Z.NovelReader.Threads.NovelSearchThread;
+import com.Z.NovelReader.Utils.FileIOUtils;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
 import com.Z.NovelReader.myObjects.NovelChap;
 
 import java.io.File;
@@ -68,7 +50,7 @@ public class NovelViewFragment extends NovelViewBasicFragment implements OnSetti
     private View view;
     private String BookName;
     private int BookID;
-    private NovelThread.TAG BookTag;
+    private NovelSearchThread.TAG BookTag;
     private String BookLink;
     private ArrayList<NovelChap> chapList;
     private NovelCatalog catalog;
@@ -123,7 +105,7 @@ public class NovelViewFragment extends NovelViewBasicFragment implements OnSetti
         BookLink = bookLink;
     }
 
-    public void setBookTag(NovelThread.TAG bookTag) {
+    public void setBookTag(NovelSearchThread.TAG bookTag) {
         BookTag = bookTag;
     }
 
@@ -389,12 +371,13 @@ public class NovelViewFragment extends NovelViewBasicFragment implements OnSetti
         Novels novel=new Novels(BookName,catalog.getSize(),current_chap,BookLink);
         novel.setId(BookID);
         novel.setOffset(offset_to_save);
-        novel.setTag_inTAG(BookTag);
+        //notice need update
+        //novel.setTag_inTAG(BookTag);
         novelDBTools.updateNovels(novel);
         Thread thread =new Thread(new Runnable() {
             @Override
             public void run() {
-                IOtxt.WriteTXT(Dir,BookName,chapList.get(chap_index).getContent());
+                FileIOUtils.WriteTXT(Dir,BookName,chapList.get(chap_index).getContent());
             }
         });
         thread.start();

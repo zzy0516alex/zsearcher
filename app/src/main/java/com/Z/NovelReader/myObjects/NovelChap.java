@@ -1,6 +1,6 @@
 package com.Z.NovelReader.myObjects;
 
-import com.Z.NovelReader.Threads.NovelThread;
+import com.Z.NovelReader.Threads.NovelSearchThread;
 
 public class NovelChap {
     private String title;
@@ -8,7 +8,7 @@ public class NovelChap {
     private int current_chapter;//当前章节号
     private int ttl_chapter;//总章节数
     private int BookID;
-    private NovelThread.TAG tag;
+    private NovelSearchThread.TAG tag;
     private String BookName;
     private String last_link="";
     private String next_link="";
@@ -17,7 +17,7 @@ public class NovelChap {
     public static final int NEXT_LINK_ONLY=2;
     public static final int NO_LINK_AVAILABLE=3;
 
-    public NovelChap(String title, NovelThread.TAG tag){
+    public NovelChap(String title, NovelSearchThread.TAG tag){
         this.title=title;
         this.tag=tag;
     }
@@ -115,11 +115,11 @@ public class NovelChap {
         this.last_link = last_link;
     }
 
-    public NovelThread.TAG getTag() {
+    public NovelSearchThread.TAG getTag() {
         return tag;
     }
 
-    public void setTag(NovelThread.TAG tag) {
+    public void setTag(NovelSearchThread.TAG tag) {
         this.tag = tag;
     }
 

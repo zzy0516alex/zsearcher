@@ -7,7 +7,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
@@ -35,47 +34,45 @@ import android.widget.Toast;
 
 import com.Z.NovelReader.Adapters.BooklistAdapter;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
+import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.Threads.ContentURLThread;
-import com.Z.NovelReader.Threads.NovelThread;
+import com.Z.NovelReader.Threads.NovelSearchThread;
 import com.Z.NovelReader.Utils.ViberateControl;
-import com.Z.NovelReader.myObjects.BookList;
-import com.Z.NovelReader.myObjects.NovelCatalog;
+import com.Z.NovelReader.myObjects.beans.NovelSearchBean;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
 import com.Z.NovelReader.myObjects.NovelSearchResult;
+import com.Z.NovelReader.myObjects.beans.SearchQuery;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NovelActivity extends AppCompatActivity {
+public class NovelSearchActivity extends AppCompatActivity {
 
-    private String url;
-    private String url2;
+    //
+    private List<SearchQuery> searchQueryList;
     private EditText search_key;
     private Button search_start;
     private ListView booklist;
     private ImageButton back;
     private String input;
-    private String code;
     private boolean startsearch;
     private List<String>Novels;
     private List<String> Links;
     private NovelSearchResult novelSearchResult;
-    private ArrayList<BookList> BookList;
+    private ArrayList<NovelSearchBean> BookList;
+    private NovelSourceDBTools sourceDBTools;
     private Context context;
+    private Activity activity;
     private Dialog wait_dialog;
     BooklistAdapter adapter;
     RelativeLayout loadView;
-    Handler handler;
-    Handler contentURL_handler;
+    NovelSearchThread.NovelSearchHandler novelSearchHandler;
+    ContentURLThread.ContentUrlHandler contentURL_handler;
     InputMethodManager manager;
     boolean first_create=true;
-    int not_find_count =0;
-    int find_count=0;
-    int internet_err=0;
     @RequiresApi(api = Build.VERSION_CODES.O)
-    @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,22 +86,108 @@ public class NovelActivity extends AppCompatActivity {
         Novels=new ArrayList<>();
         Links =new ArrayList<>();
         context=this;
-        final Activity activity= NovelActivity.this;
+        activity= NovelSearchActivity.this;
         manager= (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-        url=this.getString(R.string.book_search_base1);
-        url2=this.getString(R.string.book_search_base2);
+        sourceDBTools=new NovelSourceDBTools(context);
 
-        novelSearchResult= ViewModelProviders.of(this).get(NovelSearchResult.class);
-        novelSearchResult.getMySearchResult().observe(this, new Observer<ArrayList<BookList>>() {
+        //观测书籍搜索结果
+        observeSearchResults();
+
+        //初始化书源列表
+        sourceDBTools.getSearchUrlList(new NovelSourceDBTools.QueryListener() {
             @Override
-            public void onChanged(ArrayList<BookList> bookLists) {
-                if (bookLists.size()!=0){
-                    BookList=bookLists;
+            public void onResultBack(Object object) {
+                searchQueryList= (List<SearchQuery>) object;
+            }
+        });
+
+        //新建本地书籍文件夹
+        CreateSourcesFolder();
+
+        loadView.setVisibility(View.GONE);//隐藏载入等待图标
+
+        //初始化content url handler
+        init_ContentUrlHandler();
+
+        //通过搜索按钮开始搜索
+        search_start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                search_btn_down(activity);
+            }
+        });
+
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ViberateControl.Vibrate(activity,15);
+                back.setImageResource(R.drawable.backarrow_onclick);
+                activity.onBackPressed();
+            }
+        });
+
+        //通过键盘enter键开始搜索
+        enter_key_down(activity);
+
+    }
+
+    /**
+     * 初始化content url handler，获取当前选择的书的指定章节的内容链接
+     */
+    private void init_ContentUrlHandler() {
+        contentURL_handler=new ContentURLThread.ContentUrlHandler(new ContentURLThread.ContentUrlListener() {
+            @Override
+            public void onSuccess(NovelCatalog currentChap) {
+                wait_dialog.dismiss();
+                launchNovelShow(currentChap);
+            }
+
+            @Override
+            public void onError(int error_code,int sourceID) {
+                wait_dialog.dismiss();
+                switch(error_code){
+                    case ContentURLThread.NO_INTERNET:
+                        Toast.makeText(context, "无网络", Toast.LENGTH_SHORT).show();
+                        break;
+                    case ContentURLThread.PROCESSOR_ERROR:
+                        Toast.makeText(context, "书源规则解析出错,ID:"+sourceID, Toast.LENGTH_SHORT).show();
+                        break;
+                    case ContentURLThread.RULE_NEED_UPDATE:
+                        Toast.makeText(context, "书源需要更新,ID:"+sourceID, Toast.LENGTH_SHORT).show();
+                        break;
+                    default:
+                }
+            }
+        });
+    }
+
+    private void CreateSourcesFolder() {
+        //notice:need delete
+//        File Folder =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookCovers");
+//        if(!Folder.exists()){
+//            Folder.mkdir();
+//        }
+        File Folder =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookReserve");
+        if(!Folder.exists()){
+            Folder.mkdir();
+        }
+    }
+
+    /**
+     * 获取书籍搜索结果
+     */
+    private void observeSearchResults() {
+        novelSearchResult= ViewModelProviders.of(this).get(NovelSearchResult.class);
+        novelSearchResult.getMySearchResult().observe(this, new Observer<ArrayList<NovelSearchBean>>() {
+            @Override
+            public void onChanged(ArrayList<NovelSearchBean> bookList) {
+                if (bookList.size()!=0){
+                    BookList=bookList;
                     Novels.clear();
                     Links.clear();
-                    for (BookList bookList: bookLists) {
-                        Novels.add(bookList.getBookName());
-                        Links.add(bookList.getBookLink());
+                    for (NovelSearchBean novelSearchBean : bookList) {
+                        Novels.add(novelSearchBean.getBookName());
+                        Links.add(novelSearchBean.getBookLink());
                     }
                     adapter=new BooklistAdapter(Novels,context,false,"");
                     if (first_create){
@@ -117,73 +200,6 @@ public class NovelActivity extends AppCompatActivity {
                 }
             }
         });
-
-        File Folder =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookCovers");
-        if(!Folder.exists()){
-            Folder.mkdir();
-        }
-        File Folder2 =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookContents");
-        if(!Folder2.exists()){
-            Folder2.mkdir();
-        }
-
-        loadView.setVisibility(View.GONE);
-
-
-        handler=new Handler(){
-            @Override
-            public void handleMessage(@NonNull Message msg) {
-                super.handleMessage(msg);
-                Log.d("search_result",""+msg.what);
-                switch(msg.what){
-                    case NovelThread.BOOK_SEARCH_NOT_FOUND:
-                        not_find_count++;
-                        if (not_find_count ==2) Toast.makeText(context, "未找到", Toast.LENGTH_SHORT).show();
-                        break;
-                    case NovelThread.BOOK_SEARCH_NO_INTERNET:
-                        internet_err++;
-                        if (internet_err==2)launch_internet_setting(activity);
-                        break;
-                    case NovelThread.BOOK_SEARCH_DONE:
-                        find_count++;
-                        novelSearchResult.addToResult((ArrayList<BookList>) msg.obj);
-                        break;
-                    default:
-                }
-                if (find_count+not_find_count+internet_err==2){
-                    loadView.setVisibility(View.GONE);
-                    find_count=0;
-                    not_find_count=0;
-                    internet_err=0;
-                }
-                search_key.setCursorVisible(true);
-            }
-        };
-        contentURL_handler=new Handler(){
-            @Override
-            public void handleMessage(@NonNull Message msg) {
-                super.handleMessage(msg);
-                wait_dialog.dismiss();
-                launchNovelShow((NovelCatalog) msg.obj);
-            }
-        };
-
-        search_start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                search_btn_down(activity);
-            }
-        });
-        back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ViberateControl.Vibrate(activity,15);
-                back.setImageResource(R.drawable.backarrow_onclick);
-                activity.onBackPressed();
-            }
-        });
-        enter_key_down(activity);
-
     }
 
 
@@ -193,6 +209,10 @@ public class NovelActivity extends AppCompatActivity {
         loadView.setVisibility(View.GONE);
     }
 
+    /**
+     * 搜索初始化及启动搜书线程
+     * @param activity 用于从新载入搜索界面
+     */
     private void search_btn_down(Activity activity) {
         loadView.setVisibility(View.VISIBLE);
         if((!search_key.getText().toString().equals(""))){
@@ -210,14 +230,17 @@ public class NovelActivity extends AppCompatActivity {
                 Links.clear();
                 novelSearchResult.clear();
             }
+            //启动搜索限制计时器
             TimerButton();
+            //启动搜书线程
             NovelSearch();
         }
         else {
-            Toast.makeText(NovelActivity.this, "输入的字符不能为空", Toast.LENGTH_SHORT).show();
-        restartActivity(activity);
+            Toast.makeText(NovelSearchActivity.this, "输入的字符不能为空", Toast.LENGTH_SHORT).show();
+            restartActivity(activity);
         }
     }
+
     private void enter_key_down(final Activity activity){
         search_key.setOnKeyListener(new View.OnKeyListener() {
             @Override
@@ -245,6 +268,7 @@ public class NovelActivity extends AppCompatActivity {
             }
         }.start();
     }
+
     public static void restartActivity(Activity act){
 
         Intent intent=new Intent();
@@ -253,21 +277,61 @@ public class NovelActivity extends AppCompatActivity {
         act.finish();
 
     }
+
+    /**
+     * 书籍搜索线程
+     */
     private void NovelSearch() {
-        try {
-            code=URLEncoder.encode(input,"utf-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        //Log.e("test",code);
-        NovelThread T =new NovelThread(url,code, NovelThread.TAG.BiQuGe);
-        T.setHandler(handler);
-        T.start();
-        NovelThread T2=new NovelThread(url2,code, NovelThread.TAG.SiDaMingZhu);
-        T2.setHandler(handler);
-        T2.start();
+
+        if (searchQueryList.size()!=0) {
+            //init search handler
+            novelSearchHandler=new NovelSearchThread.NovelSearchHandler(searchQueryList.size(),
+                    new NovelSearchThread.NovelSearchListener() {
+                        @Override
+                        public void onSearchResult(ArrayList<NovelSearchBean> search_result) {
+                            novelSearchResult.addToResult(search_result);
+                        }
+
+                        @Override
+                        public void onSearchError(int error_code) {
+                            switch(error_code){
+                                case NovelSearchThread.ILLEGAL_BOOK_SOURCE:
+                                    Toast.makeText(context, "书籍资源出错", Toast.LENGTH_SHORT).show();
+                                    break;
+                                case NovelSearchThread.BOOK_SOURCE_DIABLED:
+                                    Toast.makeText(context, "书源被禁用", Toast.LENGTH_SHORT).show();
+                                    break;
+                                default:
+                            }
+                        }
+
+                        @Override
+                        public void onSearchFinish(int total_num, int num_no_internet, int num_not_found) {
+                            if (loadView.getVisibility()!=View.GONE)
+                                loadView.setVisibility(View.GONE);
+                            search_key.setCursorVisible(true);
+                            novelSearchHandler.clearAllCounters();
+                            if (num_not_found==total_num)
+                                Toast.makeText(context, "未找到", Toast.LENGTH_SHORT).show();
+                            if (num_no_internet==total_num)
+                                launch_internet_setting(activity);
+                        }
+
+                    });
+
+            //start search thread
+            for (SearchQuery search_query : searchQueryList) {
+                NovelSearchThread T = new NovelSearchThread(context,search_query,input);
+                T.setHandler(novelSearchHandler);
+                T.start();
+            }
+        }else Toast.makeText(context, "未找到有效书源", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * 跳转至网络连接设置界面
+     * @param activity 用于跳转
+     */
     private void launch_internet_setting(final Activity activity) {
             Toast.makeText(context,"请先开启网络链接", Toast.LENGTH_SHORT).show();
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
@@ -291,6 +355,9 @@ public class NovelActivity extends AppCompatActivity {
                 }).setCancelable(false).show();
     }
 
+    /**
+     * 初始化等待图标
+     */
     private void initWaitView(){
         final View view = LayoutInflater.from(this).inflate(R.layout.wait_dialog1, null);
         wait_dialog = new Dialog(this, R.style.WaitDialog);
@@ -305,42 +372,43 @@ public class NovelActivity extends AppCompatActivity {
         wait_dialog.getWindow().setAttributes(lp);
     }
 
-    private String CatalogUrl;
-    private String BookName;
-    private NovelThread.TAG current_tag;
+    private NovelSearchBean current_book;
     public class onItemclick implements AdapterView.OnItemClickListener{
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            BookList current_book=BookList.get(position);
-            CatalogUrl=Links.get(position);
-            BookName=current_book.getBookNameWithoutWriter();
-            current_tag=current_book.getTag();
-            is_in_shelf();
+            current_book=BookList.get(position);
+            Log.d("novelsearch",current_book.toString());
+            getContentURL(current_book);
             initWaitView();
+            if (loadView.getVisibility()!=View.GONE)
+                loadView.setVisibility(View.GONE);
             wait_dialog.show();
 
         }
     }
 
+    //跳转至novelshow界面
     private void launchNovelShow(NovelCatalog newNovel) {
-        Intent intent=new Intent(NovelActivity.this, NovelShowAcitivity.class);
+        Intent intent=new Intent(NovelSearchActivity.this, NovelShowAcitivity.class);
         Bundle bundle=new Bundle();
-        bundle.putString("url",newNovel.getLink().get(0));
-        bundle.putString("currentTitle",newNovel.getTitle().get(0));
-        bundle.putString("CatalogUrl",CatalogUrl);
-        bundle.putString("BookName",BookName);
-        bundle.putSerializable("tag",current_tag);
+        bundle.putSerializable("currentChap",newNovel);
+        bundle.putSerializable("currentBook",current_book);
         intent.putExtras(bundle);
         startActivity(intent);
     }
 
-    private void is_in_shelf(){
+    /**
+     * 获取选中的书籍的章节内容链接
+     */
+    private void getContentURL(final NovelSearchBean current_book){
         NovelDBTools novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
-        novelDBTools.QueryNovelsByName(BookName, new NovelDBTools.QueryResultListener() {
+        novelDBTools.QueryNovelsByName(current_book.getBookNameWithoutWriter(), new NovelDBTools.QueryResultListener() {
             @Override
             public void onQueryFinish(List<com.Z.NovelReader.NovelRoom.Novels> novels) {
-                ContentURLThread thread =new ContentURLThread(CatalogUrl);
+                //根据目录链接获取章节内容链接
+                ContentURLThread thread =new ContentURLThread(current_book.getBookLink(),current_book.getSource());
+                //判断所点击的书籍是否已在书架内
                 if (novels.size()!=0){
                     thread.setCurrentChapIndex(novels.get(0).getCurrentChap());
                     NovelShowAcitivity.setIsInShelf(true);
@@ -349,9 +417,9 @@ public class NovelActivity extends AppCompatActivity {
                     thread.setCurrentChapIndex(0);
                     NovelShowAcitivity.setIsInShelf(false);
                 }
+                //启动线程
                 thread.setContext(context);
                 thread.setHandler(contentURL_handler);
-                thread.setTag(current_tag);
                 thread.start();
             }
         });

@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,6 +22,8 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
+import com.Z.NovelReader.Threads.NovelSourceGetterThread;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.StorageUtils;
 import com.z.fileselectorlib.FileSelectorSettings;
@@ -36,7 +39,9 @@ public class SettingsActivity extends AppCompatActivity {
     private Context context;
     private Window window;
     private RelativeLayout StoragePathChange;
+    private RelativeLayout SetNovelSource;
     private SharedPreferences myInfo;
+    private NovelSourceDBTools sourceDBTools;
     private String DownloadPath;
     private ImageButton quit;
 
@@ -47,19 +52,40 @@ public class SettingsActivity extends AppCompatActivity {
 
         activity=SettingsActivity.this;
         context=this;
-        StoragePathChange=findViewById(R.id.select_storage_path);
         quit=findViewById(R.id.quit_settings);
         myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
         DownloadPath=myInfo.getString("DownloadPath","/download/ZsearcherDownloads");
+        sourceDBTools=new NovelSourceDBTools(context);
 
         initQuitButton();
 
         initStoragePathSelector();
 
+        initSetUpNovelSources();
+
         initStatusBar();
     }
 
+    private void initSetUpNovelSources() {
+        SetNovelSource=findViewById(R.id.setup_novel_source);
+        SetNovelSource.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sourceDBTools.DeleteAllSource();
+                NovelSourceGetterThread t1=new NovelSourceGetterThread(context,"http://www.yckceo.com/d/urU8x");//笔趣阁
+                NovelSourceGetterThread t2=new NovelSourceGetterThread(context,"http://www.yckceo.com/d/2jdqx");//独步小说
+                NovelSourceGetterThread t3=new NovelSourceGetterThread(context,"http://yck.mumuceo.com/d/f1HG3");//E小说
+                t1.start();
+                t2.start();
+                t3.start();
+
+                Log.d("source","书源已添加");
+            }
+        });
+    }
+
     private void initStoragePathSelector() {
+        StoragePathChange=findViewById(R.id.select_storage_path);
         StoragePathChange.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

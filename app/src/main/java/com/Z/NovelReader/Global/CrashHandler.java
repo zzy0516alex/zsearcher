@@ -4,7 +4,7 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 
-import com.Z.NovelReader.Utils.IOtxt;
+import com.Z.NovelReader.Utils.FileIOUtils;
 
 public class CrashHandler implements Thread.UncaughtExceptionHandler {
 
@@ -66,7 +66,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
             return false;
         }
         //保存日志文件
-        IOtxt.WriteErrReport(mContext.getExternalFilesDir(null),ex);
+        FileIOUtils.WriteErrReport(mContext.getExternalFilesDir(null),ex);
         return true;
     }
 

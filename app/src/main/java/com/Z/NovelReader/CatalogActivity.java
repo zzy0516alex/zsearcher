@@ -11,7 +11,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.Z.NovelReader.Adapters.BooklistAdapter;
-import com.Z.NovelReader.Threads.NovelThread;
+import com.Z.NovelReader.Threads.NovelSearchThread;
 
 import java.util.List;
 
@@ -24,7 +24,6 @@ public class CatalogActivity extends AppCompatActivity {
     private List<String> ChapList;
     private List<String>ChapLinkList;
     private String currentTitle;
-    private NovelThread.TAG tag;
     private int locate;
     Context context;
     @Override
@@ -46,16 +45,20 @@ public class CatalogActivity extends AppCompatActivity {
                 CatalogActivity.this.finish();
             }
         });
-        //
+
+        //获取数据
         final Bundle bundle=this.getIntent().getExtras();
         assert bundle != null;
         url=bundle.getString("url");
         ChapList=bundle.getStringArrayList("ChapList");
         ChapLinkList=bundle.getStringArrayList("ChapLinkList");
         currentTitle=bundle.getString("currentTitle");
-        tag= (NovelThread.TAG) bundle.getSerializable("tag");
+
+        //加载目录
         BooklistAdapter chapListAdapter=new BooklistAdapter(ChapList,context,true,currentTitle);
         chapList.setAdapter(chapListAdapter);
+
+        //控制列表滚动到当前章节附近
         for(int i=0;i<ChapList.size();i++){
             if(currentTitle.equals(ChapList.get(i))){
                 locate=i;
@@ -64,23 +67,15 @@ public class CatalogActivity extends AppCompatActivity {
         }
         if(locate>7)chapList.setSelection(locate-6);
         else chapList.setSelection(locate);
+
+        //目录点击
         chapList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String newUrl="";
                 String current_chapLink=ChapLinkList.get(position);
-                switch(tag){
-                    case BiQuGe:
-                        newUrl=url+current_chapLink;
-                        break;
-                    case SiDaMingZhu:
-                        newUrl=context.getString(R.string.book_read_base2)+"/"+current_chapLink;
-                        break;
-                    default:
-                }
                 Intent intent=new Intent();
                 Bundle bundle_back=new Bundle();
-                bundle_back.putString("url",newUrl);
+                bundle_back.putString("url",current_chapLink);
                 intent.putExtras(bundle_back);
                 CatalogActivity.this.setResult(1,intent);
                 CatalogActivity.this.finish();

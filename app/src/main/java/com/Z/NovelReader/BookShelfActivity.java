@@ -40,11 +40,12 @@ import com.Z.NovelReader.Adapters.BookshelfAdapter;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Threads.CatalogThread;
-import com.Z.NovelReader.Utils.FileUtils;
-import com.Z.NovelReader.Utils.IOtxt;
+import com.Z.NovelReader.Threads.PictureThread;
+import com.Z.NovelReader.Utils.BitmapUtils;
+import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.TimeUtil;
-import com.Z.NovelReader.myObjects.NovelCatalog;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
 import com.Z.NovelReader.myObjects.NovelChap;
 import com.z.fileselectorlib.FileSelectorSettings;
 
@@ -56,7 +57,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class BookShelfActivity extends AppCompatActivity {
@@ -85,6 +85,10 @@ public class BookShelfActivity extends AppCompatActivity {
     private Novels current_book;
     String content;
     private boolean refresh_TimeUp=false;
+    private boolean refresh_Done=false;
+    private int update_success=0;
+    private int update_fail=0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,7 +97,7 @@ public class BookShelfActivity extends AppCompatActivity {
         if(!Folder1.exists()){
             Folder1.mkdir();
         }
-        File Folder2 =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookCovers");
+        File Folder2 =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookReserve");
         if(!Folder2.exists()){
             Folder2.mkdir();
         }
@@ -101,7 +105,6 @@ public class BookShelfActivity extends AppCompatActivity {
         if(!Folder3.exists()){
             Folder3.mkdir();
         }
-        FileUtils.outputFile("这是一个测试文件，测试\n测试test\n\t123456测试。&^%",FileUtils.getRootPath()+"/download/ZsearcherDownloads","test");
         //init basic params
         BookCover=new ArrayList<>();
         BookName=new ArrayList<>();
@@ -121,7 +124,7 @@ public class BookShelfActivity extends AppCompatActivity {
         searchBar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent_novel_search=new Intent(BookShelfActivity.this,NovelActivity.class);
+                Intent intent_novel_search=new Intent(BookShelfActivity.this, NovelSearchActivity.class);
                 startActivity(intent_novel_search);
             }
         });
@@ -139,11 +142,14 @@ public class BookShelfActivity extends AppCompatActivity {
         updaterHandler.setOverride(new CatalogThread.CatalogUpdaterHandler.MyHandle() {
             @Override
             public void handle(Message msg, int Success, int Fail) {
-                if (AllNovelList.size() == Success + Fail || refresh_TimeUp) {
+                update_success=Success;
+                update_fail=Fail;
+                if (AllNovelList.size()==Success+Fail && !refresh_TimeUp){
                     if (swipeRefresh != null)swipeRefresh.setRefreshing(false);
-                        String feedback = "成功：" + Success + "\t 失败：" + Fail;
-                        Toast.makeText(context, "章节同步完成, " + feedback, Toast.LENGTH_SHORT).show();
-                    }
+                    String feedback = "成功：" + update_success + "\t 失败：" + update_fail;
+                    Toast.makeText(context, "章节同步完成, " + feedback, Toast.LENGTH_SHORT).show();
+                    refresh_Done=true;
+                }
             }
         });
 
@@ -185,9 +191,10 @@ public class BookShelfActivity extends AppCompatActivity {
                     if(!is_item_chosen){
                         if (swipeRefresh.isRefreshing())swipeRefresh.setRefreshing(false);
                         //TODO show content
-                        content=IOtxt.read_line(BookName.get(position),getExternalFilesDir(null));
+                        content= FileIOUtils.read_line(BookName.get(position),getExternalFilesDir(null));
                         current_book=AllNovelList.get(position);
-                        Catalog= IOtxt.read_catalog(current_book.getBookName(),getExternalFilesDir(null));
+                        Catalog= FileIOUtils.read_catalog("/ZsearchRes/BookReserve/" + current_book.getBookName() + "/catalog.txt",
+                                getExternalFilesDir(null));
                         if (!Catalog.isEmpty()) {
                             ArrayList<String> ChapName = Catalog.getTitle();
                             ArrayList<String> ChapLink = Catalog.getLink();
@@ -195,9 +202,10 @@ public class BookShelfActivity extends AppCompatActivity {
                         }else{
                             //重新下载catalog
                             wait_dialog.show();
-                            CatalogThread Cthread=new CatalogThread(current_book.getBookLink(),current_book.getTag_in_TAG(),false,true);
-                            Cthread.setHandler(reloadHandler);
-                            Cthread.start();
+                            //notice need update
+//                            CatalogThread Cthread=new CatalogThread(current_book.getBookLink(),current_book.getTag_in_TAG(),false,true);
+//                            Cthread.setHandler(reloadHandler);
+//                            Cthread.start();
                         }
                     }else {
                         adapter.setItem_chosen(-1);
@@ -290,7 +298,7 @@ public class BookShelfActivity extends AppCompatActivity {
             @Override
             public void onRefresh() {
                 Date current_time= TimeUtil.getCurrentTimeInDate();
-                if (TimeUtil.getDifference(updateTime,current_time,0)>30 && AllNovelList.size()!=0) {
+                if (TimeUtil.getDifference(updateTime,current_time,0)>10 && AllNovelList.size()!=0) {
                     updaterHandler.clearCounter();
                     updateTime=current_time;
                     //update catalog
@@ -321,7 +329,13 @@ public class BookShelfActivity extends AppCompatActivity {
 
             @Override
             public void onFinish() {
-                refresh_TimeUp=true;
+                if (!refresh_Done) {
+                    refresh_TimeUp=true;
+                    if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
+                    int time_out = AllNovelList.size() - update_fail - update_success;
+                    String feedback = "成功：" + update_success + "\t 失败：" + update_fail + "\t 超时：" + time_out;
+                    Toast.makeText(context, "章节同步完成, " + feedback, Toast.LENGTH_SHORT).show();
+                }
             }
         }.start();
     }
@@ -343,7 +357,8 @@ public class BookShelfActivity extends AppCompatActivity {
         chap.setBookID(current_book.getId());
         chap.setBookName(current_book.getBookName());
         chap.setCurrent_chapter(current_book.getCurrentChap());
-        chap.setTag(current_book.getTag_in_TAG());
+        //notice need update
+        //chap.setTag(current_book.getTag_in_TAG());
         NovelViewerActivity.setCurrent_chap(chap);
         startActivity(intent);
     }
@@ -361,10 +376,11 @@ public class BookShelfActivity extends AppCompatActivity {
     }
 
     private void update_catalog(Novels novel) {
-        CatalogThread catalogThread=new CatalogThread(novel.getBookLink(), novel.getTag_in_TAG(),true,false);
-        catalogThread.setOutputParams(novel.getBookName(),getExternalFilesDir(null));
-        catalogThread.setHandler(updaterHandler);
-        catalogThread.start();
+        //notice need update
+//        CatalogThread catalogThread=new CatalogThread(novel.getBookLink(), novel.getTag_in_TAG(),true,false);
+//        catalogThread.setOutputParams(novel.getBookName(),getExternalFilesDir(null));
+//        catalogThread.setHandler(updaterHandler);
+//        catalogThread.start();
     }
 
     private void removeBookCover(final String bookname_remove) {
@@ -406,16 +422,17 @@ public class BookShelfActivity extends AppCompatActivity {
 
     public Bitmap getImage(String BookName) {
         Bitmap bitmap_AddShadow=null;
-        File picDir=new File(getExternalFilesDir(null)+"/ZsearchRes/BookCovers/" + BookName + ".png");
+        File picDir=new File(getExternalFilesDir(null)+"/ZsearchRes/BookReserve/" + BookName + "/cover.png");
         FileInputStream fis=null;
         try{
             fis=new FileInputStream(picDir);
             Bitmap bitmap= BitmapFactory.decodeStream(fis);
-            Bitmap bitmap_adjustSize=getNewBitmap(bitmap,300,400);
-            bitmap_AddShadow=drawImageDropShadow(bitmap_adjustSize);
+            Bitmap bitmap_adjustSize=BitmapUtils.getResizedBitmap(bitmap,300,400);
+            bitmap_AddShadow= BitmapUtils.drawImageDropShadow(bitmap_adjustSize);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            return getNewBitmap(BitmapFactory.decodeResource(getResources(),R.mipmap.no_book_cover),300,400);
+            return BitmapUtils.getResizedBitmap(BitmapFactory.decodeResource(getResources(),R.mipmap.no_book_cover),
+                    300,400);
         }finally {
             if (fis!=null){
                 try {
@@ -428,39 +445,7 @@ public class BookShelfActivity extends AppCompatActivity {
         return bitmap_AddShadow;
     }
 
-    public Bitmap getNewBitmap(Bitmap bitmap, int newWidth ,int newHeight){
-        // 获得图片的宽高.
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        // 计算缩放比例.
-        float scaleWidth = ((float) newWidth) / width;
-        float scaleHeight = ((float) newHeight) / height;
-        // 取得想要缩放的matrix参数.
-        Matrix matrix = new Matrix();
-        matrix.postScale(scaleWidth, scaleHeight);
-        // 得到新的图片.
-        Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
-        return newBitmap;
-    }
-    private Bitmap drawImageDropShadow(Bitmap originalBitmap) {
 
-        BlurMaskFilter blurFilter = new BlurMaskFilter(1,
-                BlurMaskFilter.Blur.NORMAL);
-        Paint shadowPaint = new Paint();
-        shadowPaint.setAlpha(50);
-        shadowPaint.setColor(Color.parseColor("#FF0000"));
-        shadowPaint.setMaskFilter(blurFilter);
-
-        int[] offsetXY = new int[2];
-        Bitmap shadowBitmap = originalBitmap
-                .extractAlpha(shadowPaint, offsetXY);
-
-        Bitmap shadowImage32 = shadowBitmap.copy(Bitmap.Config.ARGB_8888, true);
-        Canvas c = new Canvas(shadowImage32);
-        c.drawBitmap(originalBitmap, offsetXY[0], offsetXY[1], null);
-
-        return shadowImage32;
-    }
 
     public static String[] getCurrentChapLink(int current_chap, ArrayList<String> chapName, ArrayList<String> chapLink) {
         String[] result=new String[3];//0:name 1:last_link 2:next_link
@@ -517,8 +502,10 @@ public class BookShelfActivity extends AppCompatActivity {
                 Toast.makeText(activity, "无网络", Toast.LENGTH_SHORT).show();
             if (activity != null && msg.obj!=null) {
                 NovelCatalog catalog= (NovelCatalog) msg.obj;
-                catalog.completeCatalog(activity.getCurrent_book().getBookLink(),activity.getCurrent_book().getTag_in_TAG());
-                IOtxt.WriteCatalog(activity.getExternalFilesDir(null),activity.getCurrent_book().getBookName(),catalog);
+                //catalog.completeCatalog(activity.getCurrent_book().getBookLink(),activity.getCurrent_book().getTag_in_TAG());
+                FileIOUtils.WriteCatalog(activity.getExternalFilesDir(null),
+                        "/ZsearchRes/BookContents/"+ activity.getCurrent_book().getBookName()+"_catalog.txt",
+                        catalog);
                 activity.setCatalog(catalog);
                 activity.startReadPage(activity.getContent(),activity.getCurrent_book(),catalog.getTitle(),catalog.getLink());
             }

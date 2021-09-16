@@ -1,6 +1,8 @@
 package com.Z.NovelReader.Utils;
 
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class StringUtils {
     //获取字符串匹配度
@@ -67,5 +69,55 @@ public class StringUtils {
             throw new IllegalArgumentException("invalid url");
         }
         return newurl;
+    }
+
+    /**
+     * 统计子串在源串中出现的次数
+     * @param s 源字符串
+     * @param sub 子串
+     * @return 重复次数
+     */
+    public static int filter(String s,String sub){
+        int old_length=s.length();
+        String replace="";
+        if (s.contains(sub)){
+            replace = s.replace(sub, "");//将需要查找的字符串替换为空
+        }
+        int new_length= replace.length();//用原来字符串的长度去减替换过的字符串就是该字符串中字符出现的次数
+        int count=(old_length-new_length)/(sub.length());//因为是字符串中字符出现的次数,所以要除以字符串你的长度最后就是字符串在另一个字符串中出现的次数
+        return count;
+    }
+
+    /**
+     * 补全书籍链接
+     * @param url 原始链接
+     * @param bookSourceUrl 书源链接
+     * @return 完整链接
+     */
+    public static String completeUrl(String url, String bookSourceUrl) {
+        String temp = "";
+        if (!url.contains("http")) {
+            if (bookSourceUrl != null) {
+                if (url.startsWith("/")) url = url.substring(1);
+                if (!bookSourceUrl.endsWith("/"))bookSourceUrl=bookSourceUrl+"/";
+                temp = (bookSourceUrl + url);
+            }
+        } else temp = url;
+        return temp;
+    }
+
+    // 通过 -?[0-9]+(\\\\.[0-9]+)? 进行匹配是否为数字
+    private static Pattern pattern = Pattern.compile("-?[0-9]+(\\\\.[0-9]+)?");
+
+    /**
+     * 通过正则表达式判断字符串是否为数字
+     * @param str
+     * @return
+     */
+    public static boolean isNumber(String str) {
+        // 通过Matcher进行字符串匹配
+        Matcher m = pattern.matcher(str);
+        // 如果正则匹配通过 m.matches() 方法返回 true ，反之 false
+        return m.matches();
     }
 }

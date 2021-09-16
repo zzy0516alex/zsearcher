@@ -2,7 +2,7 @@ package com.Z.NovelReader.Utils;
 
 import android.util.Log;
 
-import com.Z.NovelReader.myObjects.NovelCatalog;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -18,17 +18,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-public class IOtxt {
+public class FileIOUtils {
 
 
     /**
      * 从目录文件读取目录链接
-     * @param bookname 书名
+     * @param catalog_sub_path 书名
      * @param Dir 根目录
      * @return NovelCatalog
      */
-    public static NovelCatalog read_catalog(String bookname, File Dir /*getExternalFilesDir*/) {
-        File txtDir=new File(Dir+"/ZsearchRes/BookContents/" + bookname + "_catalog.txt");
+    public static NovelCatalog read_catalog(String catalog_sub_path, File Dir /*getExternalFilesDir*/) {
+        File txtDir=new File(Dir+catalog_sub_path);
         FileInputStream fis=null;
         int counter=0;
         HashMap<String,ArrayList<String>> result=new HashMap<>();
@@ -114,11 +114,11 @@ public class IOtxt {
     /**
      * 写入章节内容
      * @param Dir 根目录
-     * @param BookName 书名
+     * @param sub_path 子目录需带有书名"/ZsearchRes/BookReserve/bookname"
      * @param content 内容
      */
-    public static void WriteTXT(File Dir,String BookName,String content){
-        File mk_txt=new File(Dir+"/ZsearchRes/BookContents/"+ BookName+".txt" );
+    public static void WriteTXT(File Dir,String sub_path,String content){
+        File mk_txt=new File(Dir+sub_path+"/content.txt");
         writeToFile(content, mk_txt,false);
     }
 
@@ -166,10 +166,10 @@ public class IOtxt {
     /**
      * 以novelCatalog格式写入目录
      * @param Dir 根目录
-     * @param BookName 书名
+     * @param sub_path 书名
      * @param novelCatalog 类
      */
-    public static void WriteCatalog(File Dir,String BookName,NovelCatalog novelCatalog){
+    public static void WriteCatalog(File Dir,String sub_path,NovelCatalog novelCatalog){
         StringBuilder content=new StringBuilder();
         for (int i = 0; i < novelCatalog.getLink().size(); i++) {
             content.append(novelCatalog.getTitle().get(i));
@@ -178,7 +178,7 @@ public class IOtxt {
             if(i!=novelCatalog.getSize()-1)content.append('\n');
         }
         String content_string=content.toString();
-        File mk_txt=new File(Dir+"/ZsearchRes/BookContents/"+ BookName+"_catalog.txt" );
+        File mk_txt=new File(Dir + sub_path);
         writeToFile(content_string, mk_txt,false);
 
     }

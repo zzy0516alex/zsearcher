@@ -3,9 +3,17 @@ package com.Z.NovelReader.Threads;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
+import androidx.annotation.NonNull;
+
+import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
+import com.Z.NovelReader.Processors.CatalogProcessor;
 import com.Z.NovelReader.R;
-import com.Z.NovelReader.myObjects.NovelCatalog;
+import com.Z.NovelReader.Utils.FileIOUtils;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
+import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.myObjects.beans.NovelSearchBean;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -14,17 +22,27 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.concurrent.TimeoutException;
 
 public class ContentURLThread extends Thread {
-    private String url;
-    private String  newUrl;
-    private String FirstTitle;
+    private String catalogURL;
+    private int sourceID;
+    private NovelRequire novelRequire;//书源规则类
+    private NovelSourceDBTools sourceDBTools;//书源数据库DAO
     private Handler handler;
+    private Message message;
     private Context context;
-    private NovelThread.TAG tag;
     private int currentChapIndex;
-    public ContentURLThread(String url) {
-        this.url=url;
+    public static final int CONTENT_GRASP_DONE=0X0;
+    public static final int BOOK_SOURCE_DIABLED=0X1;
+    public static final int NO_INTERNET=0X2;
+    public static final int PROCESSOR_ERROR=0X3;
+    public static final int RULE_NEED_UPDATE=0X4;
+
+    public ContentURLThread(String catalogURL, int sourceID) {
+        this.catalogURL = catalogURL;
+        this.sourceID=sourceID;
     }
 
     public void setContext(Context context) {
@@ -35,10 +53,6 @@ public class ContentURLThread extends Thread {
         this.handler = handler;
     }
 
-    public void setTag(NovelThread.TAG tag) {
-        this.tag = tag;
-    }
-
     public void setCurrentChapIndex(int currentChapIndex) {
         this.currentChapIndex = currentChapIndex;
     }
@@ -46,45 +60,86 @@ public class ContentURLThread extends Thread {
     @Override
     public void run() {
         super.run();
+        if (context!=null)sourceDBTools=new NovelSourceDBTools(context);
+        sourceDBTools.getNovelRequireById(sourceID, new NovelSourceDBTools.QueryListener() {
+            @Override
+            public void onResultBack(Object object) {
+                novelRequire= (NovelRequire) object;
+            }
+        });
         try {
-            Connection connect = Jsoup.connect(url);
+            if (handler!=null)message=handler.obtainMessage();
+            Connection connect = Jsoup.connect(catalogURL);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
             Document document= connect.get();
-            switch(tag){
-                case BiQuGe:
-                    processor1(document);
-                    break;
-                case SiDaMingZhu:
-                    processor2(document);
-                    break;
-                default:
+            //等待数据库查询结果
+            int timeout=0;
+            while (novelRequire==null && timeout<100){
+                sleep(1);
+                timeout++;
             }
-            if (newUrl!=null) {
-                Message message = handler.obtainMessage();
-                NovelCatalog novelCatalog=new NovelCatalog();
-                novelCatalog.add(FirstTitle,newUrl);
-                message.obj = novelCatalog;
-                handler.sendMessage(message);
+            if (timeout>99)throw new TimeoutException();
+
+            NovelCatalog catalog = CatalogProcessor.getCatalog(document, novelRequire);
+
+            if (!catalog.isEmpty()&&message!=null) {
+                message.what=CONTENT_GRASP_DONE;
+                //将目录写入临时文件
+                FileIOUtils.WriteCatalog(context.getExternalFilesDir(null),
+                        "/ZsearchRes/temp_catalog.txt",catalog);
+                //返回当前需要的内容链接
+                NovelCatalog currentChap = new NovelCatalog();
+                currentChap.add(catalog.getTitle().get(currentChapIndex),catalog.getLink().get(currentChapIndex));
+                message.obj=currentChap;
+            }else {
+                if (message!=null){
+                    message.what = RULE_NEED_UPDATE;
+                    message.obj=sourceID;
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
+            if (message!=null){
+                message.what=NO_INTERNET;
+                message.obj=sourceID;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+            if (message!=null){
+                message.what=BOOK_SOURCE_DIABLED;
+                message.obj=sourceID;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (message!=null){
+                message.what=PROCESSOR_ERROR;
+                message.obj=sourceID;
+            }
+        }
+        if (handler!=null && message!=null)handler.sendMessage(message);
+    }
+
+    public static class ContentUrlHandler extends Handler{
+        ContentUrlListener listener;
+
+        public ContentUrlHandler(ContentUrlListener listener) {
+            this.listener = listener;
+        }
+
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            if (msg.what==CONTENT_GRASP_DONE)
+                listener.onSuccess((NovelCatalog) msg.obj);
+            else {
+                listener.onError(msg.what, (Integer) msg.obj);
+            }
         }
     }
-
-    private void processor1(Document document) {
-        Elements element=document.select("div.box_con");
-        Element ele_firstchap=element.get(1).select("a").get(currentChapIndex);
-        String firsturl=ele_firstchap.attr("href");
-        newUrl=url+firsturl;
-        FirstTitle=ele_firstchap.text();
+    public interface ContentUrlListener{
+        void onSuccess(NovelCatalog currentChap);
+        void onError(int error_code,int sourceID);
     }
-    private void processor2(Document document) {
-        Elements element=document.select("div.info_mulu");
-        Element ele_firstchap=element.get(0).select("a").get(currentChapIndex);
-        String firsturl=ele_firstchap.attr("href");
-        newUrl=context.getString(R.string.book_read_base2)+firsturl;
-        FirstTitle=ele_firstchap.text()+"(1)";
-    }
-
 
 }

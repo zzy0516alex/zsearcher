@@ -11,22 +11,18 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Point;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,19 +36,17 @@ import com.Z.NovelReader.Global.OnSettingChangeListener;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Threads.CatalogThread;
-import com.Z.NovelReader.Threads.ChapGetterThread;
-import com.Z.NovelReader.Threads.NovelThread;
+import com.Z.NovelReader.Threads.NovelSearchThread;
 import com.Z.NovelReader.Utils.Brightness;
-import com.Z.NovelReader.Utils.IOtxt;
+import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.ScreenSize;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.ViberateControl;
-import com.Z.NovelReader.myObjects.NovelCatalog;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
 import com.Z.NovelReader.myObjects.NovelChap;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static com.Z.NovelReader.Adapters.NovelViewAdapter.DNMod;
 import static com.Z.NovelReader.Adapters.NovelViewAdapter.DNMod.DAY_MOD;
@@ -90,7 +84,7 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
     private boolean is_scroll_stop=true;
     private String BookName;
     private String BookLink;
-    private NovelThread.TAG BookTag;
+    private NovelSearchThread.TAG BookTag;
     private int BookID;
     private int page_offset;
 
@@ -168,19 +162,23 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
 
     private void recoverCurrentChap(List<Novels> novels) {
         Novels recover_novel = novels.get(0);
-        String content= IOtxt.read_line(recover_novel.getBookName(),getExternalFilesDir(null));
-        catalog= IOtxt.read_catalog(recover_novel.getBookName(),getExternalFilesDir(null));
+        String content= FileIOUtils.read_line(recover_novel.getBookName(),getExternalFilesDir(null));
+        catalog= FileIOUtils.read_catalog("/ZsearchRes/BookContents/" + recover_novel.getBookName() + "_catalog.txt",
+                getExternalFilesDir(null));
         current_chap= BookShelfActivity.getNovelChap(content,
                 BookShelfActivity.getCurrentChapLink(
                         recover_novel.getCurrentChap(),catalog.getTitle(),catalog.getLink()));
         current_chap.setBookID(recover_novel.getId());
         current_chap.setBookName(recover_novel.getBookName());
         current_chap.setCurrent_chapter(recover_novel.getCurrentChap());
-        current_chap.setTag(recover_novel.getTag_in_TAG());
+        //notice need update
+        //current_chap.setTag(recover_novel.getTag_in_TAG());
+        page_offset=recover_novel.getOffset();
     }
 
     private void init_chapParams() {
-        catalog= IOtxt.read_catalog(current_chap.getBookName(),getExternalFilesDir(null));
+        catalog= FileIOUtils.read_catalog("/ZsearchRes/BookContents/" + current_chap.getBookName() + "_catalog.txt",
+                getExternalFilesDir(null));
         BookName=current_chap.getBookName();
         BookTag=current_chap.getTag();
         BookID=current_chap.getBookID();
@@ -195,10 +193,11 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
             public void onClick(View v) {
                 Animation animation = AnimationUtils.loadAnimation(activity, R.anim.rotate);
                 Refresh.startAnimation(animation);
-                CatalogThread catalogThread=new CatalogThread(BookLink,BookTag,true,false);
-                catalogThread.setOutputParams(BookName,getExternalFilesDir(null));
-                catalogThread.setHandler(chap_update_handler);
-                catalogThread.start();
+                //notice need update
+//                CatalogThread catalogThread=new CatalogThread(BookLink,BookTag,true,false);
+//                catalogThread.setOutputParams(BookName,getExternalFilesDir(null));
+//                catalogThread.setHandler(chap_update_handler);
+//                catalogThread.start();
             }
         });
     }
@@ -209,7 +208,7 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
             @Override
             public void handle(Message msg, int Success, int Fail) {
                 if (Success==1){
-                    catalog= IOtxt.read_catalog(BookName,getExternalFilesDir(null));
+                    catalog= FileIOUtils.read_catalog("/ZsearchRes/BookContents/" + BookName + "_catalog.txt",getExternalFilesDir(null));
                     booklistAdapter.updateList(catalog.getTitle());
                     settingChangeListener.onCatalogUpdate(catalog);
                     Refresh.clearAnimation();

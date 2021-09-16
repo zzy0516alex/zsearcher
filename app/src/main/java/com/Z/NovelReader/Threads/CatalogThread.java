@@ -3,8 +3,10 @@ package com.Z.NovelReader.Threads;
 import android.os.Handler;
 import android.os.Message;
 
-import com.Z.NovelReader.Utils.IOtxt;
-import com.Z.NovelReader.myObjects.NovelCatalog;
+import com.Z.NovelReader.Processors.CatalogProcessor;
+import com.Z.NovelReader.Utils.FileIOUtils;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
+import com.Z.NovelReader.myObjects.beans.NovelRequire;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -17,10 +19,10 @@ import java.util.ArrayList;
 
 public class CatalogThread extends Thread {
     private String url;
-    private NovelThread.TAG tag;
     private ArrayList<String> ChapList;
     private ArrayList<String> ChapLinkList;
     private NovelCatalog result;
+    private NovelRequire novelRequire;
     private boolean isOutput =false;
     private boolean isCallBack=false;
     private String BookName;
@@ -29,9 +31,9 @@ public class CatalogThread extends Thread {
     public static final int CATALOG_UPDATED=0;
     public static final int CATALOG_UPDATE_FAILED=1;
     private int reserve_count=0;
-    public CatalogThread(String url, NovelThread.TAG tag,boolean isOutput,boolean isCallBack) {
+    public CatalogThread(String url, NovelRequire novelRequire, boolean isOutput, boolean isCallBack) {
         this.url=url;
-        this.tag=tag;
+        this.novelRequire=novelRequire;
         this.isOutput =isOutput;//是否输出到文件
         this.isCallBack=isCallBack;//是否直接回调
     }
@@ -57,16 +59,7 @@ public class CatalogThread extends Thread {
                     .followRedirects(true)
                     .timeout(50000)
                     .ignoreContentType(true).get();
-            switch(tag){
-                case BiQuGe:
-                    processor1(document);
-                    break;
-                case SiDaMingZhu:
-                    processor2(document);
-                    break;
-                default:
-            }
-            result = new NovelCatalog(ChapList, ChapLinkList);
+            result = CatalogProcessor.getCatalog(document, novelRequire);
             if(!isOutput && isCallBack){
                 //返回结果
                 Message message=mHandler.obtainMessage();
@@ -75,7 +68,7 @@ public class CatalogThread extends Thread {
                 mHandler.sendMessage(message);
             }
         }catch (SocketTimeoutException e){
-            IOtxt.WriteErrReport(Dir,e,url);
+            FileIOUtils.WriteErrReport(Dir,e,url);
             if (isOutput) isOutput =false;
             if (mHandler!=null){
                 Message message = mHandler.obtainMessage();
@@ -85,7 +78,7 @@ public class CatalogThread extends Thread {
         }
         catch (Exception e) {
             e.printStackTrace();
-            IOtxt.WriteErrReport(Dir,e,url);
+            FileIOUtils.WriteErrReport(Dir,e,url);
             reserve_count++;
             if (reserve_count<3) {
                 try {
@@ -106,17 +99,10 @@ public class CatalogThread extends Thread {
                 }
             }
         }
+        //需要输出到文件
         if(isOutput){
             isOutput=false;
-            StringBuilder content=new StringBuilder();
-            result.completeCatalog(url,tag);
-            for (int i = 0; i < result.getSize(); i++) {
-                content.append(result.getTitle().get(i));
-                content.append('\n');
-                content.append(result.getLink().get(i));
-                if(i!=ChapList.size()-1)content.append('\n');
-            }
-            IOtxt.WriteCatalog(Dir,BookName,content.toString());
+            FileIOUtils.WriteCatalog(Dir,"/ZsearchRes/BookReserve/"+BookName+"/catalog.txt",result);
             //成功
             if (mHandler!=null){
                 Message message = mHandler.obtainMessage();
@@ -175,9 +161,8 @@ public class CatalogThread extends Thread {
                     case CatalogThread.CATALOG_UPDATED:
                         success_counter++;
                         break;
-                    case CatalogThread.CATALOG_UPDATE_FAILED: {
+                    case CatalogThread.CATALOG_UPDATE_FAILED:
                         fail_counter++;
-                    }
                     break;
                     default:
                 }

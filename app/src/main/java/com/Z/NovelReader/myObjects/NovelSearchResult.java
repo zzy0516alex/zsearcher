@@ -3,31 +3,33 @@ package com.Z.NovelReader.myObjects;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.Z.NovelReader.myObjects.beans.NovelSearchBean;
+
 import java.util.ArrayList;
 
 public class NovelSearchResult extends ViewModel {
-    private MutableLiveData<ArrayList<BookList>> mySearchResult;
+    private MutableLiveData<ArrayList<NovelSearchBean>> mySearchResult;
 
-    public MutableLiveData<ArrayList<BookList>> getMySearchResult() {
+    public MutableLiveData<ArrayList<NovelSearchBean>> getMySearchResult() {
         if (mySearchResult==null){
-            ArrayList<BookList> initList=new ArrayList<>();
+            ArrayList<NovelSearchBean> initList=new ArrayList<>();
             mySearchResult=new MutableLiveData<>();
             mySearchResult.setValue(initList);
         }
         return mySearchResult;
     }
-    public void addToResult(BookList bookList){
-        ArrayList<BookList> new_list=mySearchResult.getValue();
-        if (new_list!=null)new_list.add(bookList);
+    public void addToResult(NovelSearchBean novelSearchBean){
+        ArrayList<NovelSearchBean> new_list=mySearchResult.getValue();
+        if (new_list!=null)new_list.add(novelSearchBean);
         mySearchResult.setValue(new_list);
     }
-    public void addToResult(ArrayList<BookList> bookLists){
-        ArrayList<BookList> new_list=mySearchResult.getValue();
-        if (new_list!=null)new_list.addAll(bookLists);
+    public void addToResult(ArrayList<NovelSearchBean> bookList){
+        ArrayList<NovelSearchBean> new_list=mySearchResult.getValue();
+        if (new_list!=null)new_list.addAll(bookList);
         mySearchResult.setValue(new_list);
     }
     public void clear(){
-        ArrayList<BookList>emptyList=new ArrayList<>();
+        ArrayList<NovelSearchBean>emptyList=new ArrayList<>();
         mySearchResult.setValue(emptyList);
     }
 }

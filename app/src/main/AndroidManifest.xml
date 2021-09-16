@@ -52,16 +52,7 @@
         </activity>
         <activity android:name="com.Z.NovelReader.CatalogActivity" />
         <activity android:name="com.Z.NovelReader.NovelShowAcitivity" />
-        <activity android:name="com.Z.NovelReader.NovelActivity" />
-        <activity android:name="com.Z.NovelReader.MainActivity">
-
-            <!-- <intent-filter> -->
-            <!-- <action android:name="android.intent.action.MAIN" /> -->
-
-
-            <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
-            <!-- </intent-filter> -->
-        </activity>
+        <activity android:name="com.Z.NovelReader.NovelSearchActivity" />
     </application>
 
 </manifest>

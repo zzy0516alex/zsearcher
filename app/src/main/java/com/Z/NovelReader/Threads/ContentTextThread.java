@@ -5,7 +5,10 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.Z.NovelReader.Utils.IOtxt;
+import com.Z.NovelReader.NovelRoom.Novels;
+import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
+import com.Z.NovelReader.Utils.FileIOUtils;
+import com.Z.NovelReader.myObjects.beans.NovelRequire;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -16,29 +19,29 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ContentTextThread extends Thread {
     private String url;
     private File Dir;
     private String BookName;
-    private NovelThread.TAG tag;
-    private Context context;
+    private NovelRequire novelRequire;
+    private String content;
     int err_count=0;
+    boolean needWriteFile=true;
 
-    public ContentTextThread(String url,String book_name,File Dir) {
+    public ContentTextThread(String url,String book_name,File Dir,boolean needWriteFile) {
         this.url = url;
         this.Dir=Dir;
         this.BookName=book_name;
+        this.needWriteFile=needWriteFile;
     }
 
-    public void setTag(NovelThread.TAG tag) {
-        this.tag = tag;
+    public void setNovelRequire(NovelRequire novelRequire) {
+        this.novelRequire = novelRequire;
     }
 
-    public void setContext(Context context) {
-        this.context = context;
-    }
 
     @Override
     public void run() {
@@ -47,29 +50,45 @@ public class ContentTextThread extends Thread {
             Connection connect = Jsoup.connect(url);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
             Document document= connect.get();
-            String content = "";
-            switch(tag){
-                case BiQuGe:
-                    content=getContent1(document);
-                    break;
-                case SiDaMingZhu:
-                    content=getContent2(document);
-                    break;
-                default:
+            NovelRuleAnalyzer contentAnalyzer=new NovelRuleAnalyzer();
+            List<String> content_list;
+            if (novelRequire!=null)content_list = contentAnalyzer.getObjectFromElements(new Elements(document),
+                    novelRequire.getRuleContent().getContent());
+            else throw new RuntimeException("novel require is null");
+            if (content_list!=null) {
+                content=content_list.get(0);
+                if (needWriteFile)
+                    FileIOUtils.WriteTXT(Dir, "/ZsearchRes/BookReserve/" + BookName, content);
             }
-            IOtxt.WriteTXT(Dir,BookName,content);
         } catch (IOException e) {
             e.printStackTrace();
             Log.e("err","text save error");
             err_count++;
             if (err_count<3)run();
             else {
-                Looper.prepare();
-                Toast.makeText(context, "章节缓存失败", Toast.LENGTH_SHORT).show();
-                Looper.loop();
+                content="章节缓存出错:IO异常";
+                if (needWriteFile)
+                    FileIOUtils.WriteTXT(Dir,"/ZsearchRes/BookReserve/"+BookName,content);
             }
+        } catch (RuntimeException e){
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+            content="章节缓存出错:书源解析异常";
+            if (needWriteFile)
+                FileIOUtils.WriteTXT(Dir,"/ZsearchRes/BookReserve/"+BookName,content);
         }
 
+    }
+
+    public String getContent() {
+        try {
+            this.join();
+            return content;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public static String getContent1(Document document) {
@@ -100,28 +119,4 @@ public class ContentTextThread extends Thread {
         return text.toString();
     }
 
-    public void WriteTXT(String content){
-        File mk_txt=new File(Dir+"/ZsearchRes/BookContents/"+ BookName+".txt" );
-        FileOutputStream fot=null;
-        try {
-            fot=new FileOutputStream(mk_txt);
-        }catch (FileNotFoundException e){
-            e.printStackTrace();
-        }
-        try{
-            fot.write(content.getBytes());
-            fot.flush();
-        }catch (IOException e){
-            e.printStackTrace();
-        }finally {
-            if(fot!=null){
-                try {
-                    fot.close();
-                }catch (IOException e){
-                    e.printStackTrace();
-                }
-            }
-        }
-
-    }
 }

@@ -40,6 +40,12 @@ public class Brightness {
         window.setAttributes(layoutParams);
     }
 
+    /**
+     * 更改系统亮度
+     * @param context
+     * @param systemBrightness
+     * @return
+     */
     public static boolean setSystemScreenBrightness(Context context, int systemBrightness) {
         return Settings.System.putInt(context.getContentResolver(), Settings.System.SCREEN_BRIGHTNESS,systemBrightness);
     }

@@ -5,7 +5,7 @@ import android.os.Message;
 
 import androidx.annotation.NonNull;
 
-import com.Z.NovelReader.myObjects.NovelCatalog;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
 import com.Z.NovelReader.myObjects.NovelChap;
 
 import org.jsoup.Jsoup;
@@ -100,7 +100,7 @@ public class ChapGetterThread extends Thread {
 
     }
 
-    private void grabContent(Document document, NovelThread.TAG tag) {
+    private void grabContent(Document document, NovelSearchThread.TAG tag) {
         switch(tag){
             case BiQuGe:
                 chap_content=getContent1(document);

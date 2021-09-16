@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-import com.Z.NovelReader.Threads.NovelThread;
+import com.Z.NovelReader.Threads.NovelSearchThread;
 
 @Entity
 public class Novels {
@@ -19,8 +19,8 @@ public class Novels {
     private int CurrentChap;
     @ColumnInfo(name="book_link")
     private String BookLink;
-    @ColumnInfo(name = "tag")
-    private int tag;
+    @ColumnInfo(name = "source")
+    private int source;
     @ColumnInfo(name="offset")
     private int offset=3;
 
@@ -82,36 +82,37 @@ public class Novels {
         this.offset = offset;
     }
 
-    public void setTag_inTAG(NovelThread.TAG tag){
-        switch(tag){
-            case BiQuGe:
-                this.tag=0;
-                break;
-            case SiDaMingZhu:
-                this.tag=1;
-                break;
-            default:
-        }
-    }
-    public NovelThread.TAG getTag_in_TAG(){
-        NovelThread.TAG current_tag= NovelThread.TAG.BiQuGe;
-        switch(tag){
-            case 0:
-                current_tag= NovelThread.TAG.BiQuGe;
-                break;
-            case 1:
-                current_tag= NovelThread.TAG.SiDaMingZhu;
-                break;
-            default:
-        }
-        return current_tag;
+//    public void setTag_inTAG(NovelSearchThread.TAG tag){
+//        switch(tag){
+//            case BiQuGe:
+//                this.tag=0;
+//                break;
+//            case SiDaMingZhu:
+//                this.tag=1;
+//                break;
+//            default:
+//        }
+//    }
+//    public NovelSearchThread.TAG getTag_in_TAG(){
+//        NovelSearchThread.TAG current_tag= NovelSearchThread.TAG.BiQuGe;
+//        switch(tag){
+//            case 0:
+//                current_tag= NovelSearchThread.TAG.BiQuGe;
+//                break;
+//            case 1:
+//                current_tag= NovelSearchThread.TAG.SiDaMingZhu;
+//                break;
+//            default:
+//        }
+//        return current_tag;
+//    }
+
+
+    public int getSource() {
+        return source;
     }
 
-    public int getTag() {
-        return tag;
-    }
-
-    public void setTag(int tag) {
-        this.tag = tag;
+    public void setSource(int source) {
+        this.source = source;
     }
 }
