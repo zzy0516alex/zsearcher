@@ -118,6 +118,7 @@ public class NovelSearchThread extends Thread {
             Log.e("err","no data");
             if (message!=null)message.what=BOOK_SOURCE_DIABLED;
         } catch (Exception e) {
+            Log.e("novel search","书源解析错误："+novelRequire.getBookSourceName());
             e.printStackTrace();
         }
 

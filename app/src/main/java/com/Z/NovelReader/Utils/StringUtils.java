@@ -1,5 +1,10 @@
 package com.Z.NovelReader.Utils;
 
+import org.apache.commons.text.StringEscapeUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.safety.Whitelist;
+
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -119,5 +124,17 @@ public class StringUtils {
         Matcher m = pattern.matcher(str);
         // 如果正则匹配通过 m.matches() 方法返回 true ，反之 false
         return m.matches();
+    }
+
+    public static String styleHTML_to_styleTXT(String html){
+        Document document = Jsoup.parse(html);
+        Document.OutputSettings outputSettings = new Document.OutputSettings().prettyPrint(false);
+        document.outputSettings(outputSettings);
+        document.select("br").append("\\n\\n");
+        document.select("p").prepend("\\n\\n");
+        document.select("p").append("\\n\\n");
+        String newHtml = document.html().replaceAll("\\\\n", "\n");
+        String plainText = Jsoup.clean(newHtml, "", Whitelist.none(), outputSettings);
+        return StringEscapeUtils.unescapeHtml4(plainText.trim());
     }
 }

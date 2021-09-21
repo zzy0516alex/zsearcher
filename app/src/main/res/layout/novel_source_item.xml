@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ImageButton
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@mipmap/more_info"
+        android:background="#00000000"
+        android:id="@+id/more_info"
+        android:layout_centerVertical="true"/>
+    <TextView
+        android:layout_marginTop="20dp"
+        android:id="@+id/novel_source_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/more_info"
+        android:layout_marginStart="6dp"
+        android:layout_centerVertical="true"
+        android:text="书源1"
+        android:textColor="@color/black"
+        android:textSize="20sp"/>
+    <com.suke.widget.SwitchButton
+        android:layout_marginTop="20dp"
+        android:layout_width="45dp"
+        android:layout_height="27dp"
+        app:sb_checked_color="@color/DoderBlue"
+        android:id="@+id/novel_source_enable"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="20dp"
+        app:sb_show_indicator="false"/>
+</RelativeLayout>

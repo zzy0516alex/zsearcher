@@ -37,8 +37,7 @@
         android:layout_toRightOf="@id/next"
         android:id="@+id/zoom"
         android:layout_marginLeft="10dp"
-        android:layout_marginTop="25dp"
-
+        android:layout_centerVertical="true"
         android:maxHeight="3dp"
         android:minHeight="3dp"
         android:progressDrawable="@drawable/seek_bar_style2"
@@ -56,11 +55,11 @@
             android:id="@+id/web_refresh"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/refresh"
+            android:src="@mipmap/refresh_icon_white"
             android:layout_toRightOf="@id/catalog"
-            android:layout_marginTop="14dp"
+            android:layout_centerVertical="true"
             android:background="#00000000"
-            android:layout_marginLeft="10dp"/>
+            android:layout_marginLeft="15dp"/>
     </RelativeLayout>
 
     <ImageButton

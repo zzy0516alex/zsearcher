@@ -203,10 +203,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 //准备目录数据传入
                 Intent intent=new Intent(NovelShowAcitivity.this,CatalogActivity.class);
                 Bundle bundle_catalog=new Bundle();
-                bundle_catalog.putString("url",catalogUrl);
                 bundle_catalog.putString("currentTitle",currentTitle);
-                bundle_catalog.putStringArrayList("ChapList", (ArrayList<String>) ChapList);
-                bundle_catalog.putStringArrayList("ChapLinkList", (ArrayList<String>) ChapLinkList);
                 intent.putExtras(bundle_catalog);
                 startActivityForResult(intent,1);
             }
@@ -301,12 +298,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 }
             }
 
-//            @Override
-//            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-//
-//                return false;
-//            }
-
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                 //super.onReceivedSslError(view, handler, error);
@@ -323,10 +314,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         webSettings.setLoadWithOverviewMode(true);
         webSettings.setTextZoom(myProgress+150);
         webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
-//        webSettings.setAppCacheEnabled(false);
         webSettings.setDomStorageEnabled(true);
-//        webSettings.setMixedContentMode(
-//                WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
 
         //获取目录
         getCatalog();
@@ -397,13 +385,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
     public static void setBook_id(int book_id) {
         NovelShowAcitivity.book_id = book_id;
     }
-
-//    public static boolean getIsInShelf(){
-//        return isInShelf;
-//    }
-//    public static int getBook_id() {
-//        return book_id;
-//    }
 
     public String getBookName() {
         return BookName;

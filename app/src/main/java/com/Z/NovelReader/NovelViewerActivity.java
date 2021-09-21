@@ -39,7 +39,7 @@ import com.Z.NovelReader.Threads.CatalogThread;
 import com.Z.NovelReader.Threads.NovelSearchThread;
 import com.Z.NovelReader.Utils.Brightness;
 import com.Z.NovelReader.Utils.FileIOUtils;
-import com.Z.NovelReader.Utils.ScreenSize;
+import com.Z.NovelReader.Utils.ScreenUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.ViberateControl;
 import com.Z.NovelReader.myObjects.beans.NovelCatalog;
@@ -442,7 +442,6 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
             @Override
             public void onClick(View v) {
                 ViberateControl.Vibrate(activity,15);
-                BackToShelf.setImageResource(R.drawable.backarrow_onclick);
                 activity.onBackPressed();
             }
         });
@@ -469,7 +468,7 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
     @Override
     public void onScreenTouch(float x, float y) {
         float clickableArea_top=TopToolBar.getLayoutParams().height;
-        float clickableArea_bottom=ScreenSize.getScreenHeight(activity)-BottomToolBar.getLayoutParams().height;
+        float clickableArea_bottom= ScreenUtils.getScreenHeight(activity)-BottomToolBar.getLayoutParams().height;
         if (is_scroll_stop){
             if (!is_toolbar_visible) {
                 BottomToolBar.setVisibility(View.VISIBLE);

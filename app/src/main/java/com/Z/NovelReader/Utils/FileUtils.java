@@ -1,6 +1,7 @@
 package com.Z.NovelReader.Utils;
 
 import android.os.Environment;
+import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -19,6 +20,12 @@ public class FileUtils {
         return Environment.getExternalStorageDirectory().getAbsolutePath();
     }
 
+    /**
+     * 以加密形式输出文件.znr
+     * @param content 文件原始内容
+     * @param file_parent_path 文件存储路径
+     * @param filename 文件名
+     */
     public static void outputFile(String content,String file_parent_path,String filename){
         byte[] b_content=content.getBytes();//utf-8
         BufferedInputStream bis = null;
@@ -62,5 +69,36 @@ public class FileUtils {
                     e.printStackTrace();
                 }
         }
+    }
+
+    /**
+     * 删除文件夹及其下所有文件
+     * @param dir 文件夹
+     */
+    public static void deleteAllFiles(File dir) {
+        File[] files = dir.listFiles();
+        if (files != null)
+            for (File f : files) {
+                if (f.isDirectory()) { // 判断是否为文件夹
+                    deleteAllFiles(f);
+                    try {
+                        f.delete();
+                    } catch (Exception e) {
+                        Log.e("file util","删除文件失败");
+                        e.printStackTrace();
+                    }
+                } else {
+                    if (f.exists()) { // 判断是否存在
+                        deleteAllFiles(f);//file=null
+                        try {
+                            f.delete();
+                        } catch (Exception e) {
+                            Log.e("file util","删除文件失败");
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        dir.delete();//删除文件夹本身
     }
 }

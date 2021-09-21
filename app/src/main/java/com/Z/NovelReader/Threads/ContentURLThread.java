@@ -72,13 +72,6 @@ public class ContentURLThread extends Thread {
             Connection connect = Jsoup.connect(catalogURL);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
             Document document= connect.get();
-            //等待数据库查询结果
-            int timeout=0;
-            while (novelRequire==null && timeout<100){
-                sleep(1);
-                timeout++;
-            }
-            if (timeout>99)throw new TimeoutException();
 
             NovelCatalog catalog = CatalogProcessor.getCatalog(document, novelRequire);
 

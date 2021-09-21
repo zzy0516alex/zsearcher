@@ -81,7 +81,7 @@ public class FileIOUtils {
      * @return 文本
      */
     public static String read_line(String bookname,File Dir){
-        File txtDir=new File(Dir+"/ZsearchRes/BookContents/" + bookname + ".txt");
+        File txtDir=new File(Dir+"/ZsearchRes/BookReserve/" + bookname + "/content.txt");
         FileInputStream fis=null;
         StringBuilder sb = new StringBuilder("");
         try {

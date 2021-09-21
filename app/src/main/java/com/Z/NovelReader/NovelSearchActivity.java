@@ -121,7 +121,6 @@ public class NovelSearchActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ViberateControl.Vibrate(activity,15);
-                back.setImageResource(R.drawable.backarrow_onclick);
                 activity.onBackPressed();
             }
         });
@@ -162,11 +161,6 @@ public class NovelSearchActivity extends AppCompatActivity {
     }
 
     private void CreateSourcesFolder() {
-        //notice:need delete
-//        File Folder =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookCovers");
-//        if(!Folder.exists()){
-//            Folder.mkdir();
-//        }
         File Folder =new File(getExternalFilesDir(null)+"/ZsearchRes/","BookReserve");
         if(!Folder.exists()){
             Folder.mkdir();
@@ -389,10 +383,10 @@ public class NovelSearchActivity extends AppCompatActivity {
     }
 
     //跳转至novelshow界面
-    private void launchNovelShow(NovelCatalog newNovel) {
+    private void launchNovelShow(NovelCatalog newChapter) {
         Intent intent=new Intent(NovelSearchActivity.this, NovelShowAcitivity.class);
         Bundle bundle=new Bundle();
-        bundle.putSerializable("currentChap",newNovel);
+        bundle.putSerializable("currentChap",newChapter);
         bundle.putSerializable("currentBook",current_book);
         intent.putExtras(bundle);
         startActivity(intent);

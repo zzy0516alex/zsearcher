@@ -6,12 +6,16 @@ import androidx.appcompat.widget.Toolbar;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.Z.NovelReader.Adapters.BooklistAdapter;
 import com.Z.NovelReader.Threads.NovelSearchThread;
+import com.Z.NovelReader.Utils.FileIOUtils;
+import com.Z.NovelReader.myObjects.beans.NovelCatalog;
 
 import java.util.List;
 
@@ -19,8 +23,6 @@ import java.util.List;
 public class CatalogActivity extends AppCompatActivity {
 
     private ListView chapList;
-
-    private String url;
     private List<String> ChapList;
     private List<String>ChapLinkList;
     private String currentTitle;
@@ -37,7 +39,7 @@ public class CatalogActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);//左侧添加一个默认的返回图标
         getSupportActionBar().setHomeButtonEnabled(true); //设置返回键可用
         getSupportActionBar().setDisplayShowTitleEnabled(false);//隐藏标题
-        toolbar.setNavigationIcon(R.mipmap.backarrow);       //加载图标
+        toolbar.setNavigationIcon(R.mipmap.back_icon_white);       //加载图标
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -49,9 +51,8 @@ public class CatalogActivity extends AppCompatActivity {
         //获取数据
         final Bundle bundle=this.getIntent().getExtras();
         assert bundle != null;
-        url=bundle.getString("url");
-        ChapList=bundle.getStringArrayList("ChapList");
-        ChapLinkList=bundle.getStringArrayList("ChapLinkList");
+        //不能用bundle传递大容量数据，如超长章节的目录
+        getCatalog();
         currentTitle=bundle.getString("currentTitle");
 
         //加载目录
@@ -81,5 +82,20 @@ public class CatalogActivity extends AppCompatActivity {
                 CatalogActivity.this.finish();
             }
         });
+    }
+
+    /**
+     * 从临时目录中读取目录数据，初始化章节信息
+     */
+    private void getCatalog() {
+        NovelCatalog result_back = FileIOUtils.read_catalog("/ZsearchRes/temp_catalog.txt",
+                context.getExternalFilesDir(null));
+        if (!result_back.isEmpty()) {
+            ChapList = result_back.getTitle();
+            ChapLinkList = result_back.getLink();
+        }else{
+            Toast.makeText(this, "目录读取失败", Toast.LENGTH_SHORT).show();
+            Log.d("novel show","目录读取失败");
+        }
     }
 }

@@ -113,28 +113,7 @@ public class CatalogThread extends Thread {
 
     }
 
-    private void processor1(Document document) {
-        Elements elements=document.select("div.box_con");
-        Elements titles=elements.get(1).select("a");
-        ChapList= (ArrayList<String>) titles.eachText();
-        ChapLinkList= (ArrayList<String>) titles.eachAttr("href");
-    }
-    private void processor2(Document document){
-        Elements element=document.select("div.info_mulu");
-        Elements ele_chaplist=element.get(0).select("a");
-        ArrayList<String> chaps= (ArrayList<String>) ele_chaplist.eachText();
-        ArrayList<String>chaplinks= (ArrayList<String>) ele_chaplist.eachAttr("href");
-        ArrayList<String>link_adjusted=new ArrayList<>();
-        for (String link:chaplinks) {
-            link_adjusted.add(link.replace("/",""));
-        }
-        for (int i = 0; i < chaps.size(); i++) {
-            ChapList.add(chaps.get(i)+"(1)");
-            ChapList.add(chaps.get(i)+"(2)");
-            ChapLinkList.add(link_adjusted.get(i));
-            ChapLinkList.add(link_adjusted.get(i).replace(".html","_2.html"));
-        }
-    }
+
     public static class CatalogUpdaterHandler<T> extends Handler {
         private final WeakReference<T> mActivity;
         private int fail_counter=0;

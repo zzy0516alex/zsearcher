@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="NS_enable_btn" type="id"/>
+    <item name="NS_info_btn" type="id"/>
+</resources>

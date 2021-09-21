@@ -1,12 +1,17 @@
 package com.Z.NovelReader;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -24,6 +29,7 @@ import android.widget.TextView;
 
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.Threads.NovelSourceGetterThread;
+import com.Z.NovelReader.Utils.ScreenUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.StorageUtils;
 import com.z.fileselectorlib.FileSelectorSettings;
@@ -40,6 +46,7 @@ public class SettingsActivity extends AppCompatActivity {
     private Window window;
     private RelativeLayout StoragePathChange;
     private RelativeLayout SetNovelSource;
+    private PopupWindow PathSelector;
     private SharedPreferences myInfo;
     private NovelSourceDBTools sourceDBTools;
     private String DownloadPath;
@@ -52,17 +59,19 @@ public class SettingsActivity extends AppCompatActivity {
 
         activity=SettingsActivity.this;
         context=this;
-        quit=findViewById(R.id.quit_settings);
         myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
         DownloadPath=myInfo.getString("DownloadPath","/download/ZsearcherDownloads");
         sourceDBTools=new NovelSourceDBTools(context);
 
+        //初始化退出按钮
         initQuitButton();
 
+        //初始化存储路径选择对话框
         initStoragePathSelector();
 
         initSetUpNovelSources();
 
+        //初始化顶部状态栏
         initStatusBar();
     }
 
@@ -71,15 +80,15 @@ public class SettingsActivity extends AppCompatActivity {
         SetNovelSource.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sourceDBTools.DeleteAllSource();
-                NovelSourceGetterThread t1=new NovelSourceGetterThread(context,"http://www.yckceo.com/d/urU8x");//笔趣阁
-                NovelSourceGetterThread t2=new NovelSourceGetterThread(context,"http://www.yckceo.com/d/2jdqx");//独步小说
-                NovelSourceGetterThread t3=new NovelSourceGetterThread(context,"http://yck.mumuceo.com/d/f1HG3");//E小说
-                t1.start();
-                t2.start();
-                t3.start();
-
-                Log.d("source","书源已添加");
+//                sourceDBTools.DeleteAllSource();
+//                NovelSourceGetterThread t1=new NovelSourceGetterThread(context,"http://www.yckceo.com/d/urU8x");//笔趣阁
+//                NovelSourceGetterThread t2=new NovelSourceGetterThread(context,"http://www.yckceo.com/d/2jdqx");//独步小说
+//                NovelSourceGetterThread t3=new NovelSourceGetterThread(context,"http://yck.mumuceo.com/d/f1HG3");//E小说
+//                t1.start();
+//                t2.start();
+//                t3.start();
+                startActivity(new Intent(SettingsActivity.this,
+                        NovelSourceManageActivity.class));
             }
         });
     }
@@ -90,40 +99,70 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 DownloadPath=myInfo.getString("DownloadPath","/download/ZsearcherDownloads");
+                //总布局
                 RelativeLayout PathSelectorLayout= (RelativeLayout) LayoutInflater.from(activity).inflate(R.layout.storage_path_select_popup,null);
+                //初始化视图
                 TextView currentPath=PathSelectorLayout.findViewById(R.id.current_path);
                 ProgressBar storageAvailable=PathSelectorLayout.findViewById(R.id.storage);
-                TextView SizeAvailable=PathSelectorLayout.findViewById(R.id.available);
-                TextView SizeTotal=PathSelectorLayout.findViewById(R.id.total);
+                TextView SpaceTotal=PathSelectorLayout.findViewById(R.id.total);
                 Button change=PathSelectorLayout.findViewById(R.id.change_path);
+                //第一行标题
                 currentPath.setText("根目录"+DownloadPath);
-                SizeAvailable.setText(StorageUtils.getFileSize(StorageUtils.getROMAvailableSize(context)));
-                SizeTotal.setText(StorageUtils.getFileSize(StorageUtils.getROMTotalSize(context)));
-                float progress=StorageUtils.getROMAvailableSize(context)*100.0f/StorageUtils.getROMTotalSize(context);
+                //第二行存储容量
+                long space_available=StorageUtils.getROMAvailableSize(context);
+                long space_total=StorageUtils.getROMTotalSize(context);
+                String storage_info=String.format(getString(R.string.storage_info),
+                        StorageUtils.getFileSize(space_available),
+                        StorageUtils.getFileSize(space_total));
+                SpaceTotal.setText(storage_info);
+                float progress=(space_total-space_available)*100.0f/StorageUtils.getROMTotalSize(context);
                 storageAvailable.setProgress((int) progress);
-                final PopupWindow PathSelector=new PopupWindow(PathSelectorLayout,780, ViewGroup.LayoutParams.WRAP_CONTENT);
+                //弹窗设置
+                PathSelector=new PopupWindow(PathSelectorLayout,780, ViewGroup.LayoutParams.WRAP_CONTENT);
                 PathSelector.setFocusable(true);
                 PathSelector.setBackgroundDrawable(getDrawable(R.drawable.popwindow_white));
-                BackGroundAlpha(0.6f);
+                ScreenUtils.BackGroundAlpha(activity,0.6f);
                 PathSelector.showAtLocation(activity.getWindow().getDecorView(), Gravity.CENTER, 0, 0);
                 PathSelector.setOnDismissListener(new PopupWindow.OnDismissListener() {
                     @Override
                     public void onDismiss() {
-                        BackGroundAlpha(1.0f);
+                        ScreenUtils.BackGroundAlpha(activity,1.0f);
                     }
                 });
+                //第三行按键设置
                 change.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        showFileSelector();
-                        PathSelector.dismiss();
+                        if (isStoragePermissionGranted()) {
+                            showFileSelector();
+                            PathSelector.dismiss();
+                        }
                     }
                 });
             }
         });
     }
 
+    private boolean isStoragePermissionGranted() {
+        int readPermissionCheck = ContextCompat.checkSelfPermission(context,
+                Manifest.permission.READ_EXTERNAL_STORAGE);
+        int writePermissionCheck = ContextCompat.checkSelfPermission(context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (readPermissionCheck == PackageManager.PERMISSION_GRANTED
+                && writePermissionCheck == PackageManager.PERMISSION_GRANTED) {
+            Log.v("storage setting", "Permission is granted");
+            return true;
+        } else {
+            Log.v("storage setting", "Permission is revoked");
+            ActivityCompat.requestPermissions(activity, new String[]{
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            return false;
+        }
+    }
+
     private void initQuitButton() {
+        quit=findViewById(R.id.quit_settings);
         quit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -146,6 +185,16 @@ public class SettingsActivity extends AppCompatActivity {
                 SharedPreferences.Editor editor = myInfo.edit();
                 editor.putString("DownloadPath", path).apply();
             }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
+            //权限重新允许
+            showFileSelector();
+            PathSelector.dismiss();
         }
     }
 
@@ -180,17 +229,16 @@ public class SettingsActivity extends AppCompatActivity {
                 .show(SettingsActivity.this);
     }
 
-    public void BackGroundAlpha(float f) {
-        WindowManager.LayoutParams layoutParams = activity.getWindow().getAttributes();
-        layoutParams.alpha = f;
-        activity.getWindow().setAttributes(layoutParams);
-    }
+//    public void BackGroundAlpha(float f) {
+//        WindowManager.LayoutParams layoutParams = activity.getWindow().getAttributes();
+//        layoutParams.alpha = f;
+//        activity.getWindow().setAttributes(layoutParams);
+//    }
 
 
     private void initStatusBar() {
         window= this.getWindow();
-        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN); //显示状态栏
-        window.setStatusBarColor(getResources().getColor(R.color.white));
-        StatusBarUtil.setStatusBarDarkTheme(this,true);
+        StatusBarUtil.setStatusBarTransparent(window);
+        StatusBarUtil.setStatusBarDarkTheme(activity,true);
     }
 }

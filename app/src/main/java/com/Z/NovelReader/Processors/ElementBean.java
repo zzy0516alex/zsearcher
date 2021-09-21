@@ -6,7 +6,7 @@ public class ElementBean {
     private NovelRuleAnalyzer.RuleType type;
     private String ruleContent;//js中的label
     private List<Integer> exclusions;//需要剔除的元素索引
-    private int element_index=-1;//同名元素索引
+    private int element_index=9999;//同名元素索引
     private String attr = "";
     private String bound = ".";//为rulecontent添加结尾符，如：#
     private String[] replacement=new String[2];
@@ -72,7 +72,7 @@ public class ElementBean {
     }
 
     public boolean hasIndex(){
-        return element_index!=-1;
+        return element_index!=9999;
     }
 
     public boolean hasReplacement(){

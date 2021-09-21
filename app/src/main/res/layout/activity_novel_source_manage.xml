@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".NovelSourceManageActivity"
+    android:background="@color/white"
+    android:layout_marginTop="35dp">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="@color/white"
+        android:id="@+id/NSM_top">
+        <ImageButton
+            android:id="@+id/quit_NSM"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/back_icon_black"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="15dp"
+            android:background="#00000000"/>
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/novel_source_icon"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@+id/NSM_title"
+            android:layout_marginEnd="8dp"/>
+        <TextView
+            android:id="@+id/NSM_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="书源管理"
+            android:textColor="@color/black"
+            android:textSize="20sp"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true"/>
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/novel_manage_btn"
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="15dp"
+            android:id="@+id/NSM_manage"/>
+    </RelativeLayout>
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/NSM_top"
+        android:id="@+id/novel_source_list" />
+
+</RelativeLayout>

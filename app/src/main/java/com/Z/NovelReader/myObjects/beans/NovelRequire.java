@@ -114,4 +114,23 @@ public class NovelRequire {
     public static NovelRequire getNovelRequireBean(String json){
         return new Gson().fromJson(json, NovelRequire[].class)[0];
     }
+
+    @Override
+    public String toString() {
+        return "书源ID：" + id +
+                "\n 名称：" + bookSourceName +
+                "\n 网址：" + bookSourceUrl +
+                "\n 书籍封面：" +ruleBookInfo.getCoverUrl() +
+                "\n 搜索规则：" +
+                "\n    结果列表：" + ruleSearch.getBookList() +
+                "\n    书名：" + ruleSearch.getName() +
+                "\n    作者：" + ruleSearch.getAuthor() +
+                "\n 目录规则：" +
+                "\n    章节列表：" + ruleToc.getChapterList() +
+                "\n    章节名称：" + ruleToc.getChapterName() +
+                "\n    章节连接：" + ruleToc.getChapterUrl() +
+                "\n    下个目录：" + ruleToc.getNextTocUrl() +
+                "\n 内容规则：" + ruleContent.getContent()
+                ;
+    }
 }

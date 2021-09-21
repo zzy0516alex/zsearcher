@@ -39,6 +39,10 @@ dependencies {
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'com.github.zzy0516alex:FileSelectorRelease:v3.0'
     implementation 'com.google.code.gson:gson:2.8.6'
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-text
+    implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+    //switch button
+    implementation 'com.github.zcweng:switch-button:0.0.3@aar'
 
     def room_version = "2.2.5"
 

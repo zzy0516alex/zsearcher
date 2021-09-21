@@ -40,17 +40,10 @@
         android:layout_marginEnd="15dp"
         android:id="@+id/storage_info">
         <TextView
-            android:id="@+id/available"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="可用：60GB"
-            android:textSize="12sp"
-            android:textColor="#DCDCDC" />
-        <TextView
             android:id="@+id/total"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="总共：60GB"
+            android:text="@string/storage_info"
             android:textSize="12sp"
             android:textColor="#DCDCDC"
             android:layout_alignParentEnd="true"/>
@@ -67,7 +60,7 @@
         android:layout_height="wrap_content"
         android:id="@+id/change_path"
         android:layout_below="@+id/separator_for_storage"
-        android:background="@drawable/back_btn_white"
+        android:background="@drawable/square_btn_white"
         android:text="更改"
         android:textColor="@color/DoderBlue"/>
 

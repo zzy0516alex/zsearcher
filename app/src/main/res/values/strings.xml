@@ -1,7 +1,4 @@
 <resources>
     <string name="app_name">Zsearcher</string>
-    <!--    <string name="book_search_url1">https://www.biquge.info/modules/article/search.php?searchkey=</string>-->
-    <string name="book_search_base1">https://www.b5200.net</string>
-    <string name="book_search_base2">https://www.sidamingzhu.org</string>
-    <string name="book_read_base2">"https://m.sidamingzhu.org"</string>
+    <string name="storage_info">剩余：%1$s / 总共：%2$s</string>
 </resources>

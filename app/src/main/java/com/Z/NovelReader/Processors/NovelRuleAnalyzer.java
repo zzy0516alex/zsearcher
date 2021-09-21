@@ -243,12 +243,10 @@ public class NovelRuleAnalyzer {
                     case HTML:{
                         StringBuilder content=new StringBuilder();
                         for (Element para : selectedElements.elements) {
-                            content.append("    ");
-                            content.append(para.text());
-                            content.append("\n");
-                            content.append("\n");
+                            content.append(para.html());
                         }
-                        object.add(getReplacedItem(bean,content.toString()));
+                        String txt = StringUtils.styleHTML_to_styleTXT(content.toString());
+                        object.add(getReplacedItem(bean,txt));
                     }
                         break;
                     default:{
@@ -286,7 +284,7 @@ public class NovelRuleAnalyzer {
         if (bean.hasExclusions() && elements.size()!=0)
             elements=getElementsAfterExclusion(bean.getExclusions(),elements);
         if (bean.hasIndex() && elements.size()!=0)
-            elements=new Elements(elements.get(bean.getElement_index()));
+            elements=getElementsByIndex(bean.getElement_index(),elements);
         return elements;
     }
     private Elements getSelectedElements(Element element, ElementBean bean) {
@@ -300,6 +298,14 @@ public class NovelRuleAnalyzer {
             elementList.add(elements.get(i));
         }
         return new Elements(elementList);
+    }
+    private Elements getElementsByIndex(int index,Elements elements){
+        if (index>=0){
+            return new Elements(elements.get(index));
+        }else {
+            int i=elements.size()+index;
+            return new Elements(elements.get(i));
+        }
     }
 
     class SelectedElements{
