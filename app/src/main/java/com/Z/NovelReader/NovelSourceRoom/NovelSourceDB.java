@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase;
 
 import com.Z.NovelReader.myObjects.beans.NovelRequire;
 
-@Database(entities = {NovelRequire.class},version = 1,exportSchema = false)
+@Database(entities = {NovelRequire.class},version = 2,exportSchema = false)
 public abstract class NovelSourceDB extends RoomDatabase {
     private static NovelSourceDB SOURCE_DATABASE;
     public static synchronized NovelSourceDB getDataBase(Context context){

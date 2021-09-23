@@ -1,6 +1,5 @@
 package com.Z.NovelReader;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,10 +13,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.http.SslError;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -25,7 +21,6 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.webkit.SslErrorHandler;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -48,9 +43,7 @@ import com.Z.NovelReader.myObjects.beans.NovelRequire;
 import com.Z.NovelReader.myObjects.beans.NovelSearchBean;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 import static java.lang.Thread.sleep;
 
@@ -75,6 +68,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
     String nextUrl;
     String pastUrl;
     String catalogUrl;//书籍目录链接
+    String infoUrl;//书籍信息页链接
     String currentTitle;//当前章节标题
     String BookName;
     int sourceID;//书源编号
@@ -102,7 +96,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
         if (currentChap!=null && currentBook!=null) {
             currentURL = currentChap.getLink().get(0);
             currentTitle = currentChap.getTitle().get(0);
-            catalogUrl = currentBook.getBookLink();
+            catalogUrl = currentBook.getBookCatalogLink();
+            infoUrl = currentBook.getBookInfoLink();
             sourceID = currentBook.getSource();
             BookName= currentBook.getBookNameWithoutWriter();
         }else {
@@ -409,7 +404,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
                             //TODO: add to shelf
                             isInShelf = true;
                             //插入数据库
-                            Novels novel = new Novels(BookName, ttlChap, currentChap, catalogUrl);
+                            Novels novel = new Novels(BookName, ttlChap, currentChap, catalogUrl,infoUrl);
                             novel.setSource(sourceID);
                             novelDBTools.insertNovels(novel);
                             //新建文件夹
@@ -469,7 +464,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
     }
 
     private void update_bookshelfINFO(){
-            Novels novel=new Novels(BookName,ttlChap,currentChap,catalogUrl);
+            Novels novel=new Novels(BookName,ttlChap,currentChap,catalogUrl,infoUrl);
             novel.setId(book_id);
             novelDBTools.updateNovels(novel);
             ContentTextThread t=new ContentTextThread(currentURL,BookName,

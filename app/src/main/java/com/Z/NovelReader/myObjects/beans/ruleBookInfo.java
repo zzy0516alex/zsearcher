@@ -12,6 +12,9 @@ public class ruleBookInfo {
     @ColumnInfo(name = "Info_introduction")
     private String intro;
 
+    @ColumnInfo(name = "Info_tocUrl")
+    private String tocUrl;
+
     public String getCoverUrl() {
         return coverUrl;
     }
@@ -26,5 +29,13 @@ public class ruleBookInfo {
 
     public void setIntro(String intro) {
         this.intro = intro;
+    }
+
+    public String getTocUrl() {
+        return tocUrl;
+    }
+
+    public void setTocUrl(String tocUrl) {
+        this.tocUrl = tocUrl;
     }
 }

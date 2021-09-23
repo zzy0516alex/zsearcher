@@ -18,7 +18,7 @@
         android:layout_height="40dp"
         android:id="@+id/past"
         android:text="上一章"
-        android:background="@drawable/btn2"
+        android:background="@drawable/skyblue_btn"
         android:layout_marginLeft="10dp"
         android:layout_marginTop="10dp"
         android:layout_marginBottom="10dp"/>
@@ -27,7 +27,7 @@
         android:layout_height="40dp"
         android:id="@+id/next"
         android:text="下一章"
-        android:background="@drawable/btn2"
+        android:background="@drawable/skyblue_btn"
         android:layout_toRightOf="@+id/past"
         android:layout_marginLeft="10dp"
         android:layout_marginTop="10dp"/>
@@ -47,7 +47,7 @@
         android:layout_height="40dp"
         android:id="@+id/catalog"
         android:text="目录"
-        android:background="@drawable/btn2"
+        android:background="@drawable/skyblue_btn"
         android:layout_toEndOf="@+id/zoom"
         android:layout_marginTop="10dp"
         />

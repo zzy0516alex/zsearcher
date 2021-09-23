@@ -1,19 +1,18 @@
 package com.Z.NovelReader.myObjects.beans;
 
-import com.Z.NovelReader.Threads.NovelSearchThread;
-
 import java.io.Serializable;
 
 public class NovelSearchBean implements Serializable {
     private String BookName;
     private String writer;
-    private String BookLink;
+    private String BookInfoLink;
+    private String BookCatalogLink;
     private int source;//书源编号
 
-    public NovelSearchBean(String bookName, String writer, String bookLink) {
+    public NovelSearchBean(String bookName, String writer, String bookInfoLink) {
         BookName = bookName;
         this.writer = writer;
-        BookLink = bookLink;
+        BookInfoLink = bookInfoLink;
     }
 
     public NovelSearchBean(String bookName) {
@@ -33,12 +32,12 @@ public class NovelSearchBean implements Serializable {
         BookName = bookName;
     }
 
-    public String getBookLink() {
-        return BookLink;
+    public String getBookInfoLink() {
+        return BookInfoLink;
     }
 
-    public void setBookLink(String bookLink) {
-        BookLink = bookLink;
+    public void setBookInfoLink(String bookInfoLink) {
+        BookInfoLink = bookInfoLink;
     }
 
     public void setWriter(String writer) {
@@ -53,12 +52,20 @@ public class NovelSearchBean implements Serializable {
         this.source = source;
     }
 
+    public String getBookCatalogLink() {
+        return BookCatalogLink;
+    }
+
+    public void setBookCatalogLink(String bookCatalogLink) {
+        BookCatalogLink = bookCatalogLink;
+    }
+
     @Override
     public String toString() {
         return "NovelSearchBean{" +
                 "BookName='" + BookName + '\'' +
                 ", writer='" + writer + '\'' +
-                ", BookLink='" + BookLink + '\'' +
+                ", BookLink='" + BookInfoLink + '\'' +
                 ", source=" + source +
                 '}';
     }

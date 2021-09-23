@@ -10,6 +10,7 @@ public class ElementBean {
     private String attr = "";
     private String bound = ".";//为rulecontent添加结尾符，如：#
     private String[] replacement=new String[2];
+    private boolean need_advanced_match = false;// 当存在##[patten1]##[patten2]###时，且此时bean不是匹配element的类型，为真
 
     public NovelRuleAnalyzer.RuleType getType() {
         return type;
@@ -78,5 +79,13 @@ public class ElementBean {
     public boolean hasReplacement(){
         if (replacement==null||replacement[0]==null)return false;
         return !"".equals(replacement[0]);
+    }
+
+    public boolean isNeed_advanced_match() {
+        return need_advanced_match;
+    }
+
+    public void setNeed_advanced_match(boolean need_advanced_match) {
+        this.need_advanced_match = need_advanced_match;
     }
 }

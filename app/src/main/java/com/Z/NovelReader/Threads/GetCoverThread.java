@@ -1,10 +1,8 @@
 package com.Z.NovelReader.Threads;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 
 import com.Z.NovelReader.NovelRoom.Novels;
-import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.myObjects.beans.NovelRequire;
@@ -29,7 +27,7 @@ public class GetCoverThread extends Thread {
     public GetCoverThread(Novels novel,NovelRequire novelRequire, File dir) {
         this.BookName=novel.getBookName();
         this.Dir=dir;
-        this.infoPageURL=novel.getBookLink();
+        this.infoPageURL=novel.getBookCatalogLink();
         this.novelRequire=novelRequire;
     }
 

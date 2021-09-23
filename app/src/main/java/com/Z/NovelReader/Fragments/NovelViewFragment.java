@@ -28,6 +28,7 @@ import com.Z.NovelReader.Global.OnSettingChangeListener;
 import com.Z.NovelReader.Global.RecyclerViewItemTouchListener;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
+import com.Z.NovelReader.Processors.BookListProcessor;
 import com.Z.NovelReader.R;
 import com.Z.NovelReader.Threads.CatalogThread;
 import com.Z.NovelReader.Threads.ChapGetterThread;
@@ -368,7 +369,8 @@ public class NovelViewFragment extends NovelViewBasicFragment implements OnSetti
     }
 
     private void SaveCurrentLine() {
-        Novels novel=new Novels(BookName,catalog.getSize(),current_chap,BookLink);
+        //todo booklink
+        Novels novel=new Novels(BookName,catalog.getSize(),current_chap,BookLink, BookLink);
         novel.setId(BookID);
         novel.setOffset(offset_to_save);
         //notice need update

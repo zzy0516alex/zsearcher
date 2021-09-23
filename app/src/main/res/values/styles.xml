@@ -16,7 +16,7 @@
         </attr>
     </declare-styleable>
     <style
-        name="WaitDialog"
+        name="WaitDialog_white"
         parent="@android:style/Theme.Dialog">
         <item name="android:windowFrame">@null</item><!--边框-->
         <item name="android:windowIsFloating">true</item><!--是否浮现在activity之上-->
@@ -27,7 +27,7 @@
         <item name="android:backgroundDimAmount">0.6</item>
     </style>
     <style
-        name="WaitDialog2"
+        name="WaitDialog_black"
         parent="@android:style/Theme.Dialog">
         <item name="android:windowFrame">@null</item><!--边框-->
         <item name="android:windowIsFloating">true</item><!--是否浮现在activity之上-->

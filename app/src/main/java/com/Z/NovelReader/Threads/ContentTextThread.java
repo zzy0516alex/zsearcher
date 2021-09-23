@@ -55,10 +55,13 @@ public class ContentTextThread extends Thread {
             if (novelRequire!=null)content_list = contentAnalyzer.getObjectFromElements(new Elements(document),
                     novelRequire.getRuleContent().getContent());
             else throw new RuntimeException("novel require is null");
-            if (content_list!=null) {
+            if (content_list!=null && content_list.size()!=0) {
                 content=content_list.get(0);
                 if (needWriteFile)
                     FileIOUtils.WriteTXT(Dir, "/ZsearchRes/BookReserve/" + BookName, content);
+            }else if (needWriteFile){
+                content = "章节缓存出错:未获取到文本";
+                FileIOUtils.WriteTXT(Dir, "/ZsearchRes/BookReserve/" + BookName, content);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -66,7 +69,7 @@ public class ContentTextThread extends Thread {
             err_count++;
             if (err_count<3)run();
             else {
-                content="章节缓存出错:IO异常";
+                content="章节缓存出错:网络异常";
                 if (needWriteFile)
                     FileIOUtils.WriteTXT(Dir,"/ZsearchRes/BookReserve/"+BookName,content);
             }

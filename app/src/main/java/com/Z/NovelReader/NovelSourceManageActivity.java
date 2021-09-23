@@ -17,33 +17,43 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.Z.NovelReader.Adapters.NovelSourceAdapter;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceViewModel;
+import com.Z.NovelReader.Threads.NovelSourceGetterThread;
 import com.Z.NovelReader.Utils.ScreenUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.myObjects.beans.NovelRequire;
 import com.Z.NovelReader.views.KeyboardPopupWindow;
+import com.Z.NovelReader.views.WaitDialog;
 
 import java.util.List;
 
 public class NovelSourceManageActivity extends AppCompatActivity {
 
+    //views
     private Window window;
     private ListView lv_novelSourceList;
     private ImageButton im_manage;
     private PopupWindow manageOptions;
+    private WaitDialog waitDialog;
+    //data sources
     private NovelSourceAdapter adapter;
     private NovelSourceDBTools sourceDBTools;//书源数据库DAO
     private NovelSourceViewModel novelSourceViewModel;//书源数据维护
     private List<NovelRequire> novelRequireList;//书源列表
+    //thread & handler
+    private NovelSourceGetterThread.NSGetterHandler handler;
+    //basic paras
     private Context context;
     private Activity activity;
 
@@ -57,8 +67,31 @@ public class NovelSourceManageActivity extends AppCompatActivity {
         //view 初始化
         lv_novelSourceList = findViewById(R.id.novel_source_list);
         im_manage = findViewById(R.id.NSM_manage);
+        initWaitView();
         //界面初始化
         initStatusBar();
+        //init handler
+        handler = new NovelSourceGetterThread.NSGetterHandler(new NovelSourceGetterThread.NSGetterListener() {
+            @Override
+            public void onSuccess() {
+                if (waitDialog!=null)waitDialog.dismiss();
+                Toast.makeText(context, "书源添加完成", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(int error_code) {
+                if (waitDialog!=null)waitDialog.dismiss();
+                switch(error_code){
+                    case NovelSourceGetterThread.NO_INTERNET:
+                        Toast.makeText(context, "无网络", Toast.LENGTH_SHORT).show();
+                        break;
+                    case NovelSourceGetterThread.SOURCE_TYPE_NOT_JSON:
+                        Toast.makeText(context, "书源链接无效:不是json", Toast.LENGTH_SHORT).show();
+                        break;
+                    default:
+                }
+            }
+        });
         //书源数据库DAO初始化
         sourceDBTools = new NovelSourceDBTools(this);
         //初始化view model，启动observer
@@ -112,10 +145,11 @@ public class NovelSourceManageActivity extends AppCompatActivity {
         manageOptions.setBackgroundDrawable(ContextCompat.getDrawable(context,R.drawable.popwindow_white));
         manageOptions.showAsDropDown(im_manage,-layout.getMeasuredWidth() + im_manage.getWidth(),15);
         //点击事件
+        //网络导入
         ll_internet_import.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                KeyboardPopupWindow popWiw = new KeyboardPopupWindow(context,R.layout.edit_keyboard,true);
+                final KeyboardPopupWindow popWiw = new KeyboardPopupWindow(context,R.layout.edit_keyboard,true);
                 popWiw.setInputMethodMode(PopupWindow.INPUT_METHOD_NEEDED);
                 popWiw.setFocusable(true);
                 //根据软键盘调整大小
@@ -125,11 +159,27 @@ public class NovelSourceManageActivity extends AppCompatActivity {
                 popWiw.setOnDismissListener(new PopupWindow.OnDismissListener() {
                     @Override
                     public void onDismiss() {
-                        Log.d("edit_keyboard","dismiss");
                         InputMethodManager im = (InputMethodManager) context
                                 .getSystemService(Context.INPUT_METHOD_SERVICE);
                         im.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
                         manageOptions.dismiss();
+                    }
+                });
+                ImageButton imb_commit = popWiw.getContentView().findViewById(R.id.ITIM_link_commit);
+                final EditText edt_input = popWiw.getContentView().findViewById(R.id.ITIM_link_input);
+                imb_commit.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String link = edt_input.getText().toString();
+                        if ("".equals(link) || !link.contains("http")){
+                            Toast.makeText(activity, "错误的链接", Toast.LENGTH_SHORT).show();
+                        }else {
+                            NovelSourceGetterThread sourceGetterThread=new NovelSourceGetterThread(context,link);
+                            sourceGetterThread.setHandler(handler);
+                            sourceGetterThread.start();
+                            popWiw.dismiss();
+                            waitDialog.show();
+                        }
                     }
                 });
             }
@@ -165,5 +215,9 @@ public class NovelSourceManageActivity extends AppCompatActivity {
         window= this.getWindow();
         StatusBarUtil.setStatusBarTransparent(window);
         StatusBarUtil.setStatusBarDarkTheme(this,true);
+    }
+    private void initWaitView(){
+        waitDialog=new WaitDialog(context,R.style.WaitDialog_black)
+                .setTitle("书源载入中");
     }
 }

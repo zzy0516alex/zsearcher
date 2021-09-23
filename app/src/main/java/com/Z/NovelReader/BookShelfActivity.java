@@ -7,25 +7,16 @@ import androidx.lifecycle.ViewModelProviders;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BlurMaskFilter;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -40,10 +31,8 @@ import com.Z.NovelReader.Adapters.BookshelfAdapter;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
-import com.Z.NovelReader.Processors.BookListProcessor;
 import com.Z.NovelReader.Threads.CatalogThread;
 import com.Z.NovelReader.Threads.GetCoverThread;
-import com.Z.NovelReader.Threads.PictureThread;
 import com.Z.NovelReader.Utils.BitmapUtils;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.FileUtils;
@@ -52,6 +41,7 @@ import com.Z.NovelReader.Utils.TimeUtil;
 import com.Z.NovelReader.myObjects.beans.NovelCatalog;
 import com.Z.NovelReader.myObjects.NovelChap;
 import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.views.WaitDialog;
 import com.z.fileselectorlib.FileSelectorSettings;
 
 import java.io.File;
@@ -60,7 +50,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +69,7 @@ public class BookShelfActivity extends AppCompatActivity {
     private GridView bookShelf;
     private SwipeRefreshLayout swipeRefresh;
     private Button delete;
-    private Dialog wait_dialog;
+    private WaitDialog waitDialog;
     private Window window;
     private ImageView menu;
     private LinearLayout searchBar;
@@ -102,6 +91,7 @@ public class BookShelfActivity extends AppCompatActivity {
     private Date updateTime;
     private int update_success=0;
     private int update_fail=0;
+    private int bookNum = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,7 +141,7 @@ public class BookShelfActivity extends AppCompatActivity {
         initStatusBar();
         //init preference
         myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
-        final int num = myInfo.getInt("bookNum",0);
+        bookNum = myInfo.getInt("bookNum",0);
         long update_time = myInfo.getLong("update_time", 0);
         updateTime.setTime(update_time);
 
@@ -181,6 +171,7 @@ public class BookShelfActivity extends AppCompatActivity {
                 AllNovelList=novels;
                 SharedPreferences.Editor editor=myInfo.edit();
                 editor.putInt("bookNum",novels.size()).apply();
+                bookNum=novels.size();
                 BookName.clear();
                 BookCover.clear();
                 for (Novels novel : novels) {
@@ -195,7 +186,7 @@ public class BookShelfActivity extends AppCompatActivity {
                     swipeRefresh.setRefreshing(true);
                     onRefreshListener.onRefresh();
                 }
-                if(num!=0) {
+                if(bookNum!=0) {
                     adapter.setBookNames(BookName);
                     adapter.setBookCovers(BookCover);
                     adapter.notifyDataSetChanged();
@@ -214,7 +205,7 @@ public class BookShelfActivity extends AppCompatActivity {
         });
 
         //书架点击
-        if(num!=0){
+        if(bookNum!=0){
             adapter=new BookshelfAdapter(BookCover,BookName,context);
             bookShelf.setAdapter(adapter);
             bookShelf.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -232,8 +223,8 @@ public class BookShelfActivity extends AppCompatActivity {
                             startReadPage(content, current_book, ChapName, ChapLink);
                         }else if (novelRequireMap!=null){
                             //重新下载catalog
-                            wait_dialog.show();
-                            CatalogThread catalog_reload_thread=new CatalogThread(current_book.getBookLink(),
+                            waitDialog.show();
+                            CatalogThread catalog_reload_thread=new CatalogThread(current_book.getBookCatalogLink(),
                                     novelRequireMap.get(current_book.getSource()),true,true);
                             catalog_reload_thread.setOutputParams(current_book.getBookName(),
                                     context.getExternalFilesDir(null));
@@ -412,7 +403,7 @@ public class BookShelfActivity extends AppCompatActivity {
     private void startReadPage(String content, Novels current_book, ArrayList<String> chapName, ArrayList<String> chapLink) {
         Intent intent=new Intent(BookShelfActivity.this, NovelViewerActivity.class);
         intent.putExtra("offset",current_book.getOffset());
-        intent.putExtra("BookLink",current_book.getBookLink());
+        intent.putExtra("BookLink",current_book.getBookCatalogLink());
         String[] currentChap = getCurrentChapLink(current_book.getCurrentChap(), chapName, chapLink);
         NovelChap chap;
         chap = getNovelChap(content, currentChap);
@@ -441,48 +432,12 @@ public class BookShelfActivity extends AppCompatActivity {
         if (novelRequireMap==null)return;
         NovelRequire novelRequire = novelRequireMap.get(novel.getSource());
         if (novelRequire==null)return;
-        CatalogThread catalogThread=new CatalogThread(novel.getBookLink(),novelRequire,true,false);
+        CatalogThread catalogThread=new CatalogThread(novel.getBookCatalogLink(),novelRequire,true,false);
         catalogThread.setOutputParams(novel.getBookName(),getExternalFilesDir(null));
         catalogThread.setHandler(updaterHandler);
         catalogThread.start();
     }
 
-//    private void removeBookCover(final String bookname_remove) {
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                File delefile = new File(getExternalFilesDir(null)+"/ZsearchRes/BookCovers/"+bookname_remove+".png");
-//                if(delefile.exists() && delefile.isFile()) {
-//                    if(delefile.delete()){
-//                        Log.e("delete","success");
-//                    }else{
-//                        Log.e("delete","fail");
-//                    }
-//                }else {
-//                    Log.e("delete","does not exist");
-//                }
-//            }
-//        }).start();
-//
-//    }
-//    private void removeBookContents(final String bookname_remove){
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                File delefile = new File(getExternalFilesDir(null)+"/ZsearchRes/BookContents/"+bookname_remove+".txt");
-//                if(delefile.exists() && delefile.isFile()) {
-//                    if(delefile.delete()){
-//                        Log.e("delete","success");
-//                    }else{
-//                        Log.e("delete","fail");
-//                    }
-//                }else {
-//                    Log.e("delete","does not exist");
-//                }
-//            }
-//        }).start();
-//
-//    }
 
     public Bitmap getImage(String BookName) {
         Bitmap bitmap_AddShadow=null;
@@ -539,18 +494,12 @@ public class BookShelfActivity extends AppCompatActivity {
     }
 
     private void initWaitView(){
-        final View view = LayoutInflater.from(this).inflate(R.layout.wait_dialog2, null);
-        wait_dialog = new Dialog(this, R.style.WaitDialog2);
-        wait_dialog.setContentView(view);
-        wait_dialog.setCanceledOnTouchOutside(false);
-        WindowManager.LayoutParams lp = wait_dialog.getWindow().getAttributes();
-        lp.width = 400;
-        lp.height = 420;
-        lp.alpha = 0.6f;
-        wait_dialog.getWindow().setAttributes(lp);
+        waitDialog=new WaitDialog(context,R.style.WaitDialog_black)
+                .setTitle("资源预下载中");
     }
 
     public static class CatalogReloadHandler extends Handler {
+        //todo 考虑书源被删除的情况
         private final WeakReference<BookShelfActivity> mActivity;
         private int counter;
 
@@ -569,7 +518,7 @@ public class BookShelfActivity extends AppCompatActivity {
                 activity.startReadPage(activity.getContent(),activity.getCurrent_book(),catalog.getTitle(),catalog.getLink());
             }
             assert activity != null;
-            activity.wait_dialog.dismiss();
+            activity.waitDialog.dismiss();
         }
     }
 }

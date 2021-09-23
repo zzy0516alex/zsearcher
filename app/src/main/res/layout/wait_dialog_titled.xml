@@ -4,11 +4,12 @@
     android:layout_height="match_parent">
     <RelativeLayout
         android:id="@+id/Load"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_centerHorizontal="true"
         >
         <com.github.ybq.android.spinkit.SpinKitView
+            android:id="@+id/load_circle"
             xmlns:app="http://schemas.android.com/apk/res-auto"
             style="@style/SpinKitView.Large.Circle"
             android:layout_width="48dp"
@@ -16,13 +17,16 @@
             android:layout_marginTop="60dp"
             android:layout_gravity="center"
             android:layout_centerInParent="true"
-            app:SpinKit_Color="#FFFFFF"/>
+            app:SpinKit_Color="#000000"/>
+        <TextView
+            android:id="@+id/wait_dialog_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="title"
+            android:layout_below="@+id/load_circle"
+            android:layout_centerHorizontal="true"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="15dp"/>
     </RelativeLayout>
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="资源预下载中"
-        android:layout_below="@+id/Load"
-        android:layout_centerHorizontal="true"
-        android:textColor="#FFFFFF"/>
+
 </RelativeLayout>

@@ -89,12 +89,12 @@ public class NovelSearchThread extends Thread {
                 doc=connect.post();
             }
             //等待数据库查询结果
-            int timeout=0;
-            while (novelRequire==null && timeout<100){
-                sleep(1);
-                timeout++;
-            }
-            if (timeout>99)throw new TimeoutException();
+//            int timeout=0;
+//            while (novelRequire==null && timeout<100){
+//                sleep(1);
+//                timeout++;
+//            }
+//            if (timeout>99)throw new TimeoutException();
 
             //根据书源规则处理内容
             searchResult = BookListProcessor.getSearchList(doc, novelRequire);

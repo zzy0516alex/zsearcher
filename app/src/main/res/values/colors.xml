@@ -14,4 +14,5 @@
     <color name="night_text">#FFC8C8C8</color>
     <color name="night_background">#181818</color>
     <color name="blue_gray">#6A5ACD</color>
+    <color name="btn_click_gray">#e6e6e6</color>
 </resources>

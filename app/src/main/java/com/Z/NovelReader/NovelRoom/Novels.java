@@ -4,8 +4,6 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-import com.Z.NovelReader.Threads.NovelSearchThread;
-
 @Entity
 public class Novels {
     @PrimaryKey(autoGenerate = true)
@@ -17,18 +15,21 @@ public class Novels {
     private int ttlChap;
     @ColumnInfo(name = "current_chap")
     private int CurrentChap;
-    @ColumnInfo(name="book_link")
-    private String BookLink;
+    @ColumnInfo(name="book_catalog_link")
+    private String BookCatalogLink;//书籍目录链接
+    @ColumnInfo(name="book_info_link")
+    private String BookInfoLink;//书籍信息链接
     @ColumnInfo(name = "source")
     private int source;
     @ColumnInfo(name="offset")
     private int offset=3;
 
-    public Novels(String bookName, int ttlchap, int currentChap,String bookLink) {
+    public Novels(String bookName, int ttlchap, int currentChap,String bookCatalogLink,String bookInfoLink) {
         this.BookName = bookName;
         this.ttlChap = ttlchap;
         this.CurrentChap = currentChap;
-        this.BookLink=bookLink;
+        this.BookCatalogLink = bookCatalogLink;
+        this.BookInfoLink = bookInfoLink;
     }
 
     public Novels() {
@@ -66,12 +67,12 @@ public class Novels {
         CurrentChap = currentChap;
     }
 
-    public String getBookLink() {
-        return BookLink;
+    public String getBookCatalogLink() {
+        return BookCatalogLink;
     }
 
-    public void setBookLink(String bookLink) {
-        BookLink = bookLink;
+    public void setBookCatalogLink(String bookCatalogLink) {
+        BookCatalogLink = bookCatalogLink;
     }
 
     public int getOffset() {
@@ -82,37 +83,19 @@ public class Novels {
         this.offset = offset;
     }
 
-//    public void setTag_inTAG(NovelSearchThread.TAG tag){
-//        switch(tag){
-//            case BiQuGe:
-//                this.tag=0;
-//                break;
-//            case SiDaMingZhu:
-//                this.tag=1;
-//                break;
-//            default:
-//        }
-//    }
-//    public NovelSearchThread.TAG getTag_in_TAG(){
-//        NovelSearchThread.TAG current_tag= NovelSearchThread.TAG.BiQuGe;
-//        switch(tag){
-//            case 0:
-//                current_tag= NovelSearchThread.TAG.BiQuGe;
-//                break;
-//            case 1:
-//                current_tag= NovelSearchThread.TAG.SiDaMingZhu;
-//                break;
-//            default:
-//        }
-//        return current_tag;
-//    }
-
-
     public int getSource() {
         return source;
     }
 
     public void setSource(int source) {
         this.source = source;
+    }
+
+    public String getBookInfoLink() {
+        return BookInfoLink;
+    }
+
+    public void setBookInfoLink(String bookInfoLink) {
+        BookInfoLink = bookInfoLink;
     }
 }

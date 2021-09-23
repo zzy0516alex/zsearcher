@@ -130,7 +130,10 @@ public class NovelRequire {
                 "\n    章节名称：" + ruleToc.getChapterName() +
                 "\n    章节连接：" + ruleToc.getChapterUrl() +
                 "\n    下个目录：" + ruleToc.getNextTocUrl() +
-                "\n 内容规则：" + ruleContent.getContent()
+                "\n 内容规则：" +
+                "\n    内容链接：" + ruleContent.getContent() +
+                "\n    下一页：" + ruleContent.getNextContentUrl() +
+                "\n    替换正则：" + ruleContent.getReplaceRegex()
                 ;
     }
 }

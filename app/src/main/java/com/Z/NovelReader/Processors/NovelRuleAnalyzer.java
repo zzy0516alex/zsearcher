@@ -7,13 +7,15 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NovelRuleAnalyzer {
-    public enum RuleType {CLASS,Tag,ID,ATTR,TEXT,TEXT_NODES,HTML,OMIT_TAG}
+    public enum RuleType {CLASS,Tag,ID,TEXT_OWN,ATTR,TEXT,TEXT_NODES,HTML,OMIT_TAG,REGEX_MATCH}
     private ElementBean[] beans;
-    //public String[] TAG_NAME={"a","p","div","span","li","h1","h2","h3","h4","h5","h6","em","dd"};
 
     //notice: 构建bean所需的方法：
 
@@ -29,6 +31,7 @@ public class NovelRuleAnalyzer {
             if (rule.contains("class."))return RuleType.CLASS;
             else if (rule.contains("tag."))return RuleType.Tag;
             else if (rule.contains("id."))return RuleType.ID;
+            else if (rule.contains("text."))return RuleType.TEXT_OWN;//匹配包含特定文本的元素
             else return RuleType.OMIT_TAG;//缺省TAG标志的tag类型
         }else {
             if (rule.contains("href"))return RuleType.ATTR;
@@ -50,16 +53,17 @@ public class NovelRuleAnalyzer {
      */
     private void getRuleContentByType(ElementBean bean, String layer) throws Exception {
         switch(bean.getType()){
-            case CLASS:
+            case CLASS: {
                 String[] parts_class = layer.split("\\.");
                 String rule_content = layer.replace("class.", "");
-                if (parts_class.length>2){
-                    rule_content=rule_content.split("\\.")[0];
+                if (parts_class.length > 2) {
+                    rule_content = rule_content.split("\\.")[0];
                     bean.setElement_index(Integer.parseInt(parts_class[2]));
                 }
                 bean.setBound(".");
-                if (rule_content.contains(" "))rule_content=rule_content.replace(" ",".");
+                if (rule_content.contains(" ")) rule_content = rule_content.replace(" ", ".");
                 bean.setRuleContent(rule_content);
+            }
                 break;
             case Tag:{
                 String[] parts_tag = layer.split("\\.");
@@ -67,6 +71,14 @@ public class NovelRuleAnalyzer {
                 bean.setRuleContent(parts_tag[1].split("!")[0]);
                 bean.setBound("");
                 if (parts_tag.length==3)bean.setElement_index(Integer.parseInt(parts_tag[2]));
+            }
+                break;
+            case TEXT_OWN:{
+                String[] parts_text_own = layer.split("\\.");
+                if (parts_text_own.length != 2)throw new Exception("layer 格式错误");
+                bean.setRuleContent(String.format(":containsOwn(%1$s)",
+                        parts_text_own[1]));
+                bean.setBound("");
             }
                 break;
             case ID:{
@@ -95,19 +107,24 @@ public class NovelRuleAnalyzer {
                 bean.setBound("");
             }
                 break;
+            case REGEX_MATCH:{
+                bean.setRuleContent("");
+            }
+                break;
             default:
         }
     }
 
-    private List<Integer> getElementExclusions(String layer) throws Exception {
-        List<Integer> result=new ArrayList<>();
-        if (!layer.contains("!"))return null;
+    private String getElementExclusions(ElementBean bean, String layer) throws Exception {
+        List<Integer> exclusions=new ArrayList<>();
+        if (!layer.contains("!"))return layer;
         String[] parts = layer.split("!");
         if (parts.length!=2)throw new Exception("layer 格式错误");
         for (String p:parts[1].split("\\|")) {
-            result.add(Integer.parseInt(p));
+            exclusions.add(Integer.parseInt(p));
         }
-        return result;
+        bean.setExclusions(exclusions);
+        return parts[0];
     }
 
     private String getContentReplacement(ElementBean bean,String layer) throws Exception {
@@ -115,11 +132,14 @@ public class NovelRuleAnalyzer {
         replacement[0]="";
         replacement[1]="";
         if (!layer.contains("##"))return layer;
-        //if (bean.getType()==RuleType.NONE)bean.setType(RuleType.TEXT);
         String[] parts = layer.split("##");
         if (parts.length>4)throw new Exception("layer 格式错误");
-        replacement[0]=parts[1];
-        if (parts.length>=3)replacement[1]=parts[2];
+        replacement[0]=parts[1];//需替换(普通替换)
+        if (parts.length>=3){
+            if (bean.getType()==RuleType.OMIT_TAG)bean.setType(RuleType.REGEX_MATCH);
+            else if (!isTypeofElement(bean))bean.setNeed_advanced_match(true);//需利用正则替换
+            replacement[1]=parts[2];//需捕获
+        }
         bean.setReplacement(replacement);
         return parts[0];
     }
@@ -139,11 +159,11 @@ public class NovelRuleAnalyzer {
             //set type
             b.setType(getRuleType(currentlayer));
             //set replacement
-            currentlayer=getContentReplacement(b,currentlayer);
+            currentlayer = getContentReplacement(b,currentlayer);
+            //set exclusions
+            currentlayer = getElementExclusions(b,currentlayer);
             //set content
             getRuleContentByType(b,currentlayer);
-            //set exclusions
-            b.setExclusions(getElementExclusions(currentlayer));
             beans[i]=b;
         }
     }
@@ -249,6 +269,11 @@ public class NovelRuleAnalyzer {
                         object.add(getReplacedItem(bean,txt));
                     }
                         break;
+                    case REGEX_MATCH:{
+                        String result = getRegexMatchedResult(ele.html(), bean);
+                        object.add(result);
+                    }
+                        break;
                     default:{
                         String item = selectedElements.elements.text();
                         object.add(getReplacedItem(bean, item));
@@ -260,10 +285,27 @@ public class NovelRuleAnalyzer {
         return object;
     }
 
-    private String getReplacedItem(ElementBean bean, String item) {
+    private String getRegexMatchedResult(String origin, ElementBean bean) {
+        Pattern pattern=Pattern.compile(bean.getReplacement()[0]);
+        Matcher matcher=pattern.matcher(origin);
+        String result="";
+        if (matcher.find()){
+            String match = matcher.group(0);
+            result = match.replaceAll(bean.getReplacement()[0],
+                    bean.getReplacement()[1]);
+        }
+        return result;
+    }
+
+    private String getReplacedItem(ElementBean bean, String item) throws Exception {
         String result=item;
-        if (bean.hasReplacement())
-            result = item.replace(bean.getReplacement()[0],bean.getReplacement()[1]);
+        if (bean.hasReplacement()){
+            if ("".equals(bean.getReplacement()[1]))
+                result = item.replaceAll(bean.getReplacement()[0],"");
+            else if (bean.isNeed_advanced_match()) {
+                result = getRegexMatchedResult(item,bean);
+            } else throw new Exception("layout 类型错误,应该为:REGEX_MATCH 或 源规则不符合正则替换逻辑");
+        }
         return result;
     }
     //判断接下来解析的目标是否仍是elements
@@ -271,7 +313,8 @@ public class NovelRuleAnalyzer {
         return bean.getType()!= RuleType.TEXT &&
                 bean.getType()!= RuleType.ATTR &&
                 bean.getType()!=RuleType.TEXT_NODES &&
-                bean.getType()!=RuleType.HTML;
+                bean.getType()!=RuleType.HTML &&
+                bean.getType()!=RuleType.REGEX_MATCH;
     }
 
     private Elements getSelectedElements(Elements elements, ElementBean bean) {

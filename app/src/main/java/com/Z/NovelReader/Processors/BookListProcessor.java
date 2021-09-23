@@ -28,7 +28,7 @@ public class BookListProcessor {
             NovelSearchBean current_book=new NovelSearchBean();
             current_book.setBookName(BookNames.get(i));
             String url=BookLinks.get(i);
-            current_book.setBookLink(StringUtils.completeUrl(url, novelRequire.getBookSourceUrl()));
+            current_book.setBookInfoLink(StringUtils.completeUrl(url, novelRequire.getBookSourceUrl()));
             if (authors.size()!=0)current_book.setWriter(authors.get(i));
             current_book.setSource(novelRequire.getId());
             searchResult.add(current_book);

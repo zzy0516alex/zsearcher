@@ -30,6 +30,7 @@ public class CatalogThread extends Thread {
     private android.os.Handler mHandler;
     public static final int CATALOG_UPDATED=0;
     public static final int CATALOG_UPDATE_FAILED=1;
+    public static final int NOVEL_SOURCE_NO_FOUND=2;//todo 考虑书源被删除的情况
     private int reserve_count=0;
     public CatalogThread(String url, NovelRequire novelRequire, boolean isOutput, boolean isCallBack) {
         this.url=url;

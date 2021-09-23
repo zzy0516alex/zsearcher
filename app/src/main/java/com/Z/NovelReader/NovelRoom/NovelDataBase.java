@@ -6,7 +6,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {Novels.class},version = 4,exportSchema = false)
+@Database(entities = {Novels.class},version = 5,exportSchema = false)
 public abstract class NovelDataBase extends RoomDatabase {
     private static NovelDataBase NOVEL_DATABASE;
     public static synchronized NovelDataBase getDataBase(Context context){
