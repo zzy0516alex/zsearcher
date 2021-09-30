@@ -13,9 +13,8 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.Z.NovelReader.Adapters.BooklistAdapter;
-import com.Z.NovelReader.Threads.NovelSearchThread;
 import com.Z.NovelReader.Utils.FileIOUtils;
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
 
 import java.util.List;
 
@@ -88,7 +87,7 @@ public class CatalogActivity extends AppCompatActivity {
      * 从临时目录中读取目录数据，初始化章节信息
      */
     private void getCatalog() {
-        NovelCatalog result_back = FileIOUtils.read_catalog("/ZsearchRes/temp_catalog.txt",
+        NovelCatalog result_back = FileIOUtils.read_catalog("/ZsearchRes/catalog.txt",
                 context.getExternalFilesDir(null));
         if (!result_back.isEmpty()) {
             ChapList = result_back.getTitle();

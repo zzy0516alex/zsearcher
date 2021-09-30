@@ -23,8 +23,17 @@
         android:text="书源1"
         android:textColor="@color/black"
         android:textSize="20sp"/>
+    <ImageButton
+        android:id="@+id/novel_source_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="25dp"
+        android:src="@mipmap/delete_icon"
+        android:background="#00000000"/>
+
     <com.suke.widget.SwitchButton
-        android:layout_marginTop="20dp"
         android:layout_width="45dp"
         android:layout_height="27dp"
         app:sb_checked_color="@color/DoderBlue"

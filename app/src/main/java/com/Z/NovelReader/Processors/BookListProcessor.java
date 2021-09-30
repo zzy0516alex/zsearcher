@@ -1,8 +1,8 @@
 package com.Z.NovelReader.Processors;
 
 import com.Z.NovelReader.Utils.StringUtils;
-import com.Z.NovelReader.myObjects.beans.NovelSearchBean;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.NovelSearchBean;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;

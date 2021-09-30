@@ -14,8 +14,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NovelRuleAnalyzer {
-    public enum RuleType {CLASS,Tag,ID,TEXT_OWN,ATTR,TEXT,TEXT_NODES,HTML,OMIT_TAG,REGEX_MATCH}
+    public enum RuleType {CLASS,Tag,ID,META,TEXT_OWN,ATTR,TEXT,TEXT_NODES,HTML,OMIT_TAG,REGEX_MATCH}
     private ElementBean[] beans;
+    private boolean isContent = false;//如果需要获取章节内容，为真，进行特别优化
+
+    public void setContent(boolean content) {
+        isContent = content;
+    }
 
     //notice: 构建bean所需的方法：
 
@@ -27,19 +32,22 @@ public class NovelRuleAnalyzer {
     private RuleType getRuleType(String rule){
         if (rule.contains("@"))
             throw new IllegalArgumentException("查询语句分离不完全");
+        if (rule.contains("##"))rule = rule.split("##")[0];//净化，防止正则污染
         if (rule.contains(".")){
             if (rule.contains("class."))return RuleType.CLASS;
             else if (rule.contains("tag."))return RuleType.Tag;
             else if (rule.contains("id."))return RuleType.ID;
             else if (rule.contains("text."))return RuleType.TEXT_OWN;//匹配包含特定文本的元素
             else return RuleType.OMIT_TAG;//缺省TAG标志的tag类型
-        }else {
+        }else if (StringUtils.match_meta(rule)){
+            return RuleType.META;
+        } else {
             if (rule.contains("href"))return RuleType.ATTR;
             else if (rule.contains("alt"))return RuleType.ATTR;
             else if (rule.contains("src"))return RuleType.ATTR;
             else if (rule.contains("content"))return RuleType.ATTR;
-            else if (rule.contains("text"))return RuleType.TEXT;
             else if (rule.contains("textNodes"))return RuleType.TEXT_NODES;
+            else if (rule.contains("text"))return RuleType.TEXT;
             else if (rule.contains("html"))return RuleType.HTML;
             else return RuleType.OMIT_TAG;
         }
@@ -68,9 +76,13 @@ public class NovelRuleAnalyzer {
             case Tag:{
                 String[] parts_tag = layer.split("\\.");
                 if (parts_tag.length<=1||parts_tag.length>3)throw new Exception("layer 格式错误");
-                bean.setRuleContent(parts_tag[1].split("!")[0]);
+                bean.setRuleContent(parts_tag[1]/*.split("!")[0]*/);
                 bean.setBound("");
-                if (parts_tag.length==3)bean.setElement_index(Integer.parseInt(parts_tag[2]));
+                if (parts_tag.length==3){
+                    if (StringUtils.isNumber(parts_tag[2]))
+                        bean.setElement_index(Integer.parseInt(parts_tag[2]));
+                    else bean.setRuleContent(parts_tag[1]+"."+parts_tag[2]);
+                }
             }
                 break;
             case TEXT_OWN:{
@@ -111,6 +123,11 @@ public class NovelRuleAnalyzer {
                 bean.setRuleContent("");
             }
                 break;
+            case META:{
+                bean.setBound("meta");
+                bean.setRuleContent(layer);
+            }
+                break;
             default:
         }
     }
@@ -121,24 +138,29 @@ public class NovelRuleAnalyzer {
         String[] parts = layer.split("!");
         if (parts.length!=2)throw new Exception("layer 格式错误");
         for (String p:parts[1].split("\\|")) {
+            //todo add ":" detect
             exclusions.add(Integer.parseInt(p));
         }
         bean.setExclusions(exclusions);
         return parts[0];
     }
 
-    private String getContentReplacement(ElementBean bean,String layer) throws Exception {
+    public String getContentReplacement(ElementBean bean,String layer) throws Exception {
         String[] replacement=new String[2];
         replacement[0]="";
         replacement[1]="";
         if (!layer.contains("##"))return layer;
         String[] parts = layer.split("##");
         if (parts.length>4)throw new Exception("layer 格式错误");
-        replacement[0]=parts[1];//需替换(普通替换)
+        replacement[0]=parts[1];//普通替换
         if (parts.length>=3){
             if (bean.getType()==RuleType.OMIT_TAG)bean.setType(RuleType.REGEX_MATCH);
-            else if (!isTypeofElement(bean))bean.setNeed_advanced_match(true);//需利用正则替换
-            replacement[1]=parts[2];//需捕获
+            else if (!isTypeofElement(bean)){
+                if (StringUtils.match_regexMatch(parts[2]))
+                    bean.setNeed_advanced_match(true);//需利用正则匹配
+                else bean.setNeed_advanced_replace(true);//需利用正则替换
+            }
+            replacement[1]=parts[2];//进阶正则
         }
         bean.setReplacement(replacement);
         return parts[0];
@@ -252,10 +274,10 @@ public class NovelRuleAnalyzer {
                         List<TextNode> paras = content_element.textNodes();
                         StringBuilder content=new StringBuilder();
                         for (TextNode para:paras) {
-                            content.append("    ");
+                            if (isContent)content.append("    ");
                             content.append(para.text());
-                            content.append("\n");
-                            content.append("\n");
+                            if (isContent)content.append("\n");
+                            if (isContent)content.append("\n");
                         }
                         object.add(getReplacedItem(bean,content.toString()));
                     }
@@ -285,6 +307,12 @@ public class NovelRuleAnalyzer {
         return object;
     }
 
+    /**
+     * 在原始字符串按正则表达式找到符合要求的字符串，并进行替换
+     * @param origin 原始字符串
+     * @param bean 包含正则规则的元素
+     * @return 匹配并替换的字符串
+     */
     private String getRegexMatchedResult(String origin, ElementBean bean) {
         Pattern pattern=Pattern.compile(bean.getReplacement()[0]);
         Matcher matcher=pattern.matcher(origin);
@@ -297,13 +325,15 @@ public class NovelRuleAnalyzer {
         return result;
     }
 
-    private String getReplacedItem(ElementBean bean, String item) throws Exception {
+    public String getReplacedItem(ElementBean bean, String item) throws Exception {
         String result=item;
         if (bean.hasReplacement()){
             if ("".equals(bean.getReplacement()[1]))
                 result = item.replaceAll(bean.getReplacement()[0],"");
             else if (bean.isNeed_advanced_match()) {
                 result = getRegexMatchedResult(item,bean);
+            } else if (bean.isNeed_advanced_replace()){
+                result = item.replaceAll(bean.getReplacement()[0],bean.getReplacement()[1]);
             } else throw new Exception("layout 类型错误,应该为:REGEX_MATCH 或 源规则不符合正则替换逻辑");
         }
         return result;

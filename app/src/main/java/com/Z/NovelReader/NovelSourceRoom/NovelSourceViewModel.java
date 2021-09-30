@@ -6,7 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 
 import java.util.List;
 

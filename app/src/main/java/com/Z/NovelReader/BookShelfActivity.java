@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -33,14 +34,15 @@ import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.Threads.CatalogThread;
 import com.Z.NovelReader.Threads.GetCoverThread;
+import com.Z.NovelReader.Threads.NovelUpdateThread;
 import com.Z.NovelReader.Utils.BitmapUtils;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.FileUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.TimeUtil;
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
-import com.Z.NovelReader.myObjects.NovelChap;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.NovelChap;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.views.WaitDialog;
 import com.z.fileselectorlib.FileSelectorSettings;
 
@@ -53,6 +55,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class BookShelfActivity extends AppCompatActivity {
@@ -77,9 +81,10 @@ public class BookShelfActivity extends AppCompatActivity {
     Context context;
     Activity activity;
     //线程&handler
-    private CatalogThread.CatalogUpdaterHandler<BookShelfActivity> updaterHandler;//目录更新线程handler
+    private NovelUpdateThread.NovelUpdaterHandler<BookShelfActivity> updaterHandler;//目录更新线程handler
     private CatalogReloadHandler reloadHandler;//目录重新下载线程handler
     private SwipeRefreshLayout.OnRefreshListener onRefreshListener;//书籍刷新handler
+    private ExecutorService threadPool;//控制书籍更新的并发数
     //基本变量
     private Bitmap default_cover;
     private boolean is_item_chosen=false;
@@ -92,6 +97,8 @@ public class BookShelfActivity extends AppCompatActivity {
     private int update_success=0;
     private int update_fail=0;
     private int bookNum = 0;
+    //broad cast intent
+    public static String CATALOG_BROADCAST = "Z.BookShelf.intent.CATALOG_READY";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,7 +121,7 @@ public class BookShelfActivity extends AppCompatActivity {
         BookName=new ArrayList<>();
         context=this;
         activity=this;
-        updaterHandler =new CatalogThread.CatalogUpdaterHandler<>(this);
+        updaterHandler =new NovelUpdateThread.NovelUpdaterHandler<>(this);
         reloadHandler=new CatalogReloadHandler(this);
         content="缓存读取失败";
         updateTime=new Date();
@@ -146,7 +153,7 @@ public class BookShelfActivity extends AppCompatActivity {
         updateTime.setTime(update_time);
 
         // init handler
-        updaterHandler.setOverride(new CatalogThread.CatalogUpdaterHandler.MyHandle() {
+        updaterHandler.setOverride(new NovelUpdateThread.NovelUpdaterHandler.NovelUpdateListener() {
             @Override
             public void handle(Message msg, int Success, int Fail) {
                 update_success=Success;
@@ -159,6 +166,7 @@ public class BookShelfActivity extends AppCompatActivity {
                 }
             }
         });
+        threadPool = Executors.newFixedThreadPool(5);//一次更新5本书
 
         //init time
         final Date current_time=TimeUtil.getCurrentTimeInDate();
@@ -215,19 +223,21 @@ public class BookShelfActivity extends AppCompatActivity {
                         if (swipeRefresh.isRefreshing())swipeRefresh.setRefreshing(false);
                         content= FileIOUtils.read_line(BookName.get(position),getExternalFilesDir(null));
                         current_book=AllNovelList.get(position);
+                        Log.d("book shelf","打开书籍："+current_book.toString());
                         Catalog= FileIOUtils.read_catalog("/ZsearchRes/BookReserve/" + current_book.getBookName() + "/catalog.txt",
                                 getExternalFilesDir(null));
                         if (!Catalog.isEmpty()) {
+                            Log.d("book shelf",current_book.getBookName()+":目录打开成功");
                             ArrayList<String> ChapName = Catalog.getTitle();
                             ArrayList<String> ChapLink = Catalog.getLink();
-                            startReadPage(content, current_book, ChapName, ChapLink);
+                            //startReadPage(content, current_book, ChapName, ChapLink);
                         }else if (novelRequireMap!=null){
                             //重新下载catalog
+                            //todo 需重新设计
                             waitDialog.show();
                             CatalogThread catalog_reload_thread=new CatalogThread(current_book.getBookCatalogLink(),
-                                    novelRequireMap.get(current_book.getSource()),true,true);
-                            catalog_reload_thread.setOutputParams(current_book.getBookName(),
-                                    context.getExternalFilesDir(null));
+                                    novelRequireMap.get(current_book.getSource()));
+                            catalog_reload_thread.setOutputParams("/BookReserve/" + current_book.getBookName());
                             catalog_reload_thread.setHandler(reloadHandler);
                             catalog_reload_thread.start();
                         }else {
@@ -293,6 +303,16 @@ public class BookShelfActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
+        //update book source
+        sourceDBTools=new NovelSourceDBTools(context);
+        sourceDBTools.getNovelRequireMap( new NovelSourceDBTools.QueryListener() {
+            @Override
+            public void onResultBack(Object object) {
+                if (object instanceof Map)
+                    novelRequireMap = (Map<Integer, NovelRequire>) object;
+                Log.d("book shelf","更新 novel require");
+            }
+        });
         SharedPreferences recoverInfo= context.getSharedPreferences("recoverInfo", Context.MODE_PRIVATE);
         recoverInfo.edit().putBoolean("onFront",false).apply();
         super.onResume();
@@ -363,8 +383,7 @@ public class BookShelfActivity extends AppCompatActivity {
                     Novels novel = AllNovelList.get(i);
                     NovelRequire novelRequire = novelRequireMap.get(novel.getSource());
                     if (novelRequire!=null) {
-                        GetCoverThread update_cover_thread = new GetCoverThread(novel,novelRequire,
-                                getExternalFilesDir(null));
+                        GetCoverThread update_cover_thread = new GetCoverThread(novel,novelRequire);
                         update_cover_thread.start();
                     }
                 }
@@ -431,11 +450,9 @@ public class BookShelfActivity extends AppCompatActivity {
     private void update_catalog(Novels novel) {
         if (novelRequireMap==null)return;
         NovelRequire novelRequire = novelRequireMap.get(novel.getSource());
-        if (novelRequire==null)return;
-        CatalogThread catalogThread=new CatalogThread(novel.getBookCatalogLink(),novelRequire,true,false);
-        catalogThread.setOutputParams(novel.getBookName(),getExternalFilesDir(null));
-        catalogThread.setHandler(updaterHandler);
-        catalogThread.start();
+        NovelUpdateThread novelUpdateThread = new NovelUpdateThread(novelRequire,novel);
+        novelUpdateThread.setHandler(updaterHandler);
+        threadPool.execute(novelUpdateThread);
     }
 
 
@@ -510,7 +527,7 @@ public class BookShelfActivity extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             BookShelfActivity activity = mActivity.get();
-            if (msg.what==CatalogThread.CATALOG_UPDATE_FAILED)
+            if (msg.what==CatalogThread.CATALOG_OBTAIN_FAILED)
                 Toast.makeText(activity, "无网络", Toast.LENGTH_SHORT).show();
             if (activity != null && msg.obj!=null) {
                 NovelCatalog catalog= (NovelCatalog) msg.obj;

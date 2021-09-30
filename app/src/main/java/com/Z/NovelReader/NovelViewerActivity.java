@@ -35,15 +35,15 @@ import com.Z.NovelReader.Global.OnReadingListener;
 import com.Z.NovelReader.Global.OnSettingChangeListener;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
-import com.Z.NovelReader.Threads.CatalogThread;
 import com.Z.NovelReader.Threads.NovelSearchThread;
+import com.Z.NovelReader.Threads.NovelUpdateThread;
 import com.Z.NovelReader.Utils.Brightness;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.ScreenUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.ViberateControl;
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
-import com.Z.NovelReader.myObjects.NovelChap;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.NovelChap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +76,7 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
     private ViewerSettingDialog settingDialog;
     private SharedPreferences myInfo;
     private DNMod currentMod;
-    private CatalogThread.CatalogUpdaterHandler<Activity> chap_update_handler;
+    private NovelUpdateThread.NovelUpdaterHandler<Activity> chap_update_handler;
     private NovelDBTools.QueryResultListener queryResultListener;
     private int currentChapIndex;
     private int myTextSize;
@@ -203,8 +203,8 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
     }
 
     private void init_chapUpdateHandler() {
-        chap_update_handler=new CatalogThread.CatalogUpdaterHandler<>(activity);
-        chap_update_handler.setOverride(new CatalogThread.CatalogUpdaterHandler.MyHandle() {
+        chap_update_handler=new NovelUpdateThread.NovelUpdaterHandler<>(activity);
+        chap_update_handler.setOverride(new NovelUpdateThread.NovelUpdaterHandler.NovelUpdateListener() {
             @Override
             public void handle(Message msg, int Success, int Fail) {
                 if (Success==1){

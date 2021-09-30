@@ -1,4 +1,4 @@
-package com.Z.NovelReader.myObjects.beans;
+package com.Z.NovelReader.Objects.beans;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Embedded;
@@ -79,40 +79,43 @@ public class NovelRequire {
         this.enabled = enabled;
     }
 
-    public com.Z.NovelReader.myObjects.beans.ruleSearch getRuleSearch() {
+    public com.Z.NovelReader.Objects.beans.ruleSearch getRuleSearch() {
         return ruleSearch;
     }
 
-    public void setRuleSearch(com.Z.NovelReader.myObjects.beans.ruleSearch ruleSearch) {
+    public void setRuleSearch(com.Z.NovelReader.Objects.beans.ruleSearch ruleSearch) {
         this.ruleSearch = ruleSearch;
     }
 
-    public com.Z.NovelReader.myObjects.beans.ruleBookInfo getRuleBookInfo() {
+    public com.Z.NovelReader.Objects.beans.ruleBookInfo getRuleBookInfo() {
         return ruleBookInfo;
     }
 
-    public void setRuleBookInfo(com.Z.NovelReader.myObjects.beans.ruleBookInfo ruleBookInfo) {
+    public void setRuleBookInfo(com.Z.NovelReader.Objects.beans.ruleBookInfo ruleBookInfo) {
         this.ruleBookInfo = ruleBookInfo;
     }
 
-    public com.Z.NovelReader.myObjects.beans.ruleToc getRuleToc() {
+    public com.Z.NovelReader.Objects.beans.ruleToc getRuleToc() {
         return ruleToc;
     }
 
-    public void setRuleToc(com.Z.NovelReader.myObjects.beans.ruleToc ruleToc) {
+    public void setRuleToc(com.Z.NovelReader.Objects.beans.ruleToc ruleToc) {
         this.ruleToc = ruleToc;
     }
 
-    public com.Z.NovelReader.myObjects.beans.ruleContent getRuleContent() {
+    public com.Z.NovelReader.Objects.beans.ruleContent getRuleContent() {
         return ruleContent;
     }
 
-    public void setRuleContent(com.Z.NovelReader.myObjects.beans.ruleContent ruleContent) {
+    public void setRuleContent(com.Z.NovelReader.Objects.beans.ruleContent ruleContent) {
         this.ruleContent = ruleContent;
     }
 
     public static NovelRequire getNovelRequireBean(String json){
         return new Gson().fromJson(json, NovelRequire[].class)[0];
+    }
+    public static NovelRequire[] getNovelRequireBeans(String json){
+        return new Gson().fromJson(json, NovelRequire[].class);
     }
 
     @Override

@@ -17,7 +17,7 @@
             android:layout_marginTop="60dp"
             android:layout_gravity="center"
             android:layout_centerInParent="true"
-            app:SpinKit_Color="#000000"/>
+            app:SpinKit_Color="#FFFFFF"/>
         <TextView
             android:id="@+id/wait_dialog_title"
             android:layout_width="wrap_content"

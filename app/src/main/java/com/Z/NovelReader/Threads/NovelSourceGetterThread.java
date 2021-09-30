@@ -7,16 +7,13 @@ import android.os.Message;
 import androidx.annotation.NonNull;
 
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
-import com.Z.NovelReader.myObjects.beans.SearchQuery;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.google.gson.JsonSyntaxException;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
-import java.util.List;
 
 public class NovelSourceGetterThread extends Thread {
 
@@ -63,8 +60,10 @@ public class NovelSourceGetterThread extends Thread {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            message.what=NO_INTERNET;
-            handler.sendMessage(message);
+            if (message!=null) {
+                message.what = NO_INTERNET;
+                handler.sendMessage(message);
+            }
         }
     }
 

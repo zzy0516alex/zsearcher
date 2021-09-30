@@ -1,8 +1,7 @@
 package com.Z.NovelReader.Processors;
 
 import com.Z.NovelReader.Utils.StringUtils;
-import com.Z.NovelReader.myObjects.beans.SearchQuery;
-import com.Z.NovelReader.myObjects.beans.ruleSearch;
+import com.Z.NovelReader.Objects.beans.SearchQuery;
 import com.google.gson.Gson;
 
 import java.io.UnsupportedEncodingException;

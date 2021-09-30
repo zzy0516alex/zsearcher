@@ -1,14 +1,10 @@
 package com.Z.NovelReader.Threads;
 
-import android.content.Context;
-import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.FileIOUtils;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -16,10 +12,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ContentTextThread extends Thread {

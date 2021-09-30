@@ -80,13 +80,6 @@ public class SettingsActivity extends AppCompatActivity {
         SetNovelSource.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                sourceDBTools.DeleteAllSource();
-//                NovelSourceGetterThread t1=new NovelSourceGetterThread(context,"http://www.yckceo.com/d/urU8x");//笔趣阁
-//                NovelSourceGetterThread t2=new NovelSourceGetterThread(context,"http://www.yckceo.com/d/2jdqx");//独步小说
-//                NovelSourceGetterThread t3=new NovelSourceGetterThread(context,"http://yck.mumuceo.com/d/f1HG3");//E小说
-//                t1.start();
-//                t2.start();
-//                t3.start();
                 startActivity(new Intent(SettingsActivity.this,
                         NovelSourceManageActivity.class));
             }
@@ -133,7 +126,7 @@ public class SettingsActivity extends AppCompatActivity {
                 change.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (isStoragePermissionGranted()) {
+                        if (StorageUtils.isStoragePermissionGranted(context,activity)) {
                             showFileSelector();
                             PathSelector.dismiss();
                         }
@@ -143,23 +136,23 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
-    private boolean isStoragePermissionGranted() {
-        int readPermissionCheck = ContextCompat.checkSelfPermission(context,
-                Manifest.permission.READ_EXTERNAL_STORAGE);
-        int writePermissionCheck = ContextCompat.checkSelfPermission(context,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if (readPermissionCheck == PackageManager.PERMISSION_GRANTED
-                && writePermissionCheck == PackageManager.PERMISSION_GRANTED) {
-            Log.v("storage setting", "Permission is granted");
-            return true;
-        } else {
-            Log.v("storage setting", "Permission is revoked");
-            ActivityCompat.requestPermissions(activity, new String[]{
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-            return false;
-        }
-    }
+//    private boolean isStoragePermissionGranted() {
+//        int readPermissionCheck = ContextCompat.checkSelfPermission(context,
+//                Manifest.permission.READ_EXTERNAL_STORAGE);
+//        int writePermissionCheck = ContextCompat.checkSelfPermission(context,
+//                Manifest.permission.WRITE_EXTERNAL_STORAGE);
+//        if (readPermissionCheck == PackageManager.PERMISSION_GRANTED
+//                && writePermissionCheck == PackageManager.PERMISSION_GRANTED) {
+//            Log.v("storage setting", "Permission is granted");
+//            return true;
+//        } else {
+//            Log.v("storage setting", "Permission is revoked");
+//            ActivityCompat.requestPermissions(activity, new String[]{
+//                    Manifest.permission.READ_EXTERNAL_STORAGE,
+//                    Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+//            return false;
+//        }
+//    }
 
     private void initQuitButton() {
         quit=findViewById(R.id.quit_settings);
@@ -228,12 +221,6 @@ public class SettingsActivity extends AppCompatActivity {
                         })
                 .show(SettingsActivity.this);
     }
-
-//    public void BackGroundAlpha(float f) {
-//        WindowManager.LayoutParams layoutParams = activity.getWindow().getAttributes();
-//        layoutParams.alpha = f;
-//        activity.getWindow().setAttributes(layoutParams);
-//    }
 
 
     private void initStatusBar() {

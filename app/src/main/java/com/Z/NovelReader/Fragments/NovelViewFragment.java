@@ -28,14 +28,12 @@ import com.Z.NovelReader.Global.OnSettingChangeListener;
 import com.Z.NovelReader.Global.RecyclerViewItemTouchListener;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
-import com.Z.NovelReader.Processors.BookListProcessor;
 import com.Z.NovelReader.R;
-import com.Z.NovelReader.Threads.CatalogThread;
 import com.Z.NovelReader.Threads.ChapGetterThread;
 import com.Z.NovelReader.Threads.NovelSearchThread;
 import com.Z.NovelReader.Utils.FileIOUtils;
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
-import com.Z.NovelReader.myObjects.NovelChap;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.NovelChap;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -68,7 +66,6 @@ public class NovelViewFragment extends NovelViewBasicFragment implements OnSetti
     private ChapGetterThread.ChapGetterHandler<FragmentActivity> last_chap_handler;
     private ChapGetterThread.ChapGetterHandler<FragmentActivity> next_chap_handler;
     private ChapGetterThread.ChapGetterHandler<FragmentActivity> jump_chap_handler;
-    private CatalogThread.CatalogUpdaterHandler<FragmentActivity> chap_update_handler;
     private NovelDBTools novelDBTools;
     private SharedPreferences myInfo;
     private File Dir;

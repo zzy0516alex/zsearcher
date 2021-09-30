@@ -1,4 +1,4 @@
-package com.Z.NovelReader.myObjects.beans;
+package com.Z.NovelReader.Objects.beans;
 
 import java.io.Serializable;
 

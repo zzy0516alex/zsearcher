@@ -1,4 +1,4 @@
-package com.Z.NovelReader.myObjects;
+package com.Z.NovelReader.Objects;
 
 import com.Z.NovelReader.Threads.NovelSearchThread;
 

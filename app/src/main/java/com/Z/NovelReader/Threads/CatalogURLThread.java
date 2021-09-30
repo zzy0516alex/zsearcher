@@ -6,9 +6,10 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.Z.NovelReader.Basic.BasicHandlerThread;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.StringUtils;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -21,31 +22,21 @@ import java.util.List;
 /**
  * 通过book info link 获取book catalog link
  */
-public class CatalogURLThread extends Thread {
+public class CatalogURLThread extends BasicHandlerThread {
 
     private String bookInfoLink;
     private String bookCatalogLink;
     private NovelRequire novelRequire;
-    private Handler handler;
-    private Message message;
-
-    public static final int URL_GET_DONE=0X1;
-    public static final int PROCESSOR_ERROR=0X2;
-    public static final int URL_NOT_FOUND=0X3;
 
     public CatalogURLThread(String bookInfoLink, NovelRequire novelRequire) {
         this.bookInfoLink = bookInfoLink;
         this.novelRequire = novelRequire;
     }
 
-    public void setHandler(Handler handler) {
-        this.handler = handler;
-    }
 
     @Override
     public void run() {
         super.run();
-        if (handler!=null)message=handler.obtainMessage();
         try {
             Connection connect = Jsoup.connect(bookInfoLink);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
@@ -58,21 +49,16 @@ public class CatalogURLThread extends Thread {
                 bookCatalogLink = StringUtils.completeUrl(urls.get(0),
                         novelRequire.getBookSourceUrl());
                 Log.d("catalog url thread","目录链接："+bookCatalogLink);
-                message.obj = bookCatalogLink;
-                message.what = URL_GET_DONE;
-                handler.sendMessage(message);
+                callback(PROCESS_DONE,bookCatalogLink);
             }else {
-                message.what = URL_NOT_FOUND;
-                handler.sendMessage(message);
+                report(TARGET_NOT_FOUND);
             }
         } catch (IOException e) {
             e.printStackTrace();
+            report(NO_INTERNET);
         } catch (Exception e){
             e.printStackTrace();
-            if (message!=null){
-                message.what=PROCESSOR_ERROR;
-                handler.sendMessage(message);
-            }
+            report(PROCESSOR_ERROR);
         }
 
     }
@@ -86,7 +72,7 @@ public class CatalogURLThread extends Thread {
 
         @Override
         public void handleMessage(@NonNull Message msg) {
-            if (msg.what==URL_GET_DONE)
+            if (msg.what==PROCESS_DONE)
                 listener.onSuccess((String) msg.obj);
             else {
                 listener.onError(msg.what);

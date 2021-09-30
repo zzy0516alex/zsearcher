@@ -1,9 +1,9 @@
-package com.Z.NovelReader.myObjects;
+package com.Z.NovelReader.Objects;
 
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.Z.NovelReader.myObjects.beans.NovelSearchBean;
+import com.Z.NovelReader.Objects.beans.NovelSearchBean;
 
 import java.util.ArrayList;
 

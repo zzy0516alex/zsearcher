@@ -1,6 +1,5 @@
-package com.Z.NovelReader.myObjects.beans;
+package com.Z.NovelReader.Objects.beans;
 
-import com.Z.NovelReader.Threads.NovelSearchThread;
 import com.Z.NovelReader.Utils.StringUtils;
 
 import java.io.Serializable;
@@ -36,6 +35,7 @@ public class NovelCatalog implements Serializable {
     public void setLink(ArrayList<String> link) {
         Link = link;
     }
+
     public void add(String title,String link){
         Title.add(title);
         Link.add(link);
@@ -54,5 +54,10 @@ public class NovelCatalog implements Serializable {
     }
     public int getSize(){
         return Title.size();
+    }
+
+    public void addCatalog(NovelCatalog sub_catalog){
+        this.Link.addAll(sub_catalog.getLink());
+        this.Title.addAll(sub_catalog.getTitle());
     }
 }

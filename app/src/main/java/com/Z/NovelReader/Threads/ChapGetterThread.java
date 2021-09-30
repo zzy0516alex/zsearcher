@@ -5,8 +5,8 @@ import android.os.Message;
 
 import androidx.annotation.NonNull;
 
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
-import com.Z.NovelReader.myObjects.NovelChap;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.NovelChap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

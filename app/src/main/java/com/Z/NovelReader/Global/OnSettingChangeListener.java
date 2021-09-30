@@ -1,7 +1,7 @@
 package com.Z.NovelReader.Global;
 
 import com.Z.NovelReader.Adapters.NovelViewAdapter.DNMod;
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
 
 public interface OnSettingChangeListener {
     /**@see com.Z.NovelReader.Fragments.NovelViewFragment*/

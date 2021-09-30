@@ -1,5 +1,9 @@
 package com.Z.NovelReader.Utils;
 
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
+
 import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -105,10 +109,23 @@ public class StringUtils {
             if (bookSourceUrl != null) {
                 if (url.startsWith("/")) url = url.substring(1);
                 if (!bookSourceUrl.endsWith("/"))bookSourceUrl=bookSourceUrl+"/";
-                temp = (bookSourceUrl + url);
+                temp = add_to_url(bookSourceUrl,url);
             }
         } else temp = url;
         return temp;
+    }
+
+    public static String add_to_url(String root,String adder){
+        StringBuilder result = new StringBuilder(root);
+        String[] url_parts = adder.split("/");
+        if (url_parts.length == 0)return root+adder;
+        for (int i = 0; i < url_parts.length; i++) {
+            if (!root.contains("/"+url_parts[i]+"/")){
+                result.append(url_parts[i]);
+                if (i!=url_parts.length-1)result.append("/");
+            }
+        }
+        return result.toString();
     }
 
     // 通过 -?[0-9]+(\\\\.[0-9]+)? 进行匹配是否为数字
@@ -130,11 +147,118 @@ public class StringUtils {
         Document document = Jsoup.parse(html);
         Document.OutputSettings outputSettings = new Document.OutputSettings().prettyPrint(false);
         document.outputSettings(outputSettings);
-        document.select("br").append("\\n\\n");
-        document.select("p").prepend("\\n\\n");
-        document.select("p").append("\\n\\n");
+        document.select("br").append("\\n");
+        document.select("p").prepend("\\n");
+        //document.select("p").append("\\n");
         String newHtml = document.html().replaceAll("\\\\n", "\n");
         String plainText = Jsoup.clean(newHtml, "", Whitelist.none(), outputSettings);
         return StringEscapeUtils.unescapeHtml4(plainText.trim());
+    }
+
+    /**
+     * 是否符合匹配meta类的情况(首尾都是[])
+     * @param rule
+     * @return
+     */
+    public static boolean match_meta(String rule){
+        Pattern pattern = Pattern.compile("^\\[.+\\]$");
+        Matcher matcher = pattern.matcher(rule);
+        return matcher.matches();
+    }
+
+    /**
+     * 判断书源正则规则是替换还是匹配，即是否存在 $1 在正则表达式中
+     * @param s
+     * @return
+     */
+    public static boolean match_regexMatch(String s){
+        Pattern pattern = Pattern.compile("(.*)(\\$\\d)(.*)");
+        Matcher matcher = pattern.matcher(s);
+        return matcher.matches();
+    }
+
+    /**
+     * 根据书源规则判断列表是否需要翻转，即规则开头为 -
+     * @param rule
+     * @return 一个matcher 对象
+     */
+    public static Matcher match_needReverseFlag(String rule){
+        Pattern pattern = Pattern.compile("^-(.+)");
+        Matcher matcher = pattern.matcher(rule);
+        return matcher;
+    }
+
+    /**
+     * 去除大于等于3个的连续空行，替换为2个空行
+     * @param origin 原始文本
+     * @return 优化后的文本
+     */
+    public static String removeEmptyLine(String origin){
+        return origin.replaceAll("(\r?\n(\\s*\r?\n){2,})", "\n\n");
+    }
+
+    /**
+     * 根据两个url链接，获取他们公共的父链接
+     * @param str1 url
+     * @param str2 url
+     */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static String getSharedURL(String str1, String str2)
+    {
+        String shared_string;
+        if(str1.length()>str2.length())
+            shared_string = getSharedString(str2,str1);
+        else
+            shared_string = getSharedString(str1,str2);
+        return getRootUrl(shared_string);
+    }
+
+    /**
+     * 获取一个链接的父链接
+     * @param url 任意链接
+     * @return root url
+     */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static String getRootUrl(String url) {
+        String shared_url = "";
+        if (url.endsWith("/")) return url;
+        String[] url_parts = url.split("/");
+        String[] url_parts_new = new String[url_parts.length-1];
+        if (url_parts.length - 1 >= 0)
+            System.arraycopy(url_parts, 0, url_parts_new, 0, url_parts.length - 1);
+        shared_url = String.join("/",url_parts_new);
+        return shared_url;
+    }
+
+    /**
+     * 获取两个字符串的最大公共子串，要求str2.len > str1.len
+     * @param str1
+     * @param str2
+     * @return
+     */
+    public static String getSharedString(String str1,String str2)
+    {
+        String[] arr=new String[100000];
+        boolean flag=false;
+        String max="";
+        int k=0;
+        for (int j=0;j<str1.length();j++)
+        {
+            for(int i=j+1;i<=str1.length();i++)
+                arr[k++]=str1.substring(j,i);
+        }
+
+        for(int i=0;i<k;i++)
+        {
+            if(str2.contains(arr[i]))
+            {
+                flag=true;
+                if(max.length()<arr[i].length())
+                {
+                    max=arr[i];
+                }
+            }
+        }
+        return flag?max:"";
     }
 }

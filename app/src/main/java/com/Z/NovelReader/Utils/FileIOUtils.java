@@ -2,7 +2,7 @@ package com.Z.NovelReader.Utils;
 
 import android.util.Log;
 
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,6 +17,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class FileIOUtils {
 
@@ -75,13 +76,13 @@ public class FileIOUtils {
     }
 
     /**
-     * 从文件读取章节内容
-     * @param bookname 书名
+     * 从文件读取文本内容
+     * @param sub_path ="/ZsearchRes/BookReserve/" + bookname + "/content.txt"
      * @param Dir 根目录
      * @return 文本
      */
-    public static String read_line(String bookname,File Dir){
-        File txtDir=new File(Dir+"/ZsearchRes/BookReserve/" + bookname + "/content.txt");
+    public static String read_line(String sub_path,File Dir){
+        File txtDir=new File(Dir+sub_path);
         FileInputStream fis=null;
         StringBuilder sb = new StringBuilder("");
         try {
@@ -147,11 +148,14 @@ public class FileIOUtils {
             e.printStackTrace();
         }
         try {
-            assert fot != null;
             fot.write(content.getBytes());
             fot.flush();
+            Log.d("write file","文件写操作");
         } catch (IOException e) {
             e.printStackTrace();
+        }catch (NullPointerException e){
+            e.printStackTrace();
+            Log.e("write file","地址不存在");
         } finally {
             if (fot != null) {
                 try {
@@ -181,6 +185,24 @@ public class FileIOUtils {
         File mk_txt=new File(Dir + sub_path);
         writeToFile(content_string, mk_txt,false);
 
+    }
+
+    /**
+     * 将一个列表写入文件
+     * @param Dir 根目录
+     * @param sub_path 子目录
+     * @param list 列表
+     */
+    public static void WriteList(File Dir, String sub_path, List<String> list,boolean append){
+        StringBuilder content=new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            content.append(list.get(i));
+            if(i!=list.size()-1)content.append('\n');
+        }
+        String content_string=content.toString();
+        File mk_txt=new File(Dir + sub_path);
+        writeToFile(content_string, mk_txt,append);
+        Log.d("file io utils","已输出链接到文件");
     }
 
     /**
@@ -214,5 +236,38 @@ public class FileIOUtils {
         stringBuilder.append(writer.toString());
         stringBuilder.append("-----------------------------------\n");
         writeToFile(stringBuilder.toString(), mk_txt,true);
+    }
+
+    public static List<String> read_list(File file){
+        List<String> list = new ArrayList<>();
+       if (!file.exists()) {
+           Log.e("file io read list","list file_not_found");
+           return list;
+       }
+        FileInputStream fis=null;
+        try {
+            fis = new FileInputStream(file);
+            InputStreamReader i_reader=new InputStreamReader(fis);
+            BufferedReader b_reader=new BufferedReader(i_reader);
+            String temp="";
+            while ((temp=b_reader.readLine())!=null) {
+                list.add(temp);
+            }
+        }catch (FileNotFoundException e){
+            e.printStackTrace();
+            Log.e("file io read list","list file_not_found");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fis!=null){
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return list;
     }
 }

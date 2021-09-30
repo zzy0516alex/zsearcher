@@ -3,8 +3,8 @@ package com.Z.NovelReader.NovelSourceRoom;
 import android.content.Context;
 import android.os.AsyncTask;
 
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
-import com.Z.NovelReader.myObjects.beans.SearchQuery;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.SearchQuery;
 
 import java.util.HashMap;
 import java.util.List;

@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.Z.NovelReader.R;
-import com.Z.NovelReader.myObjects.NovelChap;
+import com.Z.NovelReader.Objects.NovelChap;
 
 import java.util.ArrayList;
 

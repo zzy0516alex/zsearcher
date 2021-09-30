@@ -49,6 +49,11 @@ public class BookshelfAdapter extends BaseAdapter {
     }
 
     @Override
+    public boolean isEnabled(int position) {
+        return super.isEnabled(position);
+    }
+
+    @Override
     public Object getItem(int position) {
         return BookNames.get(position);
     }

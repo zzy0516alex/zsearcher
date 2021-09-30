@@ -2,10 +2,11 @@ package com.Z.NovelReader.Threads;
 
 import android.graphics.Bitmap;
 
+import com.Z.NovelReader.Global.MyApplication;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.StringUtils;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -24,10 +25,10 @@ public class GetCoverThread extends Thread {
     private String infoPageURL;
     private NovelRequire novelRequire;//书源规则类
 
-    public GetCoverThread(Novels novel,NovelRequire novelRequire, File dir) {
+    public GetCoverThread(Novels novel,NovelRequire novelRequire) {
         this.BookName=novel.getBookName();
-        this.Dir=dir;
-        this.infoPageURL=novel.getBookCatalogLink();
+        this.Dir= MyApplication.getExternalDir();
+        this.infoPageURL=novel.getBookInfoLink();
         this.novelRequire=novelRequire;
     }
 

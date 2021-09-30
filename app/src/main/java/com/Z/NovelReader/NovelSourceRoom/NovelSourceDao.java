@@ -7,10 +7,8 @@ import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Update;
 
-import com.Z.NovelReader.NovelRoom.Novels;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
-import com.Z.NovelReader.myObjects.beans.SearchQuery;
-import com.Z.NovelReader.myObjects.beans.ruleSearch;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.SearchQuery;
 
 import java.util.List;
 

@@ -1,6 +1,7 @@
 package com.Z.NovelReader;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
@@ -8,11 +9,14 @@ import androidx.lifecycle.ViewModelProviders;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.http.SslError;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -32,15 +36,15 @@ import android.widget.Toast;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
+import com.Z.NovelReader.Threads.ContentThread;
 import com.Z.NovelReader.Threads.GetCoverThread;
-import com.Z.NovelReader.Threads.CatalogThread;
 import com.Z.NovelReader.Threads.ContentTextThread;
-import com.Z.NovelReader.Threads.NovelSearchThread;
 import com.Z.NovelReader.Utils.FileIOUtils;
+import com.Z.NovelReader.Utils.FileUtils;
 import com.Z.NovelReader.Utils.StringUtils;
-import com.Z.NovelReader.myObjects.beans.NovelCatalog;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
-import com.Z.NovelReader.myObjects.beans.NovelSearchBean;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.NovelSearchBean;
 
 import java.io.File;
 import java.util.List;
@@ -56,32 +60,42 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private Button catalog;
     private ImageButton web_refresh;
     private ImageButton AddBook;
+    //外部存储的数据源
     private SharedPreferences myInfo;//用户信息（字体、书籍数量等）
     private NovelDBTools novelDBTools;//书籍数据库DAO
     private NovelRequire novelRequire;//书源规则类
     private NovelSourceDBTools sourceDBTools;//书源数据库DAO
+    //用户设置
     private int myProgress;//字体大小
-    WebSettings webSettings;
-    String currentURL;//当前网页链接
-    int ttlChap;//总章节数
-    int currentChap=0;//当前章节索引
-    String nextUrl;
-    String pastUrl;
-    String catalogUrl;//书籍目录链接
-    String infoUrl;//书籍信息页链接
-    String currentTitle;//当前章节标题
-    String BookName;
-    int sourceID;//书源编号
-    List<String>ChapList;
-    List<String>ChapLinkList;
-    List<Novels> AllNovels;//书架中所有的书
-    NovelSearchThread.TAG tag;
+    private WebSettings webSettings;
+    //章节信息 书本信息
+    private String currentURL;//当前网页链接
+    private int ttlChap;//总章节数
+    private int currentChap=0;//当前章节索引
+    private String nextUrl;
+    private String pastUrl;
+    private String catalogUrl;//书籍目录链接
+    private String infoUrl;//书籍信息页链接
+    private String contentRootUrl;//章节内容父链接
+    private String currentTitle;//当前章节标题
+    private String BookName;
+    private int sourceID;//书源编号
+    //目录信息
+    private List<String>ChapList;
+    private List<String>ChapLinkList;
+    //private List<Novels> AllNovels;//书架中所有的书
+    //基本变量
     private boolean istouch=false;
     private boolean first_load=true;//首次载入，界面提示
     private boolean isFloatButtonShow=true;
     private static boolean isInShelf=false;
+    private boolean isCatalogReady=false;//目录是否下载完成
     private static int book_id;//书架中的书号
     private Context context;
+    //broad cast intent
+    public static String CATALOG_BROADCAST = "Z.NovelShow.intent.CATALOG_READY";
+
+
     @SuppressLint({"ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,7 +150,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
         novelDBTools.getAllNovelsLD().observe(this, new Observer<List<Novels>>() {
             @Override
             public void onChanged(List<Novels> novels) {
-                AllNovels=novels;
                 SharedPreferences.Editor editor=myInfo.edit();
                 editor.putInt("bookNum",novels.size()).apply();
             }
@@ -214,7 +227,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 // TODO Auto-generated method stub
                 int ea = event.getAction();
-                Log.i("TAG", "Touch:" + ea);
                 switch (ea) {
                     case MotionEvent.ACTION_DOWN:
                         lastX = (int) event.getRawX();// 获取触摸事件触摸位置的原始X坐标
@@ -285,7 +297,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 super.onPageFinished(view, url);
                 //阅读新章节时：
                 if (!StringUtils.UrlStingCompare(url,currentURL)){
-                    System.out.println(url);
+                    System.out.println("webview load:"+url);
                     currentURL=url;
                     ChangeCurrentCondition();
                     //如果该书已在书架内则更新书架数据库信息
@@ -312,7 +324,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         webSettings.setDomStorageEnabled(true);
 
         //获取目录
-        getCatalog();
+        registerCatalogBroadcast();
 
         //刷新界面
         web_refresh.setOnClickListener(new View.OnClickListener() {
@@ -326,6 +338,20 @@ public class NovelShowAcitivity extends AppCompatActivity {
 
         //debug ContentTextThread t=new ContentTextThread(url,BookName,getExternalFilesDir(null));t.start();
 
+    }
+
+    private void registerCatalogBroadcast() {
+        BroadcastReceiver broadcastReceiver=new BroadcastReceiver() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().equals(CATALOG_BROADCAST) && !isCatalogReady)
+                    getCatalog();
+            }
+        };
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(CATALOG_BROADCAST);
+        registerReceiver(broadcastReceiver,filter);
     }
 
     @Override
@@ -390,6 +416,11 @@ public class NovelShowAcitivity extends AppCompatActivity {
      * 将书籍加入数据库并保存当前章节内容
      */
     private void IfAddToShelf() {
+        if(!isCatalogReady){
+            AddBook.setImageResource(R.mipmap.addtoshelf);
+            Toast.makeText(Novalshow, "请先等待目录加载完毕", Toast.LENGTH_SHORT).show();
+            return;
+        }
         AlertDialog.Builder builder=new AlertDialog.Builder(Novalshow);
         builder.setTitle("加入书架")
                 .setMessage("是否将本书加入书架")
@@ -413,17 +444,26 @@ public class NovelShowAcitivity extends AppCompatActivity {
                                 Book_Folder.mkdir();
                             }
                             //获取封面图片
-                            GetCoverThread thread_cover = new GetCoverThread(novel, novelRequire, getExternalFilesDir(null));
+                            GetCoverThread thread_cover = new GetCoverThread(novel,novelRequire);
                             thread_cover.start();
                             //获取当前章节文本
-                            ContentTextThread thread_text=new ContentTextThread(currentURL,BookName,
-                                    getExternalFilesDir(null),true);
-                            thread_text.setNovelRequire(novelRequire);
-                            thread_text.start();
+                            ContentThread thread_content = new ContentThread(currentURL,novelRequire,contentRootUrl);
+                            thread_content.setOutputParams("/ZsearchRes/BookReserve/" + BookName);
+                            thread_content.start();
+//                            ContentTextThread thread_text=new ContentTextThread(currentURL,BookName,
+//                                    getExternalFilesDir(null),true);
+//                            thread_text.setNovelRequire(novelRequire);
+//                            thread_text.start();
                             //获取本书目录
-                            CatalogThread thread_catalog=new CatalogThread(catalogUrl,novelRequire,true,false);
-                            thread_catalog.setOutputParams(BookName,getExternalFilesDir(null));
-                            thread_catalog.start();
+                            //通过复制获取目录
+                            String temp_catalog_path = getExternalFilesDir(null) + "/ZsearchRes/catalog.txt";
+                            String temp_catalogURL_path = getExternalFilesDir(null) + "/ZsearchRes/temp_catalog_link.txt";
+                            String target_catalog_path = getExternalFilesDir(null) + "/ZsearchRes/BookReserve/"+BookName+
+                                    "/catalog.txt";
+                            String target_catalogURL_path = getExternalFilesDir(null) + "/ZsearchRes/BookReserve/"+BookName+
+                                    "/catalog_link.txt";
+                            FileUtils.copyFile(temp_catalog_path,target_catalog_path);
+                            FileUtils.copyFile(temp_catalogURL_path,target_catalogURL_path);
                         }else Toast.makeText(Novalshow, "未查找到书源", Toast.LENGTH_SHORT).show();
 
                     }
@@ -439,16 +479,23 @@ public class NovelShowAcitivity extends AppCompatActivity {
     /**
      * 从临时目录中读取目录数据，初始化章节信息
      */
-    private void getCatalog() {
-        NovelCatalog result_back = FileIOUtils.read_catalog("/ZsearchRes/temp_catalog.txt",
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public void getCatalog() {
+        Log.d("novel show","收到广播，开始初始化目录");
+        NovelCatalog result_back = FileIOUtils.read_catalog("/ZsearchRes/catalog.txt",
                 context.getExternalFilesDir(null));
         if (!result_back.isEmpty()) {
             ChapList = result_back.getTitle();
             ChapLinkList = result_back.getLink();
             ttlChap = ChapList.size();
+
+            if (ttlChap > 1)contentRootUrl = StringUtils.getSharedURL(
+                    ChapLinkList.get(0),ChapLinkList.get(1));
+            else contentRootUrl = StringUtils.getRootUrl(ChapLinkList.get(0));
+            Log.d("novel show","content root url= "+contentRootUrl);
             ChangeCurrentCondition();
             catalog.setEnabled(true);
-            //webView.reload();
+            isCatalogReady=true;
         }else{
             Toast.makeText(this, "目录读取失败", Toast.LENGTH_SHORT).show();
             Log.d("novel show","目录读取失败");
@@ -467,10 +514,16 @@ public class NovelShowAcitivity extends AppCompatActivity {
             Novels novel=new Novels(BookName,ttlChap,currentChap,catalogUrl,infoUrl);
             novel.setId(book_id);
             novelDBTools.updateNovels(novel);
-            ContentTextThread t=new ContentTextThread(currentURL,BookName,
-                    getExternalFilesDir(null),true);
-            t.setNovelRequire(novelRequire);
-            t.start();
+
+            //更新章节缓存
+            ContentThread thread_content = new ContentThread(currentURL,novelRequire,contentRootUrl);
+            thread_content.setOutputParams("/ZsearchRes/BookReserve/" + BookName);
+            thread_content.start();
+//            ContentTextThread t=new ContentTextThread(currentURL,BookName,
+//                    getExternalFilesDir(null),true);
+//            t.setNovelRequire(novelRequire);
+//            t.start();
     }
+
 
 }

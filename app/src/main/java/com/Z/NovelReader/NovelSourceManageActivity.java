@@ -1,5 +1,7 @@
 package com.Z.NovelReader;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
@@ -7,10 +9,11 @@ import androidx.lifecycle.ViewModelProviders;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.KeyboardShortcutGroup;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,12 +33,19 @@ import com.Z.NovelReader.Adapters.NovelSourceAdapter;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceViewModel;
 import com.Z.NovelReader.Threads.NovelSourceGetterThread;
+import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.ScreenUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
-import com.Z.NovelReader.myObjects.beans.NovelRequire;
+import com.Z.NovelReader.Utils.StorageUtils;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.views.KeyboardPopupWindow;
 import com.Z.NovelReader.views.WaitDialog;
+import com.google.gson.JsonSyntaxException;
+import com.z.fileselectorlib.FileSelectorSettings;
+import com.z.fileselectorlib.Objects.FileInfo;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 public class NovelSourceManageActivity extends AppCompatActivity {
@@ -117,6 +127,11 @@ public class NovelSourceManageActivity extends AppCompatActivity {
             public void onSwitchClick(NovelRequire currentSource, boolean isEnabled) {
                 sourceDBTools.UpdateSourceVisibility(currentSource.getId(),isEnabled);
             }
+
+            @Override
+            public void onSourceDelete(NovelRequire currentSource) {
+                sourceDBTools.DeleteNovelSources(currentSource);
+            }
         });
         //list 显示数据
         lv_novelSourceList.setAdapter(adapter);
@@ -129,12 +144,64 @@ public class NovelSourceManageActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public void onBackPressed() {
+        if (adapter.isDelete_mode())adapter.setDelete_mode(false);
+        else super.onBackPressed();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
+            //权限重新允许
+            showFileSelector();
+            manageOptions.dismiss();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode==FileSelectorSettings.REQUEST_CODE && resultCode==FileSelectorSettings.BACK_WITH_SELECTIONS){
+            assert data != null;
+            Bundle bundle=data.getExtras();
+            assert bundle != null;
+            ArrayList<String> FilePathSelected
+                    =bundle.getStringArrayList(FileSelectorSettings.FILE_PATH_LIST_REQUEST);
+            if (FilePathSelected!=null && FilePathSelected.size()!=0) {
+                String path=FilePathSelected.get(0);
+                File local_source = new File(path);
+                if (local_source.exists()){
+                    try {
+                        String sourceJSON = FileIOUtils.read_line("", local_source);
+                        NovelRequire[] novelRequire = NovelRequire.getNovelRequireBeans(sourceJSON);
+                        NovelSourceDBTools sourceDBTools=new NovelSourceDBTools(context);
+                        sourceDBTools.InsertNovelSources(novelRequire);
+                        Toast.makeText(this, "新增：" +novelRequire.length+ "个书源", Toast.LENGTH_SHORT).show();
+                    }catch (JsonSyntaxException e){
+                        e.printStackTrace();
+                        Toast.makeText(context, "文件不符合书源格式", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        }
+    }
+
     private void showManageOptions() {
         //加载布局
         RelativeLayout layout = (RelativeLayout) LayoutInflater.from(activity).inflate(R.layout.novel_source_manage_popup, null);
         //找到布局的控件
         final LinearLayout ll_internet_import = layout.findViewById(R.id.import_from_internet);
-        LinearLayout ll_local_import = layout.findViewById(R.id.import_from_local);
+        final LinearLayout ll_local_import = layout.findViewById(R.id.import_from_local);
+        final LinearLayout ll_delete_select = layout.findViewById(R.id.delete_select);
+        final TextView delete_select_title = ll_delete_select.findViewById(R.id.delete_select_title);
+        //设置属性
+        if (adapter.isDelete_mode()){
+            delete_select_title.setText("退出删除");
+        }else {
+            delete_select_title.setText("删除模式");
+        }
         // 实例化popupWindow
         manageOptions = new PopupWindow(layout, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         //焦点和阴影
@@ -149,45 +216,64 @@ public class NovelSourceManageActivity extends AppCompatActivity {
         ll_internet_import.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final KeyboardPopupWindow popWiw = new KeyboardPopupWindow(context,R.layout.edit_keyboard,true);
-                popWiw.setInputMethodMode(PopupWindow.INPUT_METHOD_NEEDED);
-                popWiw.setFocusable(true);
-                //根据软键盘调整大小
-                popWiw.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-                popWiw.showAtLocation(lv_novelSourceList, Gravity.BOTTOM
-                        | Gravity.CENTER_HORIZONTAL, 0, 0);
-                popWiw.setOnDismissListener(new PopupWindow.OnDismissListener() {
-                    @Override
-                    public void onDismiss() {
-                        InputMethodManager im = (InputMethodManager) context
-                                .getSystemService(Context.INPUT_METHOD_SERVICE);
-                        im.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
-                        manageOptions.dismiss();
-                    }
-                });
-                ImageButton imb_commit = popWiw.getContentView().findViewById(R.id.ITIM_link_commit);
-                final EditText edt_input = popWiw.getContentView().findViewById(R.id.ITIM_link_input);
-                imb_commit.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String link = edt_input.getText().toString();
-                        if ("".equals(link) || !link.contains("http")){
-                            Toast.makeText(activity, "错误的链接", Toast.LENGTH_SHORT).show();
-                        }else {
-                            NovelSourceGetterThread sourceGetterThread=new NovelSourceGetterThread(context,link);
-                            sourceGetterThread.setHandler(handler);
-                            sourceGetterThread.start();
-                            popWiw.dismiss();
-                            waitDialog.show();
-                        }
-                    }
-                });
+                showEditTextForURL();
             }
         });
         ll_local_import.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (StorageUtils.isStoragePermissionGranted(context,activity)) {
+                    showFileSelector();
+                    manageOptions.dismiss();
+                }
+            }
+        });
+        ll_delete_select.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!adapter.isDelete_mode()){
+                    adapter.setDelete_mode(true);
+                    delete_select_title.setText("退出删除");
+                }else {
+                    adapter.setDelete_mode(false);
+                    delete_select_title.setText("删除模式");
+                }
+            }
+        });
+    }
 
+    private void showEditTextForURL() {
+        final KeyboardPopupWindow popWiw = new KeyboardPopupWindow(context,R.layout.edit_keyboard,true);
+        popWiw.setInputMethodMode(PopupWindow.INPUT_METHOD_NEEDED);
+        popWiw.setFocusable(true);
+        //根据软键盘调整大小
+        popWiw.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        popWiw.showAtLocation(lv_novelSourceList, Gravity.BOTTOM
+                | Gravity.CENTER_HORIZONTAL, 0, 0);
+        popWiw.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                InputMethodManager im = (InputMethodManager) context
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
+                im.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
+                manageOptions.dismiss();
+            }
+        });
+        ImageButton imb_commit = popWiw.getContentView().findViewById(R.id.ITIM_link_commit);
+        final EditText edt_input = popWiw.getContentView().findViewById(R.id.ITIM_link_input);
+        imb_commit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String link = edt_input.getText().toString();
+                if ("".equals(link) || !link.contains("http")){
+                    Toast.makeText(activity, "错误的链接", Toast.LENGTH_SHORT).show();
+                }else {
+                    NovelSourceGetterThread sourceGetterThread=new NovelSourceGetterThread(context,link);
+                    sourceGetterThread.setHandler(handler);
+                    sourceGetterThread.start();
+                    popWiw.dismiss();
+                    waitDialog.show();
+                }
             }
         });
     }
@@ -209,6 +295,16 @@ public class NovelSourceManageActivity extends AppCompatActivity {
                 ScreenUtils.BackGroundAlpha(activity,1.0f);
             }
         });
+    }
+
+    private void showFileSelector() {
+        FileSelectorSettings settings=new FileSelectorSettings();
+        settings.setRootPath(FileSelectorSettings.getSystemRootPath())
+                .setMaxFileSelect(1)
+                .setTitle("请选择书源文件")
+                .setThemeColor("#1E90FF")
+                .setFileTypesToSelect(FileInfo.FileType.Unknown)
+                .show(NovelSourceManageActivity.this);
     }
 
     private void initStatusBar() {

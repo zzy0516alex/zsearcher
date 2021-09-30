@@ -1,8 +1,7 @@
-package com.Z.NovelReader.myObjects.beans;
+package com.Z.NovelReader.Objects.beans;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
-import androidx.room.PrimaryKey;
 
 @Entity
 public class ruleSearch{
