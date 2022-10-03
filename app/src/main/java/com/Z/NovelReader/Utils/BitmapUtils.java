@@ -1,11 +1,16 @@
 package com.Z.NovelReader.Utils;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
+import android.graphics.Shader;
 
 public class BitmapUtils {
 
@@ -41,5 +46,34 @@ public class BitmapUtils {
         c.drawBitmap(originalBitmap, offsetXY[0], offsetXY[1], null);
 
         return shadowImage32;
+    }
+    public static Bitmap setRadius(Bitmap bitmap, int radius){
+        int height = bitmap.getHeight();
+        int width = bitmap.getWidth();
+
+        //创建输出的bitmap
+        Bitmap desBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        //创建canvas并传入desBitmap，这样绘制的内容都会在desBitmap上
+        Canvas canvas = new Canvas(desBitmap);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        //创建着色器
+        BitmapShader bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+        //给着色器配置matrix
+//        bitmapShader.setLocalMatrix();
+        paint.setShader(bitmapShader);
+        //创建矩形区域并且预留出border
+        RectF rect = new RectF(0, 0, width, height);
+        //把传入的bitmap绘制到圆角矩形区域内
+        canvas.drawRoundRect(rect, radius, radius, paint);
+        return desBitmap;
+
+    }
+    public static Bitmap changeColor( Bitmap transformBitmap,int color) {
+        Bitmap resBitmap = Bitmap.createBitmap(transformBitmap);
+        Canvas canvas = new Canvas(resBitmap);
+        Paint paint = new Paint();
+        paint.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(transformBitmap, 0.0F, 0.0F, paint);
+        return resBitmap;
     }
 }

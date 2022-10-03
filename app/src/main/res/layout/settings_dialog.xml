@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/dialog_deepblue"
+    android:paddingBottom="30dp">
+
+
+    <LinearLayout
+        android:id="@+id/brightness_adjust"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/label_light"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="亮度"
+            android:textColor="#D3D3D3"
+            android:textSize="18sp" />
+
+        <SeekBar
+            android:id="@+id/set_light"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="15"
+            android:maxHeight="10dp"
+            android:progressDrawable="@drawable/seek_bar_style1"
+            android:splitTrack="false"
+            android:thumb="@drawable/seek_bar_btn1" />
+
+        <Button
+            android:id="@+id/with_system"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/btn_check"
+            android:paddingVertical="10dp"
+            android:minHeight="0dp"
+            android:text="跟随系统"
+            android:textColor="#DCDCDC" />
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/text_adjust"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/brightness_adjust"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/label_text_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="字体"
+            android:textColor="#D3D3D3"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/text_size_dec"
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/ripple_btn_edging"
+                android:minHeight="0dp"
+                android:paddingVertical="8dp"
+                android:text="A-"
+                android:textColor="#DCDCDC"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/current_text_size"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:text="20"
+                android:textColor="#D3D3D3"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/text_size_inc"
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/ripple_btn_edging"
+                android:minHeight="0dp"
+                android:paddingVertical="8dp"
+                android:text="A+"
+                android:textColor="#DCDCDC"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/line_adjust"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/text_adjust"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/label_line_width"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="行距"
+            android:textColor="#D3D3D3"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/line_width_dec"
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/ripple_btn_edging"
+                android:minHeight="0dp"
+                android:paddingVertical="8dp"
+                android:text="L-"
+                android:textColor="#DCDCDC"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/current_line_width"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:text="1.0 ×"
+                android:textColor="#D3D3D3"
+                android:textSize="19sp" />
+
+            <Button
+                android:id="@+id/line_width_inc"
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/ripple_btn_edging"
+                android:minHeight="0dp"
+                android:paddingVertical="8dp"
+                android:text="L+"
+                android:textColor="#DCDCDC"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/read_mode_select"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/line_adjust"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/label_mode_select"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="翻页方式"
+            android:textColor="#D3D3D3"
+            android:textSize="18sp" />
+
+<!--        总长度260-->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:orientation="horizontal">
+        <RadioGroup
+            android:id="@+id/mode_select_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <RadioButton
+                android:id="@+id/mode_vertical"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:button="@null"
+                android:background="@drawable/btn_check"
+                android:minHeight="0dp"
+                android:paddingVertical="6dp"
+                android:text="上下"
+                android:gravity="center"
+                android:textColor="@drawable/txt_checkable_doderblue"
+                android:textSize="16sp" />
+            <RadioButton
+                android:id="@+id/mode_horizon"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:button="@null"
+                android:background="@drawable/btn_check"
+                android:minHeight="0dp"
+                android:layout_marginLeft="40dp"
+                android:paddingVertical="6dp"
+                android:text="左右"
+                android:gravity="center"
+                android:textColor="@drawable/txt_checkable_doderblue"
+                android:textSize="16sp" />
+            <RadioButton
+                android:id="@+id/mode_vivid"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:button="@null"
+                android:background="@drawable/btn_check"
+                android:minHeight="0dp"
+                android:layout_marginLeft="40dp"
+                android:paddingVertical="6dp"
+                android:text="仿真"
+                android:gravity="center"
+                android:textColor="@drawable/txt_checkable_doderblue"
+                android:textSize="16sp" />
+        </RadioGroup>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>

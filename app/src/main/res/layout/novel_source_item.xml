@@ -34,12 +34,12 @@
         android:background="#00000000"/>
 
     <com.suke.widget.SwitchButton
+        android:id="@+id/novel_source_enable"
         android:layout_width="45dp"
         android:layout_height="27dp"
-        app:sb_checked_color="@color/DoderBlue"
-        android:id="@+id/novel_source_enable"
-        android:layout_centerVertical="true"
         android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
         android:layout_marginEnd="20dp"
-        app:sb_show_indicator="false"/>
+        app:sb_checked_color="@color/DoderBlue"
+        app:sb_show_indicator="false" />
 </RelativeLayout>

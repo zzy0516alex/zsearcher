@@ -9,6 +9,15 @@
             <padding android:top="5dp" android:bottom="5dp" android:left="8dp" android:right="8dp"/>
         </shape>
     </item>
+    <item android:state_checked="true">
+        <shape>
+            <solid android:color="#00000000"/>
+            <stroke android:color="@color/DoderBlue"
+                android:width="2dp"/>
+            <corners android:radius="50dp"/>
+            <padding android:top="5dp" android:bottom="5dp" android:left="8dp" android:right="8dp"/>
+        </shape>
+    </item>
     <item>
         <shape>
             <solid android:color="#00000000"/>

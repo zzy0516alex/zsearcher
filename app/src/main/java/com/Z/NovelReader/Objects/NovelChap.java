@@ -1,32 +1,52 @@
 package com.Z.NovelReader.Objects;
 
+import com.Z.NovelReader.NovelRoom.Novels;
+import com.Z.NovelReader.Objects.beans.NovelCatalog;
+import com.Z.NovelReader.Objects.beans.NovelContentPage;
+import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.Threads.NovelSearchThread;
 
-public class NovelChap {
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+
+public class NovelChap extends Novels implements Serializable {
     private String title;
     private String content;
-    private int current_chapter;//当前章节号
-    private int ttl_chapter;//总章节数
-    private int BookID;
-    private NovelSearchThread.TAG tag;
-    private String BookName;
+    private NovelRequire novelRequire;//书源规则
     private String last_link="";
     private String next_link="";
+    private boolean onError = false;
+
     public static final int BOTH_LINK_AVAILABLE=0;
     public static final int LAST_LINK_ONLY=1;
     public static final int NEXT_LINK_ONLY=2;
     public static final int NO_LINK_AVAILABLE=3;
 
-    public NovelChap(String title, NovelSearchThread.TAG tag){
-        this.title=title;
-        this.tag=tag;
+    public NovelChap(Novels novels){
+        super(novels.getId(),novels.getBookName(),novels.getWriter(),
+                novels.getTtlChap(),novels.getCurrentChap(),
+                novels.getBookCatalogLink(),novels.getBookInfoLink(),
+                novels.getContentRootLink(),novels.getSource(),
+                novels.getProgress());
     }
-    public NovelChap(String title, String content) {
-        this.title = title;
-        this.content = content;
+    public NovelChap() {
     }
 
-    public NovelChap(String title, String content, int link_type,String ...link) {
+    public NovelChap deepClone() throws IOException, ClassNotFoundException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(this);
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        ObjectInputStream ois = new ObjectInputStream(bis);
+        return (NovelChap) ois.readObject();
+    }
+
+    public void initChap(String title, String content, int link_type,String ...link) {
         this.title = title;
         this.content = content;
         switch(link_type){
@@ -67,38 +87,6 @@ public class NovelChap {
         this.content = content;
     }
 
-    public int getBookID() {
-        return BookID;
-    }
-
-    public void setBookID(int bookID) {
-        BookID = bookID;
-    }
-
-    public String getBookName() {
-        return BookName;
-    }
-
-    public void setBookName(String bookName) {
-        BookName = bookName;
-    }
-
-    public int getCurrent_chapter() {
-        return current_chapter;
-    }
-
-    public void setCurrent_chapter(int current_chapter) {
-        this.current_chapter = current_chapter;
-    }
-
-    public int getTtl_chapter() {
-        return ttl_chapter;
-    }
-
-    public void setTtl_chapter(int ttl_chapter) {
-        this.ttl_chapter = ttl_chapter;
-    }
-
     public String getNext_link() {
         return next_link;
     }
@@ -115,12 +103,12 @@ public class NovelChap {
         this.last_link = last_link;
     }
 
-    public NovelSearchThread.TAG getTag() {
-        return tag;
+    public NovelRequire getNovelRequire() {
+        return novelRequire;
     }
 
-    public void setTag(NovelSearchThread.TAG tag) {
-        this.tag = tag;
+    public void setNovelRequire(NovelRequire novelRequire) {
+        this.novelRequire = novelRequire;
     }
 
     public boolean hasLastLink(){
@@ -129,10 +117,19 @@ public class NovelChap {
     public boolean hasNextLink(){
         return !next_link.equals("");
     }
-    public int getFurtherLinkType(int ttl_chap){
-        if (current_chapter==1){
+
+    public void setOnError(boolean onError) {
+        this.onError = onError;
+    }
+
+    public boolean isOnError() {
+        return onError;
+    }
+
+    public int getFurtherLinkType(){
+        if (getCurrentChap()==1){
             return NEXT_LINK_ONLY;
-        }else if (current_chapter==ttl_chap-2){
+        }else if (getCurrentChap()==getTtlChap()-2){
             return LAST_LINK_ONLY;
         }else return BOTH_LINK_AVAILABLE;
     }
@@ -142,6 +139,28 @@ public class NovelChap {
         }else if (current_chap==ttl_chap-1){
             return LAST_LINK_ONLY;
         }else return BOTH_LINK_AVAILABLE;
+    }
+
+    public static void initNovelChap(NovelChap chap, String content, String[] currentChap) {
+        if (currentChap[1].equals("")) {
+            chap.initChap(currentChap[0], content, NovelChap.NEXT_LINK_ONLY, currentChap[2]);
+        } else if (currentChap[2].equals("")) {
+            chap.initChap(currentChap[0], content, NovelChap.LAST_LINK_ONLY, currentChap[1]);
+        } else {
+            chap.initChap(currentChap[0], content, NovelChap.BOTH_LINK_AVAILABLE, currentChap[1], currentChap[2]);
+        }
+    }
+
+    public static String[] getCurrentChapLink(int current_chap, NovelCatalog novelCatalog) {
+        String[] result=new String[3];//0:name 1:last_link 2:next_link
+        result[0]= novelCatalog.getTitle().get(current_chap);
+        if(current_chap>0)
+            result[1]= novelCatalog.getLink().get(current_chap-1);
+        else result[1]="";
+        if(current_chap< novelCatalog.getSize()-1)
+            result[2]= novelCatalog.getLink().get(current_chap+1);
+        else result[2]="";
+        return result;
     }
 
 }

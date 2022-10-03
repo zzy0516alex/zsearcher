@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import com.Z.NovelReader.Global.MyApplication;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
+import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 
@@ -14,27 +15,32 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
 public class GetCoverThread extends Thread {
     private String BookName;
-    private File Dir;
     private String infoPageURL;
     private NovelRequire novelRequire;//书源规则类
+    private String coverPath;
 
-    public GetCoverThread(Novels novel,NovelRequire novelRequire) {
+    /**
+     *
+     * @param novel bookName,bookInfoLink required
+     * @param novelRequire
+     * @param output_path 输出封面的路径
+     */
+    public GetCoverThread(Novels novel,NovelRequire novelRequire,String output_path) {
         this.BookName=novel.getBookName();
-        this.Dir= MyApplication.getExternalDir();
         this.infoPageURL=novel.getBookInfoLink();
         this.novelRequire=novelRequire;
+        this.coverPath = output_path;
     }
 
     @Override
     public void run() {
         super.run();
+        if (novelRequire.getRuleBookInfo() == null)return;
         String rule_cover = novelRequire.getRuleBookInfo().getCoverUrl();
         if (rule_cover!=null) getCoverFromOriginSource(rule_cover);
         else getCoverFromQiDian();
@@ -49,12 +55,15 @@ public class GetCoverThread extends Thread {
             Document document = connect.get();
             NovelRuleAnalyzer coverSRCAnalyzer = new NovelRuleAnalyzer();
             List<String> src = coverSRCAnalyzer.getObjectFromElements(new Elements(document), rule_cover);
-            if (src != null) {
+            if (src != null && src.size() != 0) {
                 String picUrl=StringUtils.completeUrl(src.get(0),novelRequire.getBookSourceUrl());
                 PictureThread thread = new PictureThread(picUrl);
                 thread.start();
                 Bitmap mbitmap = (Bitmap) thread.getMyBitmap();
-                savePic(mbitmap);
+                if (mbitmap!=null)
+                    FileIOUtils.saveBitmap(coverPath,mbitmap);
+            }else {
+                getCoverFromQiDian();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -76,35 +85,12 @@ public class GetCoverThread extends Thread {
                 PictureThread thread = new PictureThread(picUrl);
                 thread.start();
                 Bitmap mbitmap = (Bitmap) thread.getMyBitmap();
-                savePic(mbitmap);
+                if (mbitmap!=null)
+                    FileIOUtils.saveBitmap(coverPath,mbitmap);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void savePic(Bitmap mbitmap) {
-        File picIn=new File(Dir+"/ZsearchRes/BookReserve/"+ BookName+"/cover.png" );
-        FileOutputStream fot=null;
-        try {
-            fot=new FileOutputStream(picIn);
-        }catch (FileNotFoundException e){
-            e.printStackTrace();
-        }
-        mbitmap.compress(Bitmap.CompressFormat.PNG,100,fot);
-        try{
-            assert fot != null;
-            fot.flush();
-        }catch (IOException e){
-            e.printStackTrace();
-        }finally {
-            if(fot!=null){
-                try {
-                    fot.close();
-                }catch (IOException e){
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 }

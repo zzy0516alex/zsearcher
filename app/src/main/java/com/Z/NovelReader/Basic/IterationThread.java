@@ -36,8 +36,10 @@ abstract public class IterationThread extends BasicHandlerThread {
         try {
             Connection connect = Jsoup.connect(StartLink);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
+            connect.header("Connection", "close");
+            connect.timeout(5000);
             Document document= connect.get();
-            Object o = firstProcess(document);
+            Object o = preProcess(document);
             if (o == null) throw new RuntimeException("IterationThread：初始结果为null,无法迭代");
             boolean do_break = canBreakIterate(o);
             if (IterateCounter != 0 && !do_break){
@@ -51,15 +53,15 @@ abstract public class IterationThread extends BasicHandlerThread {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            onErrorOccur(NO_INTERNET);
+            onErrorOccur(NO_INTERNET,e);
             report(NO_INTERNET);
         }catch (RuntimeException e){
             e.printStackTrace();
-            onErrorOccur(TARGET_NOT_FOUND);
+            onErrorOccur(TARGET_NOT_FOUND,e);
             report(TARGET_NOT_FOUND);
         } catch (Exception e) {
             e.printStackTrace();
-            onErrorOccur(PROCESSOR_ERROR);
+            onErrorOccur(PROCESSOR_ERROR,e);
             report(PROCESSOR_ERROR);
         }
     }
@@ -75,7 +77,7 @@ abstract public class IterationThread extends BasicHandlerThread {
      * @return 预处理结果
      * @throws Exception 预处理过程中的错误
      */
-    public abstract Object firstProcess(Document document) throws Exception;
+    public abstract Object preProcess(Document document) throws Exception;
 
     /**
      * 实现判断是否可以继续迭代
@@ -99,5 +101,5 @@ abstract public class IterationThread extends BasicHandlerThread {
      * 错误处理
      * @param event 错误代码
      */
-    public abstract void onErrorOccur(int event);
+    public abstract void onErrorOccur(int event,Exception e);
 }

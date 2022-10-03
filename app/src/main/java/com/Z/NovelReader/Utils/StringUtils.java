@@ -16,6 +16,8 @@ import java.util.regex.Pattern;
 public class StringUtils {
     //获取字符串匹配度
     public static double compareStrings(String str1, String str2) {
+        str1 = deleteSpaceInStart(str1);
+        str2 = deleteSpaceInStart(str2);
         ArrayList pairs1 = wordLetterPairs(str1.toUpperCase());
         ArrayList pairs2 = wordLetterPairs(str2.toUpperCase());
         int intersection = 0;
@@ -62,9 +64,16 @@ public class StringUtils {
      */
     public static boolean UrlStingCompare(String url1,String url2){
         String newurl1,newurl2;
+        //处理https协议问题
         newurl1=http2https(url1);
         newurl2=http2https(url2);
-        return newurl1.equals(newurl2);
+        if (newurl1.equals(newurl2))return true;
+        else {
+            //处理移动设备问题
+            newurl1 = newurl1.replace("https://m.","https://www.");
+            newurl2 = newurl2.replace("https://m.","https://www.");
+            return newurl1.equals(newurl2);
+        }
     }
 
     private static String http2https(String url) {
@@ -117,19 +126,18 @@ public class StringUtils {
 
     public static String add_to_url(String root,String adder){
         StringBuilder result = new StringBuilder(root);
+        boolean flag = false;//是否以 / 结尾
+        if (adder.endsWith("/"))flag = true;
         String[] url_parts = adder.split("/");
         if (url_parts.length == 0)return root+adder;
         for (int i = 0; i < url_parts.length; i++) {
             if (!root.contains("/"+url_parts[i]+"/")){
                 result.append(url_parts[i]);
-                if (i!=url_parts.length-1)result.append("/");
+                if (i!=url_parts.length-1 || flag)result.append("/");
             }
         }
         return result.toString();
     }
-
-    // 通过 -?[0-9]+(\\\\.[0-9]+)? 进行匹配是否为数字
-    private static Pattern pattern = Pattern.compile("-?[0-9]+(\\\\.[0-9]+)?");
 
     /**
      * 通过正则表达式判断字符串是否为数字
@@ -137,6 +145,7 @@ public class StringUtils {
      * @return
      */
     public static boolean isNumber(String str) {
+        Pattern pattern = Pattern.compile("-?[0-9]+(\\\\.[0-9]+)?");
         // 通过Matcher进行字符串匹配
         Matcher m = pattern.matcher(str);
         // 如果正则匹配通过 m.matches() 方法返回 true ，反之 false
@@ -188,13 +197,8 @@ public class StringUtils {
         return matcher;
     }
 
-    /**
-     * 去除大于等于3个的连续空行，替换为2个空行
-     * @param origin 原始文本
-     * @return 优化后的文本
-     */
-    public static String removeEmptyLine(String origin){
-        return origin.replaceAll("(\r?\n(\\s*\r?\n){2,})", "\n\n");
+    public static String deleteSpaceInStart(String origin){
+        return origin.replaceAll("^ ","");
     }
 
     /**
@@ -261,4 +265,23 @@ public class StringUtils {
         }
         return flag?max:"";
     }
+
+    /**
+     * 是否是以0~2个空格开头的字符串
+     * @param s
+     * @return
+     */
+    public static boolean isStartWithNoSpace(String s){
+        Pattern pattern = Pattern.compile("^[ ]{0,2}[^ ]+(.|\\n|\\r)*");
+        Matcher matcher = pattern.matcher(s);
+        return matcher.matches();
+    }
+
+    public static String simplifyChapName(String origin){
+        return origin.replaceAll("第.+?章","");
+    }
+
+//    public static String handleEscapeCharacterInUrl(String url){
+//       return url.replace("#","%23");
+//    }
 }

@@ -14,6 +14,7 @@ import com.Z.NovelReader.Processors.NovelSearchProcessor;
 import com.Z.NovelReader.Objects.beans.NovelSearchBean;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.Objects.beans.SearchQuery;
+import com.Z.NovelReader.Utils.SSLAgent;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -23,20 +24,19 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
+import javax.net.ssl.SSLHandshakeException;
+
 public class NovelSearchThread extends BasicHandlerThread {
 
     private String url;//搜书地址（完整）
     private int SourceId;//书源编号
     private SearchQuery completedSearchQuery;//搜书地址类
-    private NovelSourceDBTools sourceDBTools;//书源数据库DAO
+//    private NovelSourceDBTools sourceDBTools;//书源数据库DAO
     private NovelRequire novelRequire;//书源规则类
     private ArrayList<NovelSearchBean>searchResult;//搜索结果
 
-    //todo 需删除
-    public enum TAG {BiQuGe,SiDaMingZhu}
 
-
-    public NovelSearchThread(Context context,SearchQuery searchQuery, String key) {
+    public NovelSearchThread(NovelRequire novelRequire,SearchQuery searchQuery, String key) {
         this.completedSearchQuery =new SearchQuery();
         try {
             this.completedSearchQuery = NovelSearchProcessor.getCompleteSearchUrl(searchQuery, key);
@@ -45,7 +45,8 @@ public class NovelSearchThread extends BasicHandlerThread {
         }
         this.url= completedSearchQuery.getSearch_url();
         this.SourceId= completedSearchQuery.getId();
-        sourceDBTools=new NovelSourceDBTools(context);
+        this.novelRequire = novelRequire;
+//        sourceDBTools=new NovelSourceDBTools(context);
     }
 
 
@@ -53,21 +54,16 @@ public class NovelSearchThread extends BasicHandlerThread {
     public void run() {
         super.run();
         searchResult=new ArrayList<>();
-        //获取书源规则
-        sourceDBTools.getNovelRequireById(SourceId, new NovelSourceDBTools.QueryListener() {
-            @Override
-            public void onResultBack(Object object) {
-                novelRequire= (NovelRequire) object;
-            }
-        });
         try {
             //获取document
             Connection connect = Jsoup.connect(url);
             connect.timeout(20000);
+            connect.ignoreHttpErrors(true);
+            connect.followRedirects(true);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
             Document doc=null;
-            if ("GET".equals(completedSearchQuery.getMethod()))doc= connect.get();
-            else if ("POST".equals(completedSearchQuery.getMethod())){
+            if ("GET".equalsIgnoreCase(completedSearchQuery.getMethod()))doc= connect.get();
+            else if ("POST".equalsIgnoreCase(completedSearchQuery.getMethod())){
                 connect.postDataCharset(completedSearchQuery.getCharset());//规定字符集
                 //添加请求体
                 String post_body= completedSearchQuery.getBody();
@@ -76,6 +72,8 @@ public class NovelSearchThread extends BasicHandlerThread {
                     String[] key_value = header.split("=");
                     if (key_value.length>1)connect.data(key_value[0], key_value[1]);
                 }
+                SSLAgent.getInstance().trustAllHttpsCertificates();
+                connect.header("Connection", "close");
                 doc=connect.post();
             }
             if (novelRequire == null) {
@@ -89,13 +87,23 @@ public class NovelSearchThread extends BasicHandlerThread {
                 report(TARGET_NOT_FOUND);
             else callback(PROCESS_DONE,searchResult);
 
+        }catch (SSLHandshakeException e){
+            e.printStackTrace();
+            Log.e("err","not trusted link");
+            report(ERROR_OCCUR);
         } catch (IOException e) {
             e.printStackTrace();
             Log.e("err","no internet");
             report(NO_INTERNET);
-        }catch (Exception e) {
+        }catch (IllegalArgumentException e){
+            e.printStackTrace();
+            Log.e("novel search","url错误");
+            report(ERROR_OCCUR);
+        }
+        catch (Exception e) {
             Log.e("novel search","书源解析错误："+novelRequire.getBookSourceName());
             e.printStackTrace();
+            report(ERROR_OCCUR);
         }
     }
 

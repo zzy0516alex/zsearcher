@@ -12,6 +12,7 @@ public class ElementBean {
     private String[] replacement=new String[2];
     private boolean need_advanced_match = false;// 当存在##[patten1]##[patten2]###时，且此时bean不是匹配element的类型，且包含$，为真
     private boolean need_advanced_replace = false;// 当存在##[patten1]##[patten2]###时，且此时bean不是匹配element的类型，为真
+    private boolean hasJs = false;
 
     public NovelRuleAnalyzer.RuleType getType() {
         return type;
@@ -96,5 +97,13 @@ public class ElementBean {
 
     public void setNeed_advanced_replace(boolean need_advanced_replace) {
         this.need_advanced_replace = need_advanced_replace;
+    }
+
+    public boolean isHasJs() {
+        return hasJs;
+    }
+
+    public void setHasJs(boolean hasJs) {
+        this.hasJs = hasJs;
     }
 }

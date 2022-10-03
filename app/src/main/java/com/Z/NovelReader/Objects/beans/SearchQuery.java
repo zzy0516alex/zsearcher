@@ -62,7 +62,7 @@ public class SearchQuery {
     }
 
     public boolean hasCharset(){
-        return !"UTF-8".equals(this.charset);
+        return !"UTF-8".equals(this.charset) && !"".equals(this.charset);
     }
     public boolean hasMethod(){
         return !"GET".equals(this.method);

@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
@@ -14,7 +15,7 @@ import java.util.List;
 
 @Dao
 public interface NovelSourceDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void InsertSources(NovelRequire...sources);
 
     @Update
@@ -22,6 +23,12 @@ public interface NovelSourceDao {
 
     @Query("UPDATE novel_source SET enabled=:IsEnabled WHERE id=:id")
     void UpdateVisibility(boolean IsEnabled,int id);
+
+    @Query("UPDATE novel_source SET respond_time=:time WHERE id=:id")
+    void UpdateRespondTime(double time, int id);
+
+    @Query("UPDATE novel_source SET respond_time = (respond_time+:time)/2 WHERE id=:id")
+    void IterativeUpdateRespondTime(double time, int id);
 
     @Delete
     void DeleteSources(NovelRequire...sources);

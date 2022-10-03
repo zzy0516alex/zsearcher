@@ -11,6 +11,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 新文件类型.znr
@@ -115,13 +117,13 @@ public class FileUtils {
         try {
             File oldFile = new File(oldPath$Name);
             if (!oldFile.exists()) {
-                Log.e("--Method--", "copyFile:  oldFile not exist.");
+                Log.e("copyFile", "oldFile not exist.");
                 return false;
             } else if (!oldFile.isFile()) {
-                Log.e("--Method--", "copyFile:  oldFile not file.");
+                Log.e("copyFile", "oldFile not file.");
                 return false;
             } else if (!oldFile.canRead()) {
-                Log.e("--Method--", "copyFile:  oldFile cannot read.");
+                Log.e("copyFile", "oldFile cannot read.");
                 return false;
             }
 
@@ -145,6 +147,40 @@ public class FileUtils {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public static List<String> getAllFileNames(String path){
+        List<String> fileList = new ArrayList<>();
+
+        File file = new File(path);
+        File[] tempList = file.listFiles();
+
+        for (int i = 0; i < tempList.length; i++) {
+            if (tempList[i].isFile()) {
+                String fileName = tempList[i].getName();
+                System.out.println("文件:" + fileName);
+                fileList.add(fileName);
+            }
+        }
+
+        return fileList;
+    }
+
+    public static List<String> getAllDirNames(String path){
+        List<String> fileList = new ArrayList<>();
+
+        File file = new File(path);
+        File[] tempList = file.listFiles();
+        if (tempList==null)return fileList;
+        for (int i = 0; i < tempList.length; i++) {
+            if (tempList[i].isDirectory()) {
+                String fileName = tempList[i].getName();
+                System.out.println("文件夹:" + fileName);
+                fileList.add(fileName);
+            }
+        }
+
+        return fileList;
     }
 
 }

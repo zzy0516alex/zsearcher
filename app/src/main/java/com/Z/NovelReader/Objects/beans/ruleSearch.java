@@ -3,8 +3,10 @@ package com.Z.NovelReader.Objects.beans;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 
+import java.io.Serializable;
+
 @Entity
-public class ruleSearch{
+public class ruleSearch implements Serializable {
     //此类为“搜索书籍”处理方案
     @ColumnInfo(name = "search_author")
     private String author;

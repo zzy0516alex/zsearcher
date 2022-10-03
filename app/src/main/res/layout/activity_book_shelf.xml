@@ -17,38 +17,41 @@
             android:src="@mipmap/my_ic_launcher_foreground"
             android:paddingStart="-20dp"
             android:paddingEnd="0dp"/>
+
         <LinearLayout
+            android:id="@+id/search_bar"
             android:layout_width="match_parent"
             android:layout_height="30dp"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="160dp"
+            android:layout_centerInParent="true"
             android:layout_marginTop="20dp"
-            android:id="@+id/search_bar"
+            android:layout_marginEnd="160dp"
             android:background="@drawable/edit_text_no_bound"
             android:orientation="horizontal">
+
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:layout_marginStart="10dp"
-                android:src="@mipmap/search_icon_blue"
-                android:layout_gravity="center"/>
+                android:src="@mipmap/search_icon_blue" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="搜索想看的书"
                 android:layout_gravity="center_vertical"
-                android:layout_marginStart="8dp"/>
+                android:layout_marginStart="8dp"
+                android:text="搜索想看的书" />
 
-         </LinearLayout>
+        </LinearLayout>
+
         <ImageView
+            android:id="@+id/menu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/menu"
-            android:background="@drawable/menu_btn"
-            android:layout_centerVertical="true"
             android:layout_alignParentEnd="true"
-            android:layout_marginEnd="30dp"/>
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="30dp"
+            android:background="@drawable/menu_btn" />
     </RelativeLayout>
 
     <View
@@ -73,16 +76,17 @@
         android:layout_height="match_parent"
         android:numColumns="3"
         android:horizontalSpacing="10dp"
-        android:verticalSpacing="10dp" />
+        android:verticalSpacing="20dp" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
     <Button
+        android:id="@+id/delete"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:id="@+id/delete"
-        android:text="删除"
         android:background="@drawable/square_btn_white"
-        android:textColor="@color/red"/>
+        android:text="删除"
+        android:textColor="@color/red" />
 
 
 </RelativeLayout>

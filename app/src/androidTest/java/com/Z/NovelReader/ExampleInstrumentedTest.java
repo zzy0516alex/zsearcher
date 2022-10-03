@@ -10,6 +10,8 @@ import org.junit.runner.RunWith;
 
 import static org.junit.Assert.*;
 
+import com.Z.NovelReader.Utils.StringUtils;
+
 /**
  * Instrumented test, which will execute on an Android device.
  *
@@ -17,11 +19,9 @@ import static org.junit.Assert.*;
  */
 @RunWith(AndroidJUnit4.class)
 public class ExampleInstrumentedTest {
-    @Test
-    public void useAppContext() {
-        // Context of the app under test.
-        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-
-        assertEquals("com.example.helloworld", appContext.getPackageName());
-    }
+//    @Test
+//    public void useAppContext() {
+//        // Context of the app under test.
+//        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+//    }
 }

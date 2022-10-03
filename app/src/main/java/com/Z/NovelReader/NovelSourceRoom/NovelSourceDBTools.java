@@ -31,6 +31,11 @@ public class NovelSourceDBTools {
     public void getSearchUrlList(QueryListener listener){
         new SearchQueryAsyncTask(Dao,listener).execute();
     }
+    public List<SearchQuery> getSearchUrlList(){
+        GetAllQueryThread getAllQueryThread = new GetAllQueryThread(Dao);
+        getAllQueryThread.start();
+        return getAllQueryThread.getSearchQueries();
+    }
     //获取指定ID的书源规则
     public void getNovelRequireById(int id,QueryListener listener){
         new RulesQueryAsyncTask(Dao,id,listener).execute();
@@ -39,9 +44,23 @@ public class NovelSourceDBTools {
     public void UpdateSourceVisibility(int id,boolean IsEnabled){
         new UpdateVisibilityAsyncTask(Dao,id,IsEnabled).execute();
     }
+    //覆盖更新书源响应时间
+    public void UpdateSourceRespondTime(int id,double respond_time){
+        new UpdateRespondTimeAsyncTask(Dao,id,respond_time).execute();
+    }
+    //迭代更新书源响应时间
+    public void IterativeUpdateSourceRespondTime(int id,double respond_time){
+        new IterateRespondTimeAsyncTask(Dao,id,respond_time).execute();
+    }
     //获取所有书源的 (id-规则) 对应表
     public void getNovelRequireMap(QueryListener listener){
         new RulesMapAsyncTask(Dao,listener).execute();
+    }
+
+    public Map<Integer,NovelRequire> getNovelRequireMap(){
+        GetAllQueryThread getAllQueryThread = new GetAllQueryThread(Dao);
+        getAllQueryThread.start();
+        return getAllQueryThread.getRuleMap();
     }
 
     static class InsertAsyncTask extends AsyncTask<NovelRequire,Void,Void> {
@@ -132,6 +151,40 @@ public class NovelSourceDBTools {
             return null;
         }
     }
+    static class UpdateRespondTimeAsyncTask extends AsyncTask<Void,Void,Void> {
+        private NovelSourceDao novelSourceDao;
+        private int id;
+        private double respondTime;
+
+        public UpdateRespondTimeAsyncTask(NovelSourceDao dao,int id,double respond_time) {
+            this.novelSourceDao = dao;
+            this.id=id;
+            this.respondTime = respond_time;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            novelSourceDao.UpdateRespondTime(respondTime,id);
+            return null;
+        }
+    }
+    static class IterateRespondTimeAsyncTask extends AsyncTask<Void,Void,Void> {
+        private NovelSourceDao novelSourceDao;
+        private int id;
+        private double respondTime;
+
+        public IterateRespondTimeAsyncTask(NovelSourceDao dao,int id,double new_time) {
+            this.novelSourceDao = dao;
+            this.id=id;
+            this.respondTime = new_time;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            novelSourceDao.IterativeUpdateRespondTime(respondTime,id);
+            return null;
+        }
+    }
     static class DeleteAllAsyncTask extends AsyncTask<Void,Void,Void> {
         private NovelSourceDao novelSourceDao;
 
@@ -169,6 +222,47 @@ public class NovelSourceDBTools {
         @Override
         protected void onPostExecute(Map<Integer,NovelRequire> ruleMap) {
             listener.onResultBack(ruleMap);
+        }
+    }
+
+    static class GetAllQueryThread extends Thread{
+        private NovelSourceDao novelSourceDao;
+        private Map<Integer,NovelRequire> ruleMap;
+        private List<SearchQuery> searchQueries;
+
+        public GetAllQueryThread(NovelSourceDao novelSourceDao) {
+            this.novelSourceDao = novelSourceDao;
+        }
+
+        @Override
+        public void run() {
+            super.run();
+            //rule map
+            List<NovelRequire> sources = novelSourceDao.getSources();
+            ruleMap=new HashMap<>();
+            for (NovelRequire source : sources) {
+                ruleMap.put(source.getId(),source);
+            }
+            //search query
+            searchQueries = novelSourceDao.getSearchUrls();
+        }
+
+        public List<SearchQuery> getSearchQueries() {
+            try {
+                join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return searchQueries;
+        }
+
+        public Map<Integer, NovelRequire> getRuleMap() {
+            try {
+                join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return ruleMap;
         }
     }
 

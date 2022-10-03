@@ -5,16 +5,15 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,6 +24,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.webkit.SslErrorHandler;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -33,18 +33,22 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import com.Z.NovelReader.Basic.BasicUpdaterBroadcast;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
+import com.Z.NovelReader.NovelRoom.NovelDBUpdater;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
+import com.Z.NovelReader.Service.AlterSourceService;
 import com.Z.NovelReader.Threads.ContentThread;
 import com.Z.NovelReader.Threads.GetCoverThread;
-import com.Z.NovelReader.Threads.ContentTextThread;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.FileUtils;
+import com.Z.NovelReader.Utils.StorageUtils;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.Objects.beans.NovelSearchBean;
+import com.Z.NovelReader.views.Dialog.SweetDialog.SweetAlertDialog;
 
 import java.io.File;
 import java.util.List;
@@ -70,6 +74,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private WebSettings webSettings;
     //章节信息 书本信息
     private String currentURL;//当前网页链接
+    private String loadURL;//待加载的网页链接
     private int ttlChap;//总章节数
     private int currentChap=0;//当前章节索引
     private String nextUrl;
@@ -79,6 +84,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private String contentRootUrl;//章节内容父链接
     private String currentTitle;//当前章节标题
     private String BookName;
+    private String writer;
     private int sourceID;//书源编号
     //目录信息
     private List<String>ChapList;
@@ -113,7 +119,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
             catalogUrl = currentBook.getBookCatalogLink();
             infoUrl = currentBook.getBookInfoLink();
             sourceID = currentBook.getSource();
-            BookName= currentBook.getBookNameWithoutWriter();
+            BookName = currentBook.getBookNameWithoutWriter();
+            writer = currentBook.getWriter();
         }else {
             Toast.makeText(this, "书籍初始化失败", Toast.LENGTH_SHORT).show();
             Log.d("novel show","书籍初始化失败");
@@ -146,7 +153,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
         myProgress=myInfo.getInt("Progress",10);
 
         //get database
-        novelDBTools= ViewModelProviders.of(this).get(NovelDBTools.class);
+        novelDBTools= new ViewModelProvider(this,ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication()))
+                .get(NovelDBTools.class);
         novelDBTools.getAllNovelsLD().observe(this, new Observer<List<Novels>>() {
             @Override
             public void onChanged(List<Novels> novels) {
@@ -162,10 +170,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
         next.setEnabled(false);
         past.setEnabled(false);
 
-        if(isInShelf){
-            AddBook.setVisibility(View.INVISIBLE);
-            AddBook.setEnabled(false);
-        }
+//        AddBook.setVisibility(View.INVISIBLE);
+//        AddBook.setEnabled(false);
         catalog.setEnabled(false);
         next.setEnabled(false);
         //字体大小拖动条
@@ -194,13 +200,13 @@ public class NovelShowAcitivity extends AppCompatActivity {
         past.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                webView.loadUrl(pastUrl);
+                loadURL(pastUrl);
             }
         });
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                webView.loadUrl(nextUrl);
+                loadURL(nextUrl);
             }
         });
 
@@ -225,7 +231,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
             int lastX, lastY;
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                // TODO Auto-generated method stub
                 int ea = event.getAction();
                 switch (ea) {
                     case MotionEvent.ACTION_DOWN:
@@ -284,25 +289,26 @@ public class NovelShowAcitivity extends AppCompatActivity {
         });
 
         //网页加载与配置
-        webView.loadUrl(currentURL);
+        loadURL(currentURL);
         webSettings=webView.getSettings();
         webView.setWebViewClient(new WebViewClient(){
             @Override
             public void onPageFinished(WebView view, String url) {
                 if(first_load) {
-                    if (isInShelf)Toast.makeText(Novalshow, "该书已在书架中，建议转至书架阅读", Toast.LENGTH_SHORT).show();
-                    else Toast.makeText(NovelShowAcitivity.this, "当前为预览模式，加入书架后可优化阅读", Toast.LENGTH_SHORT).show();
-                    first_load=false;
+                    Toast.makeText(NovelShowAcitivity.this, "当前为预览模式，加入书架后可优化阅读", Toast.LENGTH_SHORT).show();
                 }
                 super.onPageFinished(view, url);
                 //阅读新章节时：
-                if (!StringUtils.UrlStingCompare(url,currentURL)){
-                    System.out.println("webview load:"+url);
-                    currentURL=url;
-                    ChangeCurrentCondition();
-                    //如果该书已在书架内则更新书架数据库信息
-                    if (isInShelf)update_bookshelfINFO();
-                }
+                System.out.println("web_view load:"+url);
+                if (!StringUtils.UrlStingCompare(url,loadURL)){
+                    Log.d("web_view","发生重定向");
+                    currentURL=loadURL;
+                }else currentURL = url;
+
+                if (!first_load)ChangeCurrentCondition();
+                //duplicated：如果该书已在书架内则更新书架数据库信息
+                //if (isInShelf)update_bookshelfINFO();
+                first_load=false;
             }
 
             @Override
@@ -316,6 +322,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
                 }
 
             }
+
         });
         webSettings.setUseWideViewPort(true);
         webSettings.setLoadWithOverviewMode(true);
@@ -341,17 +348,16 @@ public class NovelShowAcitivity extends AppCompatActivity {
     }
 
     private void registerCatalogBroadcast() {
-        BroadcastReceiver broadcastReceiver=new BroadcastReceiver() {
+        BasicUpdaterBroadcast basicUpdaterBroadcast = new BasicUpdaterBroadcast(context) {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onReceive(Context context, Intent intent) {
-                if (intent.getAction().equals(CATALOG_BROADCAST) && !isCatalogReady)
+                if (intent.getAction().equals(BasicUpdaterBroadcast.CATALOG_NOVELSHOW)
+                        && !isCatalogReady)
                     getCatalog();
             }
         };
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(CATALOG_BROADCAST);
-        registerReceiver(broadcastReceiver,filter);
+        basicUpdaterBroadcast.register();
     }
 
     @Override
@@ -363,8 +369,13 @@ public class NovelShowAcitivity extends AppCompatActivity {
             Bundle bundle=data.getExtras();
             assert bundle != null;
             newURL=bundle.getString("url");
-            webView.loadUrl(newURL);
+            loadURL(newURL);
         }
+    }
+
+    private void loadURL(String newURL) {
+        webView.loadUrl(newURL);
+        loadURL = newURL;
     }
 
     /**
@@ -382,13 +393,13 @@ public class NovelShowAcitivity extends AppCompatActivity {
         try {
             if (currentChap!=-1)currentTitle = ChapList.get(currentChap);
             else {
-                Toast.makeText(Novalshow, "更新当前章节时出错", Toast.LENGTH_SHORT).show();
-                finish();
+                Toast.makeText(Novalshow, "更新当前章节时出错:定位章节失败", Toast.LENGTH_SHORT).show();
+                return;
             }
         }catch (IndexOutOfBoundsException e){
             e.printStackTrace();
-            Toast.makeText(Novalshow, "更新当前章节时出错", Toast.LENGTH_SHORT).show();
-            finish();
+            Toast.makeText(Novalshow, "更新当前章节时出错：索引溢出", Toast.LENGTH_SHORT).show();
+            return;
         }
         PastAndNext();
         if (currentChap!=ChapLinkList.size()-1)next.setEnabled(true);
@@ -397,14 +408,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
 
     public void setFloatButtonShow(boolean floatButtonShow) {
         isFloatButtonShow = floatButtonShow;
-    }
-
-    public static void setIsInShelf(boolean isInShelf) {
-        NovelShowAcitivity.isInShelf = isInShelf;
-    }
-
-    public static void setBook_id(int book_id) {
-        NovelShowAcitivity.book_id = book_id;
     }
 
     public String getBookName() {
@@ -421,59 +424,57 @@ public class NovelShowAcitivity extends AppCompatActivity {
             Toast.makeText(Novalshow, "请先等待目录加载完毕", Toast.LENGTH_SHORT).show();
             return;
         }
-        AlertDialog.Builder builder=new AlertDialog.Builder(Novalshow);
-        builder.setTitle("加入书架")
-                .setMessage("是否将本书加入书架")
-                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (novelRequire!=null) {
-                            Toast.makeText(NovelShowAcitivity.this, "已放入书架", Toast.LENGTH_SHORT).show();
-                            AddBook.setEnabled(false);
-                            AddBook.setVisibility(View.INVISIBLE);
-                            setFloatButtonShow(false);
-                            //TODO: add to shelf
-                            isInShelf = true;
-                            //插入数据库
-                            Novels novel = new Novels(BookName, ttlChap, currentChap, catalogUrl,infoUrl);
-                            novel.setSource(sourceID);
-                            novelDBTools.insertNovels(novel);
-                            //新建文件夹
-                            File Book_Folder = new File(getExternalFilesDir(null) + "/ZsearchRes/BookReserve/", BookName);
-                            if (!Book_Folder.exists()) {
-                                Book_Folder.mkdir();
-                            }
-                            //获取封面图片
-                            GetCoverThread thread_cover = new GetCoverThread(novel,novelRequire);
-                            thread_cover.start();
-                            //获取当前章节文本
-                            ContentThread thread_content = new ContentThread(currentURL,novelRequire,contentRootUrl);
-                            thread_content.setOutputParams("/ZsearchRes/BookReserve/" + BookName);
-                            thread_content.start();
-//                            ContentTextThread thread_text=new ContentTextThread(currentURL,BookName,
-//                                    getExternalFilesDir(null),true);
-//                            thread_text.setNovelRequire(novelRequire);
-//                            thread_text.start();
-                            //获取本书目录
-                            //通过复制获取目录
-                            String temp_catalog_path = getExternalFilesDir(null) + "/ZsearchRes/catalog.txt";
-                            String temp_catalogURL_path = getExternalFilesDir(null) + "/ZsearchRes/temp_catalog_link.txt";
-                            String target_catalog_path = getExternalFilesDir(null) + "/ZsearchRes/BookReserve/"+BookName+
-                                    "/catalog.txt";
-                            String target_catalogURL_path = getExternalFilesDir(null) + "/ZsearchRes/BookReserve/"+BookName+
-                                    "/catalog_link.txt";
-                            FileUtils.copyFile(temp_catalog_path,target_catalog_path);
-                            FileUtils.copyFile(temp_catalogURL_path,target_catalogURL_path);
-                        }else Toast.makeText(Novalshow, "未查找到书源", Toast.LENGTH_SHORT).show();
-
-                    }
+        SweetAlertDialog sweetAlertDialog = new SweetAlertDialog(context, SweetAlertDialog.WARNING_TYPE);
+        sweetAlertDialog.setCanceledOnTouchOutside(false);
+        sweetAlertDialog.setTitleText("加入书架")
+                .setContentText("加入书架后,可在首页点击书籍,进入优化阅读")
+                .setConfirmButton("确认", sweetAlertDialog1->{
+                    if (novelRequire!=null) {
+                        AddBook.setEnabled(false);
+                        AddBook.setVisibility(View.INVISIBLE);
+                        setFloatButtonShow(false);
+                        addToShelf();
+                        sweetAlertDialog1.dismissWithAnimation();
+                    }else Toast.makeText(Novalshow, "未查找到书源", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        AddBook.setImageResource(R.mipmap.addtoshelf);
-                    }
-                }).setCancelable(false).show();
+                .setCancelButton("取消", sweetAlertDialog1->{
+                    AddBook.setImageResource(R.mipmap.addtoshelf);
+                    sweetAlertDialog1.dismissWithAnimation();
+                })
+                .showCancelButton(true)
+                .show();
+    }
+
+    private void addToShelf() {
+        //插入数据库
+        if (currentChap==-1)currentChap = 0;
+        Novels novel = new Novels(BookName,writer,ttlChap,currentChap,catalogUrl,infoUrl,sourceID);
+        novel.setUsed(true);
+        novel.setProgress(Novels.DEFAULT_PROGRESS);
+        novelDBTools.insertNovels(novel);
+        //启动换源服务
+        Intent alter_source_intent = new Intent(NovelShowAcitivity.this, AlterSourceService.class);
+        alter_source_intent.putExtra("Novel",novel);
+        startService(alter_source_intent);
+        //新建文件夹
+        File Book_Folder = new File(StorageUtils.getBookStoragePath(BookName,writer));
+        if (!Book_Folder.exists()) {
+            Book_Folder.mkdir();
+        }
+        //获取封面图片
+        String output_path = StorageUtils.getBookCoverPath(BookName,writer);
+        GetCoverThread thread_cover = new GetCoverThread(novel,novelRequire,output_path);
+        thread_cover.start();
+        //获取当前章节文本
+        ContentThread thread_content = new ContentThread(currentURL,novelRequire,contentRootUrl);
+        thread_content.setOutputParams(StorageUtils.getBookContentPath(BookName,writer));
+        thread_content.setUpdateRootURL(novel,context);
+        thread_content.start();
+        //通过复制获取目录
+        FileUtils.copyFile(StorageUtils.getTempCatalogPath(),StorageUtils.getBookCatalogLinkPath(BookName,writer));
+        FileUtils.copyFile(StorageUtils.getTempCatalogLinkPath(),StorageUtils.getBookCatalogLinkPath(BookName,writer));
+
+        Toast.makeText(NovelShowAcitivity.this, "已放入书架", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -482,8 +483,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void getCatalog() {
         Log.d("novel show","收到广播，开始初始化目录");
-        NovelCatalog result_back = FileIOUtils.read_catalog("/ZsearchRes/catalog.txt",
-                context.getExternalFilesDir(null));
+        //读取临时保存的目录
+        NovelCatalog result_back = FileIOUtils.read_catalog(StorageUtils.getTempCatalogPath());
         if (!result_back.isEmpty()) {
             ChapList = result_back.getTitle();
             ChapLinkList = result_back.getLink();
@@ -508,21 +509,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
     private void PastAndNext() {
         if (currentChap!=ChapLinkList.size()-1)nextUrl=ChapLinkList.get(currentChap+1);
         if (currentChap!=0)pastUrl=ChapLinkList.get(currentChap-1);
-    }
-
-    private void update_bookshelfINFO(){
-            Novels novel=new Novels(BookName,ttlChap,currentChap,catalogUrl,infoUrl);
-            novel.setId(book_id);
-            novelDBTools.updateNovels(novel);
-
-            //更新章节缓存
-            ContentThread thread_content = new ContentThread(currentURL,novelRequire,contentRootUrl);
-            thread_content.setOutputParams("/ZsearchRes/BookReserve/" + BookName);
-            thread_content.start();
-//            ContentTextThread t=new ContentTextThread(currentURL,BookName,
-//                    getExternalFilesDir(null),true);
-//            t.setNovelRequire(novelRequire);
-//            t.start();
     }
 
 

@@ -3,16 +3,81 @@
     <color name="colorPrimary">#008577</color>
     <color name="colorPrimaryDark">#00574B</color>
     <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="system_white">#FAFAFA</color>
     <color name="colorAccent">#D81B60</color>
     <color name="red">#DC143C</color>
+    <color name="backgroundBlue">#C8E0F8</color>
     <color name="skyBlue">#87CEFA</color>
+    <color name="CornBlue">#6495ED</color>
     <color name="DoderBlue">#1E90FF</color>
+    <color name="SelectorBlue">#2E7FE1</color>
+    <color name="RoyalBlue">#4169E1</color>
     <color name="NavyBlue">#000080</color>
     <color name="deepBlue">#00001E</color>
+    <color name="transparentDeepBlue">#dd00001E</color>
     <color name="comfortGreen">#CCE8CF</color>
+    <color name="deepGreen">#759C6B</color>
     <color name="day_text">#2D4D35</color>
     <color name="night_text">#FFC8C8C8</color>
     <color name="night_background">#181818</color>
     <color name="blue_gray">#6A5ACD</color>
+    <color name="white_smoke">#33F5F5F5</color>
     <color name="btn_click_gray">#e6e6e6</color>
+    <color name="text_gray">#DCDCDC</color>
+    <color name="system_gray">#808080</color>
+    <color name="disable_black">#aa000000</color>
+
+    <!-- QRCode scanner color begin -->
+    <color name="viewfinder_mask">#60000000</color>
+    <color name="result_view">#B0000000</color>
+    <color name="viewfinder_frame">#90FFFFFF</color>
+    <color name="result_point_color">#C0FFFF00</color>
+    <color name="laser_color">#21B3E2</color>
+    <color name="corner_color">#1E90FF</color>
+    <!-- QRCode scanner color end -->
+
+    <!-- SweetDialog color begin-->
+    <color name="float_transparent">#00000000</color>
+    <color name="custom_float_bg">#F27474</color>
+    <color name="sweet_dialog_bg_color">#FFFFFF</color>
+    <color name="sweet_dialog_bg_color_dark">#e6222222</color>
+
+    <color name="button_text_color">#FFFFFF</color>
+    <color name="gray_btn_bg_color">#D0D0D0</color>
+    <color name="gray_btn_bg_pressed_color">#B6B6B6</color>
+    <color name="blue_btn_bg_color">#AEDEF4</color>
+    <color name="blue_btn_bg_pressed_color">#96BFD2</color>
+    <color name="red_btn_bg_color">#DD6B55</color>
+    <color name="red_btn_bg_pressed_color">#CD5B55</color>
+    <color name="error_stroke_color">#F27474</color>
+    <color name="success_stroke_color">#A5DC86</color>
+    <color name="trans_success_stroke_color">#33A5DC86</color>
+    <color name="warning_stroke_color">#F8BB86</color>
+    <color name="text_color">#575757</color>
+    <color name="material_blue_grey_80">#ff37474f</color>
+    <color name="material_blue_grey_90">#ff263238</color>
+    <color name="material_blue_grey_95">#ff21272b</color>
+    <color name="material_deep_teal_20">#ff80cbc4</color>
+    <color name="material_deep_teal_50">#ff009688</color>
+
+    <color name="title_color">#575757</color>
+    <color name="title_color_dark">#fff</color>
+    <color name="message_color">#797979</color>
+    <color name="message_color_dark">#fff</color>
+
+    <color name="main_green_color">#6bd505</color>
+    <color name="main_green_stroke_color">#60bf04</color>
+    <color name="main_orange_color">#f77805</color>
+    <color name="main_orange_stroke_color">#e66f04</color>
+    <color name="main_orange_light_color">#f7b90d</color>
+    <color name="main_orange_light_stroke_color">#e4ab0c</color>
+    <color name="main_blue_color">#2469df</color>
+    <color name="main_blue_stroke_color">#205ec7</color>
+    <color name="main_cyan_color">#05d9f7</color>
+    <color name="main_cyan_stroke_color">#05c7e2</color>
+
+    <color name="main_disabled_color">#838383</color>
+    <color name="main_disabled_stroke_color">#707070</color>
+    <!-- SweetDialog color end-->
 </resources>

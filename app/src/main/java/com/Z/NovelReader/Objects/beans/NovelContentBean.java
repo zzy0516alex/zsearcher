@@ -4,6 +4,7 @@ public class NovelContentBean {
 
     private String content="";
     private String nextPageURL="";
+    private String triggerName = "";
 
     public NovelContentBean(String content, String nextPageURL) {
         this.content = content;
@@ -27,5 +28,13 @@ public class NovelContentBean {
 
     public void setNextPageURL(String nextPageURL) {
         this.nextPageURL = nextPageURL;
+    }
+
+    public String getTriggerName() {
+        return triggerName;
+    }
+
+    public void setTriggerName(String triggerName) {
+        this.triggerName = triggerName;
     }
 }

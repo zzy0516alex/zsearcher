@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="180dp"
+    android:layout_height="50dp"
+    android:id="@+id/SMS_background"
+    android:background="@drawable/popwindow_white">
+
+    <TextView
+        android:id="@+id/SMS_type_name"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginStart="25dp"
+        android:gravity="center_vertical"
+        android:text="排序方式"
+        android:textColor="@color/system_gray"
+        android:textSize="18sp" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="25dp"
+        android:orientation="vertical"
+        android:gravity="center">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/SMS_tri_up"
+            android:src="@mipmap/up_arrow_icon"
+            android:layout_gravity="center"/>
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/SMS_tri_down"
+            android:src="@mipmap/down_arrow_icon"
+            android:layout_gravity="center"/>
+    </LinearLayout>
+</RelativeLayout>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <TextView
+        android:id="@+id/asn_tip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Zsearcher: 换源书源准备中"
+        android:textSize="17sp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginTop="5dp"
+        android:textColor="@color/black"/>
+    <TextView
+        android:id="@+id/asn_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 / 0"
+        android:textSize="17sp"
+        android:layout_toEndOf="@+id/asn_tip"
+        android:layout_marginTop="5dp"
+        android:layout_marginStart="5dp"
+        android:textColor="@color/black"/>
+    <ProgressBar
+        android:id="@+id/asn_progress"
+        android:layout_width="240dp"
+        android:layout_height="wrap_content"
+        android:progressDrawable="@drawable/progress_bar_radius"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:maxHeight="5dp"
+        android:minHeight="5dp"
+        android:layout_below="@+id/asn_tip"
+        android:layout_marginTop="5dp"
+        android:layout_marginHorizontal="10dp"/>
+</RelativeLayout>

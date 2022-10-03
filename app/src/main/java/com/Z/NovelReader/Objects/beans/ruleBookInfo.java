@@ -3,8 +3,10 @@ package com.Z.NovelReader.Objects.beans;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 
+import java.io.Serializable;
+
 @Entity
-public class ruleBookInfo {
+public class ruleBookInfo implements Serializable {
     //此类为“书籍信息”处理方案
     @ColumnInfo(name = "Info_coverUrl")
     private String coverUrl;

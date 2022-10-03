@@ -1,9 +1,11 @@
 package com.Z.NovelReader.Processors;
 
+import com.Z.NovelReader.Processors.Exceptions.RuleProcessorException;
 import com.Z.NovelReader.Utils.StringUtils;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
@@ -12,16 +14,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class NovelRuleAnalyzer {
     public enum RuleType {CLASS,Tag,ID,META,TEXT_OWN,ATTR,TEXT,TEXT_NODES,HTML,OMIT_TAG,REGEX_MATCH}
     private ElementBean[] beans;
+    private ArrayList<Elements>selected_elements = new ArrayList<>();
     private boolean isContent = false;//如果需要获取章节内容，为真，进行特别优化
+    private boolean JsFlag = false;//是否有js脚本需要处理
+    private boolean Js_RunLater = false;//js脚本需要使用前面的处理结果
+    private String JsCode = "";
+    private String documentSource = "";
+    private JavaScriptEngine engine = new JavaScriptEngine();
 
     public void setContent(boolean content) {
         isContent = content;
     }
 
+    public void setDocumentSource(String documentSource) {
+        this.documentSource = documentSource;
+    }
     //notice: 构建bean所需的方法：
 
     /**
@@ -29,9 +41,9 @@ public class NovelRuleAnalyzer {
      * @param rule 已经按@分离后的段
      * @return 查询类型
      */
-    private RuleType getRuleType(String rule){
+    private RuleType getRuleType(String rule)throws Exception{
         if (rule.contains("@"))
-            throw new IllegalArgumentException("查询语句分离不完全");
+            throw new RuleProcessorException("查询语句分离不完全");
         if (rule.contains("##"))rule = rule.split("##")[0];//净化，防止正则污染
         if (rule.contains(".")){
             if (rule.contains("class."))return RuleType.CLASS;
@@ -75,7 +87,7 @@ public class NovelRuleAnalyzer {
                 break;
             case Tag:{
                 String[] parts_tag = layer.split("\\.");
-                if (parts_tag.length<=1||parts_tag.length>3)throw new Exception("layer 格式错误");
+                if (parts_tag.length<=1||parts_tag.length>3)throw new RuleProcessorException("layer 格式错误");
                 bean.setRuleContent(parts_tag[1]/*.split("!")[0]*/);
                 bean.setBound("");
                 if (parts_tag.length==3){
@@ -87,7 +99,7 @@ public class NovelRuleAnalyzer {
                 break;
             case TEXT_OWN:{
                 String[] parts_text_own = layer.split("\\.");
-                if (parts_text_own.length != 2)throw new Exception("layer 格式错误");
+                if (parts_text_own.length != 2)throw new RuleProcessorException("layer 格式错误");
                 bean.setRuleContent(String.format(":containsOwn(%1$s)",
                         parts_text_own[1]));
                 bean.setBound("");
@@ -132,12 +144,33 @@ public class NovelRuleAnalyzer {
         }
     }
 
+    private String checkJsUsage(String rule) throws Exception {
+        if (rule.contains("<js>")){
+            //if (isTypeofElement(bean))throw new Exception("js脚本不应出现在element类型后");
+            if (!rule.contains("</js>"))throw new RuleProcessorException("js脚本不完整");
+            JsFlag = true;
+            int startJS = rule.indexOf("<js>");
+            int endJS = rule.indexOf("</js>");
+            String layer_withoutJS = rule.substring(0, startJS) + rule.substring(endJS+5);
+            JsCode = rule.substring(startJS+4,endJS);
+            String js_result = "";
+            if (startJS == 0){
+                if ("".equals(documentSource))throw new RuleProcessorException("need to set document source");
+                engine.preDefine("https://www.beiyongzhan.me/",documentSource);
+                js_result = engine.runScript(JsCode);
+            }
+            else Js_RunLater = true;
+            return layer_withoutJS;
+        }
+        else return rule;
+    }
+
     private String getElementExclusions(ElementBean bean, String layer) throws Exception {
         List<Integer> exclusions=new ArrayList<>();
         if (!layer.contains("!"))return layer;
         String[] parts = layer.split("!");
-        if (parts.length!=2)throw new Exception("layer 格式错误");
-        for (String p:parts[1].split("\\|")) {
+        if (parts.length!=2)throw new RuleProcessorException("layer 格式错误");
+        for (String p:parts[1].split("[|:]")) {
             //todo add ":" detect
             exclusions.add(Integer.parseInt(p));
         }
@@ -151,7 +184,7 @@ public class NovelRuleAnalyzer {
         replacement[1]="";
         if (!layer.contains("##"))return layer;
         String[] parts = layer.split("##");
-        if (parts.length>4)throw new Exception("layer 格式错误");
+        if (parts.length>4)throw new RuleProcessorException("layer 格式错误");
         replacement[0]=parts[1];//普通替换
         if (parts.length>=3){
             if (bean.getType()==RuleType.OMIT_TAG)bean.setType(RuleType.REGEX_MATCH);
@@ -160,7 +193,7 @@ public class NovelRuleAnalyzer {
                     bean.setNeed_advanced_match(true);//需利用正则匹配
                 else bean.setNeed_advanced_replace(true);//需利用正则替换
             }
-            replacement[1]=parts[2];//进阶正则
+            replacement[1]=parts[2];//进阶正则 ## [regex] ## $n ## #
         }
         bean.setReplacement(replacement);
         return parts[0];
@@ -173,6 +206,14 @@ public class NovelRuleAnalyzer {
      */
     public void splitLayers(String raw_rule) throws Exception {
         String[] layers;
+        if (raw_rule.contains("||")) {
+            String[] split = raw_rule.split("\\|\\|");
+            raw_rule = split[0];
+        }
+        if (raw_rule.startsWith("@"))
+            raw_rule = raw_rule.substring(1);
+        //set js management
+        raw_rule = checkJsUsage(raw_rule);
         layers=raw_rule.split("@");
         beans=new ElementBean[layers.length];
         for (int i = 0; i < layers.length; i++) {
@@ -201,9 +242,9 @@ public class NovelRuleAnalyzer {
      */
     public Elements getElementsByRules(Document document, String raw_rule) throws Exception {
         splitLayers(raw_rule);
-        if (beans.length<=0||beans.length>3)throw new Exception("beans 生成错误");
+        if (beans.length<=0)throw new RuntimeException("beans 生成错误");
         SelectedElements elementsFromBean = getElementsFromBean(document);
-        if (elementsFromBean.bean_left!=-1)throw new Exception("应该使用getObjectFromElements");
+        if (elementsFromBean.bean_left!=-1)throw new RuleProcessorException("应该使用getObjectFromElements");
         return elementsFromBean.elements;
     }
 
@@ -215,26 +256,21 @@ public class NovelRuleAnalyzer {
      */
     private SelectedElements getElementsFromBean(Elements root) throws Exception {
         Elements elements=root;
-        int bean_left=-1;
+        int last_bean_index=-1;
         //第一层
         if (isTypeofElement(beans[0]))elements = getSelectedElements(root,beans[0]);
-        else bean_left=0;
-        //第二层
-        if (beans.length>=2){
-            if (isTypeofElement(beans[1]))elements = getSelectedElements(elements, beans[1]);
-            else if (bean_left ==-1){
-                bean_left=1;
-            }else throw new Exception("rule 格式错误");
+        else last_bean_index=0;
+        //后续的层
+        for (int i = 1; i < beans.length; i++) {
+            ElementBean bean = beans[i];
+            if (isTypeofElement(bean)){//仍是element类型
+                elements = getSelectedElements(elements,bean);
+            }else {//已经不是可以select的element
+                last_bean_index = i;
+                break;
+            }
         }
-        //第三层
-        if (beans.length==3){
-            if (isTypeofElement(beans[2]))elements = getSelectedElements(elements,beans[2]);
-            else if (bean_left ==-1){
-                bean_left=2;
-            }else throw new Exception("rule 格式错误");
-        }
-        //if (elements.size()==0)bean_left=-1;//不符合要求的匹配不再加入列表中
-        return new SelectedElements(elements,bean_left);
+        return new SelectedElements(elements,last_bean_index);
     }
 
     //重载函数，使之匹配单个element
@@ -251,22 +287,26 @@ public class NovelRuleAnalyzer {
      */
     public List<String> getObjectFromElements(Elements eles, String raw_rule) throws Exception{
         splitLayers(raw_rule);
-        if (beans.length<=0||beans.length>3)throw new Exception("beans 生成错误");
+        if (beans.length<=0)throw new RuleProcessorException("beans 生成错误");
         List<String> object=new ArrayList<>();
         for (Element ele : eles) {
             SelectedElements selectedElements = getElementsFromBean(ele);
-            int bean_left=selectedElements.bean_left;
-            if (bean_left!=-1 && !selectedElements.isEmpty()){
-                ElementBean bean=beans[bean_left];
+            selected_elements.add(selectedElements.elements);
+            int last_bean_index=selectedElements.bean_left;
+            if (last_bean_index!=-1 && !selectedElements.isEmpty()){
+                ElementBean bean=beans[last_bean_index];
+                String current_item = "null:null";
                 switch(bean.getType()){
                     case TEXT: {
                         String item = selectedElements.elements.text();
-                        object.add(getReplacedItem(bean, item));
+                        current_item = item;
+                        //object.add(getReplacedItem(bean, item));
                     }
                         break;
                     case ATTR: {
                         String item = selectedElements.elements.attr(bean.getAttr());
-                        object.add(getReplacedItem(bean, item));
+                        current_item = item;
+                        //object.add(getReplacedItem(bean, item));
                     }
                         break;
                     case TEXT_NODES:{
@@ -274,26 +314,30 @@ public class NovelRuleAnalyzer {
                         List<TextNode> paras = content_element.textNodes();
                         StringBuilder content=new StringBuilder();
                         for (TextNode para:paras) {
-                            if (isContent)content.append("    ");
+                            if (isContent)content.append("  ");
                             content.append(para.text());
                             if (isContent)content.append("\n");
                             if (isContent)content.append("\n");
                         }
-                        object.add(getReplacedItem(bean,content.toString()));
+                        current_item = content.toString();
+                        //object.add(getReplacedItem(bean,content.toString()));
                     }
                         break;
                     case HTML:{
                         StringBuilder content=new StringBuilder();
                         for (Element para : selectedElements.elements) {
                             content.append(para.html());
+                            if (isContent)content.append("\n");
                         }
                         String txt = StringUtils.styleHTML_to_styleTXT(content.toString());
-                        object.add(getReplacedItem(bean,txt));
+                        current_item = txt;
+                        //object.add(getReplacedItem(bean,txt));
                     }
                         break;
                     case REGEX_MATCH:{
                         String result = getRegexMatchedResult(ele.html(), bean);
-                        object.add(result);
+                        current_item = result;
+                        //object.add(result);
                     }
                         break;
                     default:{
@@ -301,10 +345,20 @@ public class NovelRuleAnalyzer {
                         object.add(getReplacedItem(bean, item));
                     }
                 }
+                if (current_item.equals("null:null"))throw new RuleProcessorException("unhandled element type");
+                String replacedItem = getReplacedItem(bean, current_item);
+                if (JsFlag && Js_RunLater){
+                    engine.preDefine("https://www.beiyongzhan.me/",replacedItem);
+                    engine.runScript(JsCode);
+                }
+                object.add(replacedItem);
             }
         }
-
         return object;
+    }
+
+    public ArrayList<Elements> getSelected_elements() {
+        return selected_elements;
     }
 
     /**
@@ -327,14 +381,15 @@ public class NovelRuleAnalyzer {
 
     public String getReplacedItem(ElementBean bean, String item) throws Exception {
         String result=item;
-        if (bean.hasReplacement()){
+        if (bean.hasReplacement() && (bean.getType()!=RuleType.REGEX_MATCH)){
             if ("".equals(bean.getReplacement()[1]))
                 result = item.replaceAll(bean.getReplacement()[0],"");
             else if (bean.isNeed_advanced_match()) {
                 result = getRegexMatchedResult(item,bean);
             } else if (bean.isNeed_advanced_replace()){
                 result = item.replaceAll(bean.getReplacement()[0],bean.getReplacement()[1]);
-            } else throw new Exception("layout 类型错误,应该为:REGEX_MATCH 或 源规则不符合正则替换逻辑");
+            } else
+                throw new Exception("layout 类型错误,应该为:REGEX_MATCH 或 源规则不符合正则替换逻辑");
         }
         return result;
     }
@@ -349,11 +404,7 @@ public class NovelRuleAnalyzer {
 
     private Elements getSelectedElements(Elements elements, ElementBean bean) {
         String selection=bean.getBound()+bean.getRuleContent();
-        try{
-            elements = elements.select(selection);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
+        elements = elements.select(selection);
         if (bean.hasExclusions() && elements.size()!=0)
             elements=getElementsAfterExclusion(bean.getExclusions(),elements);
         if (bean.hasIndex() && elements.size()!=0)

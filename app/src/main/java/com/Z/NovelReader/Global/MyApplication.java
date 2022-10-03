@@ -4,6 +4,10 @@ import android.app.Application;
 
 import java.io.File;
 
+/**
+ * in AndroidManifest.xml
+ * android:name=".Global.MyApplication"
+ */
 public class MyApplication extends Application {
     private static File ExternalDir;
     @Override

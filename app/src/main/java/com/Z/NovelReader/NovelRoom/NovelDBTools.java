@@ -28,11 +28,17 @@ public class NovelDBTools extends AndroidViewModel {
     public void deleteNovels(Novels...novels){
         new DeleteAsyncTask(Noveldao).execute(novels);
     }
+    public void deleteNovel(String bookName,String writer){
+        new DeleteNovelAsyncTask(Noveldao,bookName,writer).execute();
+    }
     public void deleteAll(){
         new DeleteAllAsyncTask(Noveldao).execute();
     }
-    public void QueryNovelsByName(String name,QueryResultListener resultListener){
-        new QueryByNameAsyncTask(Noveldao, name, resultListener).execute();
+    public void QueryNovelsByID(int id, QueryResultListener resultListener){
+        new QueryByIDAsyncTask(Noveldao, id, resultListener).execute();
+    }
+    public void findSameBook(String bookName, String writer, QueryResultListener resultListener){
+        new FindSameBookAsyncTask(Noveldao,resultListener,bookName,writer).execute();
     }
 
     public LiveData<List<Novels>> getAllNovelsLD() {
@@ -83,6 +89,23 @@ public class NovelDBTools extends AndroidViewModel {
             return null;
         }
     }
+    static class DeleteNovelAsyncTask extends AsyncTask<Void,Void,Void>{
+        private NovelDao novelDao;
+        private String bookName;
+        private String writer;
+
+        public DeleteNovelAsyncTask(NovelDao novelDao,String bookName,String writer) {
+            this.novelDao = novelDao;
+            this.bookName = bookName;
+            this.writer = writer;
+        }
+
+        @Override
+        protected Void doInBackground(Void...voids) {
+            novelDao.DeleteNovel(bookName,writer);
+            return null;
+        }
+    }
 
     static class DeleteAllAsyncTask extends AsyncTask<Void,Void,Void>{
         private NovelDao novelDao;
@@ -98,20 +121,20 @@ public class NovelDBTools extends AndroidViewModel {
         }
     }
 
-    static class QueryByNameAsyncTask extends AsyncTask<Void,Void,List<Novels>>{
+    static class QueryByIDAsyncTask extends AsyncTask<Void,Void,List<Novels>>{
         private NovelDao novelDao;
         private QueryResultListener resultListener;
-        private String novel_name;
+        private int id;
 
-        public QueryByNameAsyncTask(NovelDao novelDao,String novel_name,QueryResultListener resultListener) {
+        public QueryByIDAsyncTask(NovelDao novelDao, int id, QueryResultListener resultListener) {
             this.novelDao = novelDao;
             this.resultListener=resultListener;
-            this.novel_name=novel_name;
+            this.id = id;
         }
 
         @Override
         protected List<Novels> doInBackground(Void... voids) {
-            return novelDao.getNovelByName(novel_name);
+            return novelDao.getNovelByID(id);
         }
 
         @Override
@@ -119,6 +142,31 @@ public class NovelDBTools extends AndroidViewModel {
             resultListener.onQueryFinish(novels);
         }
     }
+
+    static class FindSameBookAsyncTask extends AsyncTask<Void,Void,List<Novels>>{
+        private NovelDao novelDao;
+        private QueryResultListener resultListener;
+        private String novel_name;
+        private String writer;
+
+        public FindSameBookAsyncTask(NovelDao novelDao, QueryResultListener resultListener, String novel_name, String writer) {
+            this.novelDao = novelDao;
+            this.resultListener = resultListener;
+            this.novel_name = novel_name;
+            this.writer = writer;
+        }
+
+        @Override
+        protected List<Novels> doInBackground(Void... voids) {
+            return novelDao.getNovelListUnique(novel_name,writer);
+        }
+
+        @Override
+        protected void onPostExecute(List<Novels> novels) {
+            resultListener.onQueryFinish(novels);
+        }
+    }
+
 
     public interface QueryResultListener{
         void onQueryFinish(List<Novels> novels);

@@ -52,10 +52,35 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/delete_select"
+        android:id="@+id/import_from_QRcode"
         android:layout_width="125dp"
         android:layout_height="40dp"
         android:layout_below="@+id/import_from_local"
+        android:orientation="horizontal"
+        android:background="@drawable/rounded_square_btn_white"
+        android:clickable="true"
+        android:focusable="true">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/qr_icon"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="扫码导入"
+            android:textSize="15sp"
+            android:textColor="@color/black"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/delete_select"
+        android:layout_width="125dp"
+        android:layout_height="40dp"
+        android:layout_below="@+id/import_from_QRcode"
         android:orientation="horizontal"
         android:background="@drawable/rounded_square_btn_white"
         android:clickable="true"
@@ -71,6 +96,32 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="删除模式"
+            android:textSize="15sp"
+            android:textColor="@color/black"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/check_source"
+        android:layout_width="125dp"
+        android:layout_height="40dp"
+        android:layout_below="@+id/delete_select"
+        android:orientation="horizontal"
+        android:background="@drawable/rounded_square_btn_white"
+        android:clickable="true"
+        android:focusable="true">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/check_icon"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"/>
+        <TextView
+            android:id="@+id/check_source_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="校验书源"
             android:textSize="15sp"
             android:textColor="@color/black"
             android:layout_gravity="center_vertical"

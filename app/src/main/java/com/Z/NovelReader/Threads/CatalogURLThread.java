@@ -7,6 +7,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.Z.NovelReader.Basic.BasicHandlerThread;
+import com.Z.NovelReader.Objects.MapElement;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
@@ -43,13 +44,15 @@ public class CatalogURLThread extends BasicHandlerThread {
             Document document= connect.get();
 
             NovelRuleAnalyzer catalogUrlAnalyzer=new NovelRuleAnalyzer();
+            catalogUrlAnalyzer.setDocumentSource(document.toString());
             List<String> urls = catalogUrlAnalyzer.getObjectFromElements(new Elements(document),
                     novelRequire.getRuleBookInfo().getTocUrl());
             if (urls!=null && urls.size()!=0) {
                 bookCatalogLink = StringUtils.completeUrl(urls.get(0),
                         novelRequire.getBookSourceUrl());
                 Log.d("catalog url thread","目录链接："+bookCatalogLink);
-                callback(PROCESS_DONE,bookCatalogLink);
+                MapElement element = new MapElement(novelRequire.getId(),bookCatalogLink);
+                callback(PROCESS_DONE,element);
             }else {
                 report(TARGET_NOT_FOUND);
             }

@@ -1,5 +1,6 @@
 package com.Z.NovelReader.Threads;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -9,6 +10,7 @@ import com.Z.NovelReader.Global.MyApplication;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.Utils.StorageUtils;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -20,19 +22,24 @@ import java.util.concurrent.Executors;
 
 public class NovelUpdateThread extends BasicHandlerThread {
 
-    private File Dir;
     private NovelRequire novelRequire;
     private Novels novel;
 
     private List<String> catalogLink;
     private ExecutorService threadPool;
 
+    private Context context;
+    private String broadcast_action;
+
     public NovelUpdateThread(NovelRequire novelRequire, Novels novel) {
-        Dir = MyApplication.getExternalDir();
         this.novelRequire = novelRequire;
         this.novel = novel;
         threadPool = Executors.newFixedThreadPool(15);
         catalogLink = new ArrayList<>();
+    }
+    public void setCatalogLinkCallback(Context context,String action){
+        this.context = context;
+        this.broadcast_action = action;
     }
 
     @Override
@@ -43,23 +50,18 @@ public class NovelUpdateThread extends BasicHandlerThread {
             report(ERROR_OCCUR);
             return;
         }
-        File catalog_link_file = new File(Dir+"/ZsearchRes/BookReserve/"+
-                novel.getBookName()+"/catalog_link.txt");
+        File catalog_link_file = new File(StorageUtils.getBookCatalogLinkPath(novel.getBookName(),novel.getWriter()));
         if (!catalog_link_file.exists()){
             //目录链接缺失，重新获取
             Log.d("novel update thread:"+novel.getBookName(),"重新获取目录链接");
             String subTocUrl = novelRequire.getRuleToc().getNextTocUrl();
             if (subTocUrl!=null && !"".equals(subTocUrl)) {
-                //存在子目录
-                SubCatalogLinkThread subCatalogLinkThread = new SubCatalogLinkThread(novel.getBookCatalogLink(),
-                        novelRequire,false);
-                subCatalogLinkThread.setOutputParams("/BookReserve/"+novel.getBookName()+"/catalog_link.txt");
-                subCatalogLinkThread.start();
-                report(ERROR_OCCUR);
+                //目录全部缺失，重新下载
+                callback(WAITING_KEY_FILES,novel);
             }else {
                 catalogLink.add(novel.getBookCatalogLink());
-                FileIOUtils.WriteList(Dir,
-                        "/ZsearchRes/BookReserve/"+novel.getBookName()+"/catalog_link.txt",
+                FileIOUtils.WriteList(
+                        StorageUtils.getBookCatalogLinkPath(novel.getBookName(),novel.getWriter()),
                         catalogLink,false);
                 //继续更新目录
                 checkFileAndUpdateCatalog();
@@ -78,7 +80,8 @@ public class NovelUpdateThread extends BasicHandlerThread {
             if (subTocUrl!=null && !"".equals(subTocUrl)) {
                 SubCatalogLinkThread subCatalogLinkThread = new SubCatalogLinkThread(catalogLink.get(catalogLink.size() - 1),
                         novelRequire,true);
-                subCatalogLinkThread.setOutputParams("/BookReserve/" + novel.getBookName() + "/catalog_link.txt");
+                subCatalogLinkThread.setOutputParams(
+                        StorageUtils.getBookCatalogLinkPath(novel.getBookName(),novel.getWriter()));
                 subCatalogLinkThread.start();
             }
 
@@ -88,8 +91,7 @@ public class NovelUpdateThread extends BasicHandlerThread {
     }
 
     private void checkFileAndUpdateCatalog() {
-        File temp_catalogs = new File(Dir+"/ZsearchRes/BookReserve/"+
-                novel.getBookName()+"/temp_catalogs");
+        File temp_catalogs = new File(StorageUtils.getSubCatalogDir(novel.getBookName(),novel.getWriter()));
         File[] files = temp_catalogs.listFiles();
         if (!temp_catalogs.exists()){
             //目录临时文件不存在，全部目录重新下载
@@ -113,16 +115,21 @@ public class NovelUpdateThread extends BasicHandlerThread {
     }
 
     private void updateCatalog(int start_sequence,int total_count) {
+        File Folder =new File(StorageUtils.getSubCatalogDir(novel.getBookName(),novel.getWriter()));
+        if(!Folder.exists()){
+            Folder.mkdir();
+        }
+
         CountDownLatch countDownLatch = new CountDownLatch(total_count-start_sequence);
         JoinCatalogThread joinCatalogThread = new JoinCatalogThread(total_count,
-                "/BookReserve/"+novel.getBookName(),Dir,false);
-        joinCatalogThread.setHandler(getHandler(),PROCESS_DONE,novel.getBookName());
+                StorageUtils.getSubCatalogDir(novel.getBookName(),novel.getWriter()),
+                StorageUtils.getBookCatalogPath(novel.getBookName(),novel.getWriter()),false);
+        joinCatalogThread.setHandler(getHandler());
         joinCatalogThread.setCountDownLatch(countDownLatch);
         joinCatalogThread.start();
         for (int i = start_sequence; i < total_count; i++) {
-            CatalogThread catalogThread = new CatalogThread(catalogLink.get(i),
-                    novelRequire);
-            catalogThread.setOutputParams("/BookReserve/"+novel.getBookName(),i);
+            GetCatalogThread catalogThread = new GetCatalogThread(catalogLink.get(i),novelRequire,i);
+            catalogThread.setOutput(StorageUtils.getSubCatalogPath(novel.getBookName(),novel.getWriter(),i));
             catalogThread.setCountDownLatch(countDownLatch);
             threadPool.execute(catalogThread);
         }
@@ -151,10 +158,14 @@ public class NovelUpdateThread extends BasicHandlerThread {
             T activity = mActivity.get();
             if (activity != null) {
                 synchronized (this) {
-                    switch (BasicHandlerThread.mergeEvents(msg.what)) {
+                    switch (msg.what) {
                         case NovelUpdateThread.PROCESS_DONE:
-                            Log.d("NovelUpdaterHandler", "成功：" + msg.obj);
+                            Log.d("NovelUpdaterHandler", "成功");
                             success_counter++;
+                            break;
+                        case WAITING_KEY_FILES:
+                            fail_counter++;
+                            novelUpdateListener.needRecoverAll((Novels) msg.obj);
                             break;
                         case NovelUpdateThread.ERROR_OCCUR:
                             fail_counter++;
@@ -167,6 +178,7 @@ public class NovelUpdateThread extends BasicHandlerThread {
         }
         public interface NovelUpdateListener {
             void handle(Message msg,int Success,int Fail);
+            void needRecoverAll(Novels novel);
         }
     }
 }

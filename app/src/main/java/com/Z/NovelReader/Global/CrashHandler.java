@@ -66,7 +66,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
             return false;
         }
         //保存日志文件
-        FileIOUtils.WriteErrReport(mContext.getExternalFilesDir(null),ex);
+        FileIOUtils.WriteErrReport(ex);
         return true;
     }
 

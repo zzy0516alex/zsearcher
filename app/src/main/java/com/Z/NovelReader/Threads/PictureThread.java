@@ -2,7 +2,9 @@ package com.Z.NovelReader.Threads;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -22,7 +24,7 @@ public class PictureThread extends Thread {
         Bitmap myBitmap=returnBitMap(url);
         MyBitmap=myBitmap;
     }
-    public final static Bitmap returnBitMap(String url) {
+    public Bitmap returnBitMap(String url) {
         URL myFileUrl;
         Bitmap bitmap = null;
         try {
@@ -30,15 +32,41 @@ public class PictureThread extends Thread {
             HttpURLConnection conn;
             conn = (HttpURLConnection) myFileUrl.openConnection();
             conn.setDoInput(true);
+            conn.setReadTimeout(10 * 1000);
+            conn.setConnectTimeout(10 * 1000);
+            conn.setRequestMethod("GET");
+            conn.setInstanceFollowRedirects(false);
             conn.connect();
-            InputStream is = conn.getInputStream();
-            bitmap = BitmapFactory.decodeStream(is);
+            InputStream is = null;
+            if(conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                is = conn.getInputStream();
+            }
+            else if (conn.getResponseCode() == HttpURLConnection.HTTP_MOVED_PERM){
+                String redirected_url = conn.getHeaderField("Location");
+                return returnBitMap(redirected_url);
+            }else Log.e("Picture Thread","unexpected response code:"+conn.getResponseCode());
+
+            if (is == null){
+                Log.d("Picture Thread","input stream is null");
+            }
+            else {
+                try {
+                    byte[] data=readStream(is);
+                    if(data!=null){
+                        bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+                        return bitmap;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                is.close();
+            }
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return bitmap;
+        return null;
     }
 
     public Object getMyBitmap() {
@@ -49,5 +77,20 @@ public class PictureThread extends Thread {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /*
+     * 得到图片字节流 数组大小
+     * */
+    public static byte[] readStream(InputStream inStream) throws Exception{
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int len = 0;
+        while( (len=inStream.read(buffer)) != -1){
+            outStream.write(buffer, 0, len);
+        }
+        outStream.close();
+        inStream.close();
+        return outStream.toByteArray();
     }
 }

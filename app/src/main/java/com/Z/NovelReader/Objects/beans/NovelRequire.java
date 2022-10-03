@@ -3,12 +3,16 @@ package com.Z.NovelReader.Objects.beans;
 import androidx.room.ColumnInfo;
 import androidx.room.Embedded;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 import com.google.gson.Gson;
 
-@Entity(tableName = "novel_source")
-public class NovelRequire {
+import java.io.Serializable;
+
+@Entity(tableName = "novel_source",indices = {@Index(value = {"book_source_url"},
+        unique = true)})
+public class NovelRequire implements Serializable {
     @PrimaryKey(autoGenerate = true)
     private int id;
 
@@ -23,6 +27,9 @@ public class NovelRequire {
 
     @ColumnInfo(name = "enabled")
     private boolean enabled;
+
+    @ColumnInfo(name = "respond_time")
+    private double respondTime;//单位ms
 
     @Embedded
     private ruleSearch ruleSearch;
@@ -48,7 +55,7 @@ public class NovelRequire {
     }
 
     public String getBookSourceName() {
-        return bookSourceName;
+        return bookSourceName!=null?bookSourceName:"";
     }
 
     public void setBookSourceName(String bookSourceName) {
@@ -77,6 +84,14 @@ public class NovelRequire {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public double getRespondTime() {
+        return respondTime;
+    }
+
+    public void setRespondTime(double respondTime) {
+        this.respondTime = respondTime;
     }
 
     public com.Z.NovelReader.Objects.beans.ruleSearch getRuleSearch() {
