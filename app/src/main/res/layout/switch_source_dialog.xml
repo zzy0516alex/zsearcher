@@ -3,16 +3,42 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/dialog_t_deepblue">
-    <ListView
+    <RelativeLayout
+        android:id="@+id/source_list_header"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginHorizontal="10dp">
+
+        <TextView
+            android:id="@+id/novel_source_brief"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="@string/novel_source_info"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+    </RelativeLayout>
+
+    <com.scwang.smartrefresh.layout.SmartRefreshLayout
+        android:id="@+id/refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingVertical="10dp"
-        android:layout_marginHorizontal="5dp"
-        android:layout_above="@+id/ssd_control"
-        android:listSelector="#00000000"
-        android:divider="#00000000"
-        android:dividerHeight="10dp"
-        android:id="@+id/source_backup_list"/>
+        android:layout_below="@+id/source_list_header">
+        <com.scwang.smartrefresh.header.DeliveryHeader
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingVertical="10dp"
+            android:layout_marginHorizontal="5dp"
+            android:layout_above="@+id/ssd_control"
+            android:listSelector="#00000000"
+            android:divider="#00000000"
+            android:dividerHeight="10dp"
+            android:id="@+id/source_backup_list"/>
+    </com.scwang.smartrefresh.layout.SmartRefreshLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import com.Z.NovelReader.Basic.IterationThread;
 import com.Z.NovelReader.Global.MyApplication;
 import com.Z.NovelReader.Objects.MapElement;
+import com.Z.NovelReader.Processors.CommonUrlProcessor;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.StringUtils;
@@ -61,9 +62,10 @@ public class SubCatalogLinkThread extends IterationThread {
 
     @Override
     public Object preProcess(Document document) throws Exception {
-        NovelRuleAnalyzer subCatalogAnalyzer = new NovelRuleAnalyzer();
-        List<String> subLinks = subCatalogAnalyzer.getObjectFromElements(new Elements(document),
-                    novelRequire.getRuleToc().getNextTocUrl());
+//        NovelRuleAnalyzer subCatalogAnalyzer = new NovelRuleAnalyzer();
+//        List<String> subLinks = subCatalogAnalyzer.getObjectFromElements(new Elements(document),
+//                    novelRequire.getRuleToc().getNextTocUrl());
+        List<String> subLinks = CommonUrlProcessor.getUrls(document, novelRequire, novelRequire.getRuleToc().getNextTocUrl());
         return subLinks;
     }
 

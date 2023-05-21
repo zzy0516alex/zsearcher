@@ -165,10 +165,10 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
     protected void onRestart() {
         super.onRestart();
         //TODO:recover brightness
-        if (currentDNMode ==NIGHT_MOD){
-            Brightness.stopAutoBrightness(activity);
-            Brightness.setSystemScreenBrightness(activity,60);
-        }
+//        if (currentDNMode ==NIGHT_MOD){
+//            Brightness.stopAutoBrightness(activity);
+//            Brightness.setSystemScreenBrightness(activity,60);
+//        }
     }
 
     /**
@@ -360,9 +360,7 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
 
     private void initSettings() {
         //初始化设置界面参数
-        ViewerSettingDialog.isFollowing=true;
-        //brightness=Brightness.getSystemBrightness(activity.getContentResolver());
-        //myTextSize=myInfo.getInt("myTextSize",20);
+
     }
 
     /**
@@ -372,21 +370,19 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
      */
     private void init_SettingBtn() {
         btnSettings=findViewById(R.id.settings_of_novelview);
-        initSettings();
+        settingDialog = new ViewerSettingDialog(activity,R.style.NoDimDialog);
+        settingDialog
+                .setFollowSystemBrightness(true)
+                .setBrightness(Brightness.getSystemBrightness(activity.getContentResolver()))
+                .setChangeListener(settingChangeListener)
+                .setParentListener(mode -> {
+                    currentViewMode = mode;
+                    shiftFragment();
+                });
+        //initSettings();
         //打开设置
         btnSettings.setOnClickListener(v -> {
-            settingDialog=new ViewerSettingDialog(activity,R.style.NoDimDialog);
-            settingDialog
-                    .setBrightness(Brightness.getSystemBrightness(activity.getContentResolver()))
-                    .setChangeListener(settingChangeListener)
-                    .setParentListener(new ViewerSettingDialog.ParentSettingChangeListener() {
-                        @Override
-                        public void onViewModeChange(NovelViewFragmentFactory.ViewMode mode) {
-                            currentViewMode = mode;
-                            shiftFragment();
-                        }
-                    })
-                    .show();
+            settingDialog.show();
             SetToolBarInvisible();
         });
     }
@@ -469,8 +465,9 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
                 @Override
                 public void onError(int error_code) {
                     System.out.println("error_code = " + error_code);
-                    if (switchSourceDialog!=null && switchSourceDialog.isShowing())
-                        switchSourceDialog.dismiss();
+                    Toast.makeText(context, "换源失败", Toast.LENGTH_SHORT).show();
+                    if (waitDialog!=null && waitDialog.isShowing())
+                        waitDialog.dismiss();
                 }
             }));
             switchSourceThread.start();
@@ -516,8 +513,11 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
             for (BackupSourceBean b : backupSourceList) {
                 b.setChosen(b.getSourceID() == CurrentChap.getSource());
             }
+            switchSourceDialog.setOwnerActivity(activity);
+            switchSourceDialog.setCurrentChap(CurrentChap);
             switchSourceDialog.setBackupSourceList(backupSourceList);
             switchSourceDialog.show();
+            SetToolBarInvisible();
         });
     }
 
@@ -641,7 +641,6 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
     }
 
     private void switch_to_dayMod() {
-        ViewerSettingDialog.isFollowing=true;
         Mod_btn.setImageResource(R.mipmap.night_mod);
         if (!is_toolbar_visible)
             StatusBarUtil.setStatusBarDarkTheme(activity,true);
@@ -649,12 +648,11 @@ public class NovelViewerActivity extends AppCompatActivity implements OnReadingL
     }
 
     private void switch_to_nightMod() {
-        ViewerSettingDialog.isFollowing=false;
         Mod_btn.setImageResource(R.mipmap.day_mod);
         if (!is_toolbar_visible)
             StatusBarUtil.setStatusBarDarkTheme(activity,false);
-        Brightness.stopAutoBrightness(activity);
-        Brightness.setSystemScreenBrightness(activity,60);
+//        Brightness.stopAutoBrightness(activity);
+//        Brightness.setSystemScreenBrightness(activity,60);
     }
 
     /**

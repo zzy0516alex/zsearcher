@@ -69,4 +69,9 @@ public class BackupSourceBean {
     public void setChosen(boolean chosen) {
         isChosen = chosen;
     }
+
+    @Override
+    public String toString() {
+        return "ID"+this.SourceID;
+    }
 }

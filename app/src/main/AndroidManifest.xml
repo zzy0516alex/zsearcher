@@ -44,21 +44,22 @@
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".NovelSourceManageActivity" />
+        <activity android:name=".NovelSourceManageActivity"
+            android:launchMode="standard" android:allowTaskReparenting="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*"/>
+                <data android:mimeType="*/*"/>
+                <data android:pathPattern=".*\\.znr"/>
+            </intent-filter>
+        </activity>
         <activity android:name=".SettingsActivity" />
         <activity
             android:name=".NovelViewerActivity"
             android:screenOrientation="portrait">
-<!--            <intent-filter android:scheme="file">-->
-<!--                <action android:name="android.intent.action.VIEW" />-->
-
-<!--                <category android:name="android.intent.category.DEFAULT" />-->
-
-<!--                <data-->
-<!--                    android:host="*"-->
-<!--                    android:mimeType="*/*"-->
-<!--                    android:pathPattern=".*\\.znr" />-->
-<!--            </intent-filter>-->
         </activity>
         <activity
             android:name=".BookShelfActivity"

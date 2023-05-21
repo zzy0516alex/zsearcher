@@ -2,36 +2,43 @@
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <TextView
+        android:id="@+id/current_path"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/current_path"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="15dp"
+        android:layout_marginEnd="15dp"
+        android:layout_marginBottom="15dp"
         android:ellipsize="middle"
         android:singleLine="true"
-        android:layout_margin="15dp"
-        android:text="当前：/storage/emulate/download/zsearcher"
-        android:textSize="16sp"/>
+        android:text="当前：/storage/emulate/0/download/zsearcher"
+        android:textColor="@color/black"
+        android:textSize="20sp" />
+
     <TextView
+        android:id="@+id/title_storage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@+id/current_path"
+        android:layout_marginStart="15dp"
         android:text="内部存储"
         android:textColor="@color/black"
-        android:textSize="14sp"
-        android:id="@+id/title_storage"
-        android:layout_below="@+id/current_path"
-        android:layout_marginStart="15dp" />
+        android:textSize="16sp" />
+
     <ProgressBar
         android:id="@+id/storage"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="fill_parent"
-        android:layout_height="6dp"
+        android:layout_height="10dp"
         android:layout_below="@+id/title_storage"
-        android:max="100"
-        android:progress="0"
         android:layout_marginStart="15dp"
         android:layout_marginEnd="15dp"
-        android:progressDrawable="@drawable/progressbar_blue">
-    </ProgressBar>
+        android:layout_marginTop="5dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/progressbar_blue"/>
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -39,14 +46,16 @@
         android:layout_marginStart="15dp"
         android:layout_marginEnd="15dp"
         android:id="@+id/storage_info">
+
         <TextView
             android:id="@+id/total"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="5dp"
             android:text="@string/storage_info"
-            android:textSize="12sp"
-            android:textColor="#DCDCDC"
-            android:layout_alignParentEnd="true"/>
+            android:textColor="@color/system_gray"
+            android:textSize="12sp" />
     </RelativeLayout>
     <View
         android:layout_width="match_parent"
@@ -55,14 +64,16 @@
         android:background="#D3D3D3"
         android:layout_below="@id/storage_info"
         android:id="@+id/separator_for_storage"/>
+
     <Button
+        android:id="@+id/change_path"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/change_path"
         android:layout_below="@+id/separator_for_storage"
         android:background="@drawable/square_btn_white"
         android:text="更改"
-        android:textColor="@color/DoderBlue"/>
+        android:textSize="18dp"
+        android:textColor="@color/DoderBlue" />
 
 
 </RelativeLayout>

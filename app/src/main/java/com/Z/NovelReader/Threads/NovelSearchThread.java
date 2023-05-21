@@ -15,6 +15,7 @@ import com.Z.NovelReader.Objects.beans.NovelSearchBean;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.Objects.beans.SearchQuery;
 import com.Z.NovelReader.Utils.SSLAgent;
+import com.gargoylesoftware.htmlunit.util.NameValuePair;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -23,6 +24,7 @@ import org.jsoup.nodes.Document;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.net.ssl.SSLHandshakeException;
 
@@ -55,6 +57,7 @@ public class NovelSearchThread extends BasicHandlerThread {
         super.run();
         searchResult=new ArrayList<>();
         try {
+            SSLAgent.getInstance().trustAllHttpsCertificates();
             //获取document
             Connection connect = Jsoup.connect(url);
             connect.timeout(20000);
@@ -70,9 +73,13 @@ public class NovelSearchThread extends BasicHandlerThread {
                 String[] headers = post_body.split("&");
                 for (String header : headers) {
                     String[] key_value = header.split("=");
-                    if (key_value.length>1)connect.data(key_value[0], key_value[1]);
+                    if (key_value.length>1) {
+                        byte[] bytes = key_value[1].getBytes(completedSearchQuery.getCharset());
+                        String trans = new String(bytes, completedSearchQuery.getCharset());
+                        connect.data(key_value[0], trans);
+                    }
+                    else if (header.contains("="))connect.data(key_value[0],"");
                 }
-                SSLAgent.getInstance().trustAllHttpsCertificates();
                 connect.header("Connection", "close");
                 doc=connect.post();
             }
@@ -88,16 +95,16 @@ public class NovelSearchThread extends BasicHandlerThread {
             else callback(PROCESS_DONE,searchResult);
 
         }catch (SSLHandshakeException e){
-            e.printStackTrace();
-            Log.e("err","not trusted link");
+            //e.printStackTrace();
+            Log.e("err",novelRequire.getBookSourceUrl() + " not trusted link: " + e.getMessage());
             report(ERROR_OCCUR);
         } catch (IOException e) {
             e.printStackTrace();
-            Log.e("err","no internet");
+            Log.e("err","no internet: "+novelRequire.getBookSourceUrl());
             report(NO_INTERNET);
         }catch (IllegalArgumentException e){
             e.printStackTrace();
-            Log.e("novel search","url错误");
+            Log.e("novel search","url错误: "+novelRequire.getBookSourceUrl());
             report(ERROR_OCCUR);
         }
         catch (Exception e) {

@@ -1,5 +1,8 @@
 package com.Z.NovelReader.Processors;
 
+import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.Utils.StringUtils;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -11,22 +14,37 @@ import org.mozilla.javascript.ScriptableObject;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class JavaScriptEngine {
     private Context ctx;
     private Scriptable scope;
+    private NovelRequire rule;
+    private Java java;
+    private Book book;
 
-    public JavaScriptEngine() {
+    public JavaScriptEngine(NovelRequire rule) {
         ctx = Context.enter();
         scope = ctx.initStandardObjects();
         ctx.setOptimizationLevel(-1);
-        ScriptableObject.putProperty(scope,"java",new Java());
+        java = new Java();
+        book = new Book(rule);
+        ScriptableObject.putProperty(scope,"java",java);
+        ScriptableObject.putProperty(scope,"book",book);
+        this.rule = rule;
+        preDefine();
     }
-    public void preDefine(String basicUrl, String result){
-        scope.put("basicUrl",scope,basicUrl);
-        scope.put("result",scope,result);
+    public void preDefine(){
+        scope.put("basicUrl",scope,rule.getBookSourceUrl());
+        //scope.put("baseUrl",scope,rule.getBookSourceUrl());
+        //scope.put("result",scope,result);
     }
+    public void preDefine(String key, String value){
+        scope.put(key,scope,value);
+    }
+
     public String runScript(String jsCode) throws Exception {
         Object result = ctx.evaluateString(scope, jsCode, null, 0,null);
         if (result instanceof String) return (String) result;
@@ -39,6 +57,7 @@ public class JavaScriptEngine {
 
     //用户自定义java函数
     public static class Java{
+        Map<String,String> info = new HashMap<>();
         public String ajax(String url){
             ConnectThread t = new ConnectThread(url);
             t.start();
@@ -49,7 +68,20 @@ public class JavaScriptEngine {
             }
             return "";
         }
+
+        public void put(String key,String value){
+            info.put(key,value);
+        }
     }
+    //用户自定义Book类
+    public static class Book{
+        public String origin;
+
+        public Book(NovelRequire rules){
+            this.origin = rules.getBookSourceUrl();
+        }
+    }
+
     public static class ConnectThread extends Thread{
         String url = "";
         String result = "";

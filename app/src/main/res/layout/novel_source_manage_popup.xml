@@ -4,83 +4,63 @@
     android:layout_height="match_parent">
 
     <LinearLayout
-        android:id="@+id/import_from_internet"
+        android:id="@+id/import_source"
         android:layout_width="125dp"
         android:layout_height="40dp"
-        android:orientation="horizontal"
         android:background="@drawable/rounded_square_btn_white"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="true"
+        android:orientation="horizontal">
+
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@mipmap/internet_icon"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="10dp"/>
+            android:layout_marginStart="10dp"
+            android:src="@mipmap/import_icon" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="网络导入"
-            android:textSize="15sp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"
+            android:text="导入书源"
             android:textColor="@color/black"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="10dp"/>
-    </LinearLayout>
-    <LinearLayout
-        android:id="@+id/import_from_local"
-        android:layout_width="125dp"
-        android:layout_height="40dp"
-        android:layout_below="@+id/import_from_internet"
-        android:orientation="horizontal"
-        android:background="@drawable/rounded_square_btn_white"
-        android:clickable="true"
-        android:focusable="true">
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@mipmap/local_icon"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="10dp"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="本地导入"
-            android:textSize="15sp"
-            android:textColor="@color/black"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="10dp"/>
+            android:textSize="17sp" />
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/import_from_QRcode"
+        android:id="@+id/export_source"
         android:layout_width="125dp"
         android:layout_height="40dp"
-        android:layout_below="@+id/import_from_local"
-        android:orientation="horizontal"
+        android:layout_below="@id/import_source"
         android:background="@drawable/rounded_square_btn_white"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="true"
+        android:orientation="horizontal">
+
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@mipmap/qr_icon"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="10dp"/>
+            android:layout_marginStart="10dp"
+            android:src="@mipmap/export_icon" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="扫码导入"
-            android:textSize="15sp"
-            android:textColor="@color/black"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="10dp"/>
+            android:layout_marginStart="10dp"
+            android:text="导出书源"
+            android:textColor="@color/black"
+            android:textSize="17sp" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/delete_select"
         android:layout_width="125dp"
         android:layout_height="40dp"
-        android:layout_below="@+id/import_from_QRcode"
+        android:layout_below="@+id/export_source"
         android:orientation="horizontal"
         android:background="@drawable/rounded_square_btn_white"
         android:clickable="true"
@@ -96,7 +76,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="删除模式"
-            android:textSize="15sp"
+            android:textSize="17sp"
             android:textColor="@color/black"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="10dp"/>
@@ -122,7 +102,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="校验书源"
-            android:textSize="15sp"
+            android:textSize="17sp"
             android:textColor="@color/black"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="10dp"/>

@@ -1,4 +1,5 @@
 <resources>
-    <string name="app_name">Zsearcher</string>
+    <string name="app_name">Z阅读</string>
     <string name="storage_info">剩余：%1$s / 总共：%2$s</string>
+    <string name="novel_source_info">共有%d个可用的源</string>
 </resources>

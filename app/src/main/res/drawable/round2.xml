@@ -48,7 +48,7 @@
                 android:left="0.4dp"
                 android:right="0.4dp"
                 android:top="0.4dp" />
-            <solid android:color="#50CCCCCC" />
+            <solid android:color="#40CCCCCC" />
         </shape>
     </item>
 

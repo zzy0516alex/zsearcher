@@ -89,7 +89,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
     //目录信息
     private List<String>ChapList;
     private List<String>ChapLinkList;
-    //private List<Novels> AllNovels;//书架中所有的书
     //基本变量
     private boolean istouch=false;
     private boolean first_load=true;//首次载入，界面提示
@@ -131,12 +130,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
 
         //get book source
         sourceDBTools=new NovelSourceDBTools(context);
-        sourceDBTools.getNovelRequireById(sourceID, new NovelSourceDBTools.QueryListener() {
-            @Override
-            public void onResultBack(Object object) {
-                novelRequire = (NovelRequire) object;
-            }
-        });
+        sourceDBTools.getNovelRequireById(sourceID, object -> novelRequire = (NovelRequire) object);
 
         //get view
         webView=findViewById(R.id.novelpage);
@@ -163,15 +157,10 @@ public class NovelShowAcitivity extends AppCompatActivity {
             }
         });
 
-        //debug
-        //novelDBTools.deleteAll();
-
         //initiate button
         next.setEnabled(false);
         past.setEnabled(false);
 
-//        AddBook.setVisibility(View.INVISIBLE);
-//        AddBook.setEnabled(false);
         catalog.setEnabled(false);
         next.setEnabled(false);
         //字体大小拖动条
@@ -197,18 +186,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
             }
         });
         // 上一章/下一章按钮
-        past.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadURL(pastUrl);
-            }
-        });
-        next.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadURL(nextUrl);
-            }
-        });
+        past.setOnClickListener(v -> loadURL(pastUrl));
+        next.setOnClickListener(v -> loadURL(nextUrl));
 
         //目录按钮点击
         catalog.setOnClickListener(new View.OnClickListener() {
@@ -274,17 +253,16 @@ public class NovelShowAcitivity extends AppCompatActivity {
             }
 
         });
-        AddBook.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AddBook.setImageResource(R.mipmap.shelfclick);
-                if(!istouch){
-                    IfAddToShelf();
-                }
-                if(istouch){
-                    istouch=false;
-                    AddBook.setImageResource(R.mipmap.addtoshelf);
-                }
+        AddBook.setEnabled(false);
+        AddBook.setVisibility(View.INVISIBLE);
+        AddBook.setOnClickListener(v -> {
+            AddBook.setImageResource(R.mipmap.shelfclick);
+            if(!istouch){
+                IfAddToShelf();
+            }
+            if(istouch){
+                istouch=false;
+                AddBook.setImageResource(R.mipmap.addtoshelf);
             }
         });
 
@@ -334,13 +312,10 @@ public class NovelShowAcitivity extends AppCompatActivity {
         registerCatalogBroadcast();
 
         //刷新界面
-        web_refresh.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Animation animation = AnimationUtils.loadAnimation(Novalshow, R.anim.rotate_limittime);
-                web_refresh.startAnimation(animation);
-                webView.reload();
-            }
+        web_refresh.setOnClickListener(v -> {
+            Animation animation = AnimationUtils.loadAnimation(Novalshow, R.anim.rotate_limittime);
+            web_refresh.startAnimation(animation);
+            webView.reload();
         });
 
         //debug ContentTextThread t=new ContentTextThread(url,BookName,getExternalFilesDir(null));t.start();
@@ -467,6 +442,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         thread_cover.start();
         //获取当前章节文本
         ContentThread thread_content = new ContentThread(currentURL,novelRequire,contentRootUrl);
+        thread_content.setCatalogLinks(ChapLinkList);
         thread_content.setOutputParams(StorageUtils.getBookContentPath(BookName,writer));
         thread_content.setUpdateRootURL(novel,context);
         thread_content.start();
@@ -496,6 +472,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
             Log.d("novel show","content root url= "+contentRootUrl);
             ChangeCurrentCondition();
             catalog.setEnabled(true);
+            AddBook.setEnabled(true);
+            AddBook.setVisibility(View.VISIBLE);
             isCatalogReady=true;
         }else{
             Toast.makeText(this, "目录读取失败", Toast.LENGTH_SHORT).show();

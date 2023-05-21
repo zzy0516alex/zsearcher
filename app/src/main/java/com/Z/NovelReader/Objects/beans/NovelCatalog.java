@@ -108,4 +108,8 @@ public class NovelCatalog implements Serializable {
             total_time *= 2;
         return total_time;
     }
+
+    public String toString(int index){
+        return String.format("[%s] %s",Title.get(index),Link.get(index));
+    }
 }

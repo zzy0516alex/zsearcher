@@ -2,38 +2,50 @@ package com.Z.NovelReader.Processors;
 
 import com.Z.NovelReader.Processors.Exceptions.RuleProcessorException;
 import com.Z.NovelReader.Utils.StringUtils;
+import com.jayway.jsonpath.JsonPath;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
-import java.text.Format;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
+//书源解析类，参考规则：https://alanskycn.gitee.io/teachme/Rule/source.html
 public class NovelRuleAnalyzer {
     public enum RuleType {CLASS,Tag,ID,META,TEXT_OWN,ATTR,TEXT,TEXT_NODES,HTML,OMIT_TAG,REGEX_MATCH}
+    //script表示<js> </js>包裹的js代码，marker表示@js开头的js代码
+    //only表示有且仅有js代码，follow表示需要对上一步的结果(result变量进行js脚本处理)，fail表示js脚本格式不识别或执行出错
+    public enum JSType {SCRIPT_ONLY, SCRIPT_FOLLOW, PARSE_FAIL, MARKER_ONLY}
+
     private ElementBean[] beans;
     private ArrayList<Elements>selected_elements = new ArrayList<>();
     private boolean isContent = false;//如果需要获取章节内容，为真，进行特别优化
+    //For javascript
     private boolean JsFlag = false;//是否有js脚本需要处理
-    private boolean Js_RunLater = false;//js脚本需要使用前面的处理结果
-    private String JsCode = "";
-    private String documentSource = "";
-    private JavaScriptEngine engine = new JavaScriptEngine();
+    private JSType jsType;
+    private String jsCode;
+    private String jsResult;
+    private JavaScriptEngine engine;
+    //For jsonpath
+    private boolean JsonFlag = false;//是否是
 
-    public void setContent(boolean content) {
+    public void isContent(boolean content) {
         isContent = content;
     }
 
-    public void setDocumentSource(String documentSource) {
-        this.documentSource = documentSource;
+    public void setEngine(JavaScriptEngine engine) {
+        this.engine = engine;
     }
+
+//    public void setRule(NovelRequire rule) {
+//        this.rule = rule;
+//        this.engine = new JavaScriptEngine(rule);
+//    }
+
     //notice: 构建bean所需的方法：
 
     /**
@@ -146,23 +158,34 @@ public class NovelRuleAnalyzer {
 
     private String checkJsUsage(String rule) throws Exception {
         if (rule.contains("<js>")){
-            //if (isTypeofElement(bean))throw new Exception("js脚本不应出现在element类型后");
             if (!rule.contains("</js>"))throw new RuleProcessorException("js脚本不完整");
+            if (engine == null)throw new RuleProcessorException("js脚本引擎未设置");
             JsFlag = true;
             int startJS = rule.indexOf("<js>");
             int endJS = rule.indexOf("</js>");
             String layer_withoutJS = rule.substring(0, startJS) + rule.substring(endJS+5);
-            JsCode = rule.substring(startJS+4,endJS);
-            String js_result = "";
+            jsCode = rule.substring(startJS+4,endJS);
+            jsResult = "";
             if (startJS == 0){
-                if ("".equals(documentSource))throw new RuleProcessorException("need to set document source");
-                engine.preDefine("https://www.beiyongzhan.me/",documentSource);
-                js_result = engine.runScript(JsCode);
+                try {
+                    jsResult = engine.runScript(jsCode);
+                    jsType = JSType.SCRIPT_ONLY;
+                }catch (Exception e){
+                    e.printStackTrace();
+                    jsType = JSType.PARSE_FAIL;
+                    throw new RuleProcessorException("js脚本解析失败");
+                }
             }
-            else Js_RunLater = true;
+            else jsType = JSType.SCRIPT_FOLLOW;
             return layer_withoutJS;
         }
         else return rule;
+    }
+
+    public boolean checkJsonUsage(String rule){
+        Pattern pattern = Pattern.compile("^\\$\\.(.)+");
+        Matcher matcher = pattern.matcher(rule);
+        return matcher.matches();
     }
 
     private String getElementExclusions(ElementBean bean, String layer) throws Exception {
@@ -178,7 +201,7 @@ public class NovelRuleAnalyzer {
         return parts[0];
     }
 
-    public String getContentReplacement(ElementBean bean,String layer) throws Exception {
+    public String getContentReplacement(ElementBean bean, String layer) throws Exception {
         String[] replacement=new String[2];
         replacement[0]="";
         replacement[1]="";
@@ -204,7 +227,7 @@ public class NovelRuleAnalyzer {
      * @param raw_rule
      * @throws Exception
      */
-    public void splitLayers(String raw_rule) throws Exception {
+    private void splitLayers(String raw_rule) throws Exception {
         String[] layers;
         if (raw_rule.contains("||")) {
             String[] split = raw_rule.split("\\|\\|");
@@ -214,6 +237,9 @@ public class NovelRuleAnalyzer {
             raw_rule = raw_rule.substring(1);
         //set js management
         raw_rule = checkJsUsage(raw_rule);
+        //check json usage
+        JsonFlag = checkJsonUsage(raw_rule);
+        if (!isCssRule())return;
         layers=raw_rule.split("@");
         beans=new ElementBean[layers.length];
         for (int i = 0; i < layers.length; i++) {
@@ -229,6 +255,10 @@ public class NovelRuleAnalyzer {
             getRuleContentByType(b,currentlayer);
             beans[i]=b;
         }
+    }
+
+    private boolean isCssRule(){
+        return !((JsFlag && jsType==JSType.SCRIPT_ONLY) || (JsonFlag));
     }
 
     //notice: select element所需的方法:
@@ -270,7 +300,7 @@ public class NovelRuleAnalyzer {
                 break;
             }
         }
-        return new SelectedElements(elements,last_bean_index);
+        return new SelectedElements(elements, last_bean_index);
     }
 
     //重载函数，使之匹配单个element
@@ -286,9 +316,19 @@ public class NovelRuleAnalyzer {
      * @throws Exception
      */
     public List<String> getObjectFromElements(Elements eles, String raw_rule) throws Exception{
-        splitLayers(raw_rule);
-        if (beans.length<=0)throw new RuleProcessorException("beans 生成错误");
         List<String> object=new ArrayList<>();
+        splitLayers(raw_rule);
+        if (JsFlag && jsType==JSType.SCRIPT_ONLY){
+            if (!jsResult.equals(""))object.add(jsResult);
+            return object;
+        }
+        if(JsonFlag){
+            String json = new Document(eles.toString()).body().text();
+            object = JsonPath.read(json, raw_rule);
+            return object;
+        }
+        if (beans.length<=0)throw new RuleProcessorException("beans 生成错误");
+        if(!isCssRule())throw new RuleProcessorException("未处理的非css规则");
         for (Element ele : eles) {
             SelectedElements selectedElements = getElementsFromBean(ele);
             selected_elements.add(selectedElements.elements);
@@ -347,9 +387,8 @@ public class NovelRuleAnalyzer {
                 }
                 if (current_item.equals("null:null"))throw new RuleProcessorException("unhandled element type");
                 String replacedItem = getReplacedItem(bean, current_item);
-                if (JsFlag && Js_RunLater){
-                    engine.preDefine("https://www.beiyongzhan.me/",replacedItem);
-                    engine.runScript(JsCode);
+                if (JsFlag && jsType == JSType.SCRIPT_FOLLOW){
+                    engine.runScript(jsCode);
                 }
                 object.add(replacedItem);
             }
@@ -432,7 +471,7 @@ public class NovelRuleAnalyzer {
         }
     }
 
-    class SelectedElements{
+    static class SelectedElements{
         public Elements elements;
         public int bean_left;
 

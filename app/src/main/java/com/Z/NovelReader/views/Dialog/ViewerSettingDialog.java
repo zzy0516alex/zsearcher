@@ -6,11 +6,11 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -24,11 +24,12 @@ import androidx.annotation.NonNull;
 
 import com.Z.NovelReader.Fragments.NovelViewFragmentFactory;
 import com.Z.NovelReader.Global.OnSettingChangeListener;
-import com.Z.NovelReader.Objects.NovelChap;
 import com.Z.NovelReader.Objects.beans.NovelViewTheme;
 import com.Z.NovelReader.R;
 import com.Z.NovelReader.Utils.Brightness;
 import com.Z.NovelReader.Utils.ScreenUtils;
+import com.Z.NovelReader.views.BrightnessSlider;
+import com.Z.NovelReaderKT.slider.NiftySlider;
 
 import java.util.Locale;
 
@@ -42,9 +43,9 @@ public class ViewerSettingDialog extends Dialog {
     private Button btn_line_width_inc;
     private Button btn_line_width_dec;
     private TextView tv_line_width_show;
-    private SeekBar setLight;
+    private BrightnessSlider slider_brightness_control;
     private RadioGroup rg_mode_select;
-    public static boolean isFollowing;
+    public boolean isFollowSystemBrightness;
     private int currentTextSize;
     private float currentLineWidth;
     private NovelViewFragmentFactory.ViewMode currentViewMode;
@@ -53,7 +54,7 @@ public class ViewerSettingDialog extends Dialog {
     private NovelViewTheme novelViewTheme;
     private SharedPreferences myInfo;
     public static Brightness.BrightnessObserver brightnessObserver;
-    private int brightness;
+    private float brightness;
 
     public static final int MAX_TEXT_SIZE = 35;
     public static final int MIN_TEXT_SIZE = 15;
@@ -128,36 +129,26 @@ public class ViewerSettingDialog extends Dialog {
 
         brightnessObserver = new Brightness.BrightnessObserver((Activity) context,
                 new Handler(Looper.getMainLooper()),
-                new Brightness.BrightnessChangeListener() {
-                    @Override
-                    public void onChange(int brightness) {
-                        setLight.setProgress(brightness);
-                    }
-                });
+                (brightness) -> {
+                if(isFollowSystemBrightness)
+                    slider_brightness_control.setProgressSmooth(brightness*100f);
+        });
         brightnessObserver.register();
     }
 
     private void init_skb_Light() {
-        setLight=findViewById(R.id.set_light);
-        setLight.setMax(4095);
-        setLight.setProgress(brightness);
-        setLight.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        slider_brightness_control =findViewById(R.id.brightness_control);
+        slider_brightness_control.setValueFrom(0f);//百分比进度条
+        slider_brightness_control.setValueTo(100f);//百分比进度条
+        slider_brightness_control.setValue(brightness*100f);
+        slider_brightness_control.setOnValueChangeListener(new NiftySlider.OnValueChangeListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (!isFollowing){
+            public void onValueChange(@NonNull NiftySlider slider, float value, boolean fromUser) {
+                if (fromUser){
                     Brightness.stopAutoBrightness((Activity) context);
-                    Brightness.setSystemScreenBrightness(context,progress);
+                    Brightness.changeActivityBrightness((Activity) context,value/100f);
+                    setFollowSystemBrightness(false);
                 }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                follow_system(false);
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
             }
         });
     }
@@ -252,32 +243,37 @@ public class ViewerSettingDialog extends Dialog {
 
     private void init_btn_follow() {
         follow_system=findViewById(R.id.with_system);
-        if (isFollowing){
-            follow_system.setSelected(true);
+        if (isFollowSystemBrightness){
             Brightness.startAutoBrightness((Activity) context);
         }
         else {
-            follow_system.setSelected(false);
             Brightness.stopAutoBrightness((Activity) context);
         }
-        follow_system.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isFollowing){
-                    Brightness.stopAutoBrightness((Activity) context);
-                    follow_system(false);
-                }
-                else {
-                    Brightness.startAutoBrightness((Activity) context);
-                    follow_system(true);
-                }
+        setFollowSystemBrightness(isFollowSystemBrightness);
+        follow_system.setOnClickListener(v -> {
+            if (isFollowSystemBrightness){
+                Brightness.stopAutoBrightness((Activity) context);
+                setFollowSystemBrightness(false);
+            }
+            else {
+                Brightness.changeActivityBrightness((Activity) context,-1);
+                Brightness.startAutoBrightness((Activity) context);
+                setFollowSystemBrightness(true);
             }
         });
     }
 
-    private void follow_system(boolean b) {
-        follow_system.setSelected(b);
-        isFollowing = b;
+    public ViewerSettingDialog setFollowSystemBrightness(boolean b) {
+        int selected_color = context.getColor(R.color.DoderBlue);
+        int unselected_color = Color.WHITE;
+        if(follow_system!=null)
+            follow_system.setTextColor(b?selected_color:unselected_color);
+        isFollowSystemBrightness = b;
+        return this;
+    }
+
+    public boolean isFollowSystemBrightness() {
+        return isFollowSystemBrightness;
     }
 
     @Override
@@ -286,7 +282,7 @@ public class ViewerSettingDialog extends Dialog {
         Window window = this.getWindow();
         //设置弹出位置
         window.setGravity(Gravity.BOTTOM);
-
+        setFollowSystemBrightness(isFollowSystemBrightness);
         int matchParent = WindowManager.LayoutParams.MATCH_PARENT;//父布局的宽度
         int wrapContent=WindowManager.LayoutParams.WRAP_CONTENT;
         int screen_height = ScreenUtils.getScreenHeight(context);
@@ -308,7 +304,7 @@ public class ViewerSettingDialog extends Dialog {
         return this;
     }
 
-    public ViewerSettingDialog setBrightness(int brightness) {
+    public ViewerSettingDialog setBrightness(float brightness) {
         this.brightness=brightness;
         return this;
     }

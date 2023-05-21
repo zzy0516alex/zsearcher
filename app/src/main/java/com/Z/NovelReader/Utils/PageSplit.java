@@ -77,8 +77,6 @@ public class PageSplit {
         /*
         * The first row's height is different from other row.
         */
-        //view.measure(0,0);
-        int width = view.getMeasuredWidth();
         int h = view.getBottom() - view.getTop();
         int firstH=getLineHeight(0,view);
         int otherH=getLineHeight(1,view);

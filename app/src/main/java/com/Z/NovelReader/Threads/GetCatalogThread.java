@@ -17,6 +17,7 @@ import org.jsoup.nodes.Document;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -33,6 +34,8 @@ public class GetCatalogThread extends BasicHandlerThread {
     private boolean needOutput = false;
     private boolean isSuccess = false;
     private CountDownLatch countDownLatch;
+    private int MaxReconnectNum = 10;
+    private int reconnectCounter = 0;
 
     public GetCatalogThread(String url, NovelRequire novelRequire, int sequence) {
         this.url = url;
@@ -70,6 +73,15 @@ public class GetCatalogThread extends BasicHandlerThread {
             if (catalog.getSize()!=0)isSuccess = true;
             sub_catalog = new MapElement(sub_sequence,catalog);
             callback(PROCESS_DONE,sub_catalog);
+        }
+        catch (SocketException e){
+            if (e.getMessage().contains("reset")){
+                if (reconnectCounter<MaxReconnectNum) {
+                    run();reconnectCounter++;
+                }else {
+                    report(NO_INTERNET);
+                }
+            }
         }
         catch (SocketTimeoutException e){
             e.printStackTrace();

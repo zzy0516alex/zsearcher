@@ -10,5 +10,4 @@
     <stroke
         android:width="2dp"
         android:color="@color/SelectorBlue" />
-
 </shape>

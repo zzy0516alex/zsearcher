@@ -4,26 +4,26 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.icu.text.SimpleDateFormat;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
@@ -39,12 +39,16 @@ import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceViewModel;
 import com.Z.NovelReader.Threads.CheckRespondThread;
 import com.Z.NovelReader.Threads.NovelSourceGetterThread;
+import com.Z.NovelReader.Utils.CollectionUtils;
 import com.Z.NovelReader.Utils.FileIOUtils;
+import com.Z.NovelReader.Utils.FileUtils;
 import com.Z.NovelReader.Utils.QRcodeUtils.Constant;
 import com.Z.NovelReader.Utils.ScreenUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.StorageUtils;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.views.Dialog.BottomSheetDialog;
+import com.Z.NovelReader.views.Dialog.SweetDialog.SweetAlertDialog;
 import com.Z.NovelReader.views.KeyboardPopupWindow;
 import com.Z.NovelReader.views.Dialog.WaitDialog;
 import com.Z.NovelReader.views.NovelSourceMenu;
@@ -52,10 +56,13 @@ import com.Z.NovelReader.zxing.activity.CaptureActivity;
 import com.Z.NovelReader.zxing.camera.CameraManager;
 import com.google.gson.JsonSyntaxException;
 import com.z.fileselectorlib.FileSelectorSettings;
+import com.z.fileselectorlib.FileSelectorTheme;
 import com.z.fileselectorlib.Objects.FileInfo;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -81,6 +88,7 @@ public class NovelSourceManageActivity extends AppCompatActivity {
     private Context context;
     private Activity activity;
     private boolean add_source_flag = false;
+    private boolean intent_handling = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,46 +127,22 @@ public class NovelSourceManageActivity extends AppCompatActivity {
                 }
             }
         });
-//        handler = new NovelSourceGetterThread.NSGetterHandler(new NovelSourceGetterThread.NSGetterListener() {
-//            @Override
-//            public void onSuccess() {
-//                if (waitDialog!=null)waitDialog.dismiss();
-//                Toast.makeText(context, "书源添加完成", Toast.LENGTH_SHORT).show();
-//            }
-//
-//            @Override
-//            public void onError(int error_code) {
-//                if (waitDialog!=null)waitDialog.dismiss();
-//                switch(error_code){
-//                    case NovelSourceGetterThread.NO_INTERNET:
-//                        Toast.makeText(context, "无网络", Toast.LENGTH_SHORT).show();
-//                        break;
-//                    case NovelSourceGetterThread.SOURCE_TYPE_NOT_JSON:
-//                        Toast.makeText(context, "书源链接无效:不是json", Toast.LENGTH_SHORT).show();
-//                        break;
-//                    default:
-//                }
-//            }
-//        });
 
         //书源数据库DAO初始化
         sourceDBTools = new NovelSourceDBTools(this);
         novelDBUpdater = new NovelDBUpdater(this);
         //初始化view model，启动observer
         novelSourceViewModel = new ViewModelProvider(this,ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication())).get(NovelSourceViewModel.class);
-        novelSourceViewModel.getNovelSourceLiveData().observe(this, new Observer<List<NovelRequire>>() {
-            @Override
-            public void onChanged(List<NovelRequire> novelRequires) {
-                if (add_source_flag){
-                    String info = String.format(Locale.CHINA,"新增：%d个书源",
-                            novelRequires.size()-novelRequireList.size());
-                    Toast.makeText(context, info, Toast.LENGTH_SHORT).show();
-                    add_source_flag = false;
-                }
-                novelRequireList=novelRequires;
-                adapter.setNovelRequireList(novelRequireList);
-                adapter.notifyDataSetChanged();
+        novelSourceViewModel.getNovelSourceLiveData().observe(this, novelRequires -> {
+            if (add_source_flag){
+                String info = String.format(Locale.CHINA,"新增：%d个书源",
+                        novelRequires.size()-novelRequireList.size());
+                Toast.makeText(context, info, Toast.LENGTH_SHORT).show();
+                add_source_flag = false;
             }
+            novelRequireList=novelRequires;
+            adapter.setNovelRequireList(novelRequireList);
+            adapter.notifyDataSetChanged();
         });
         //初始化adapter
         adapter=new NovelSourceAdapter(novelRequireList,this);
@@ -208,6 +192,31 @@ public class NovelSourceManageActivity extends AppCompatActivity {
                 showManageOptions();
             }
         });
+
+        if (!intent_handling)handleSourceFileFromOuter();
+        System.out.println("on create");
+    }
+
+    private void handleSourceFileFromOuter() {
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        if (intent.ACTION_VIEW.equals(action)) {
+            intent_handling = true;
+            Uri uri = intent.getData();
+            String file_path = Uri.decode(uri.getEncodedPath());
+            Log.d("NovelSourceManage", "open source file: "+ file_path);
+            SweetAlertDialog sweetAlertDialog = new SweetAlertDialog(context, SweetAlertDialog.NORMAL_TYPE);
+            sweetAlertDialog.setTitleText("读取书源")
+                    .setContentText("检测到书源文件，是否读入")
+                    .setConfirmButton("确认", sweetAlertDialog1->{
+                        sweetAlertDialog1.dismissWithAnimation();
+                        addNovelRequireFromFile(new File(file_path));
+                    })
+                    .show();
+            sweetAlertDialog.setOnDismissListener(dialog -> {
+                intent_handling = false;
+            });
+        }
     }
 
     @Override
@@ -235,7 +244,7 @@ public class NovelSourceManageActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         //本地文件导入回调
-        if (requestCode==FileSelectorSettings.FILELIST_REQUEST_CODE && resultCode==FileSelectorSettings.BACK_WITH_SELECTIONS){
+        if (requestCode==FileSelectorSettings.FILE_LIST_REQUEST_CODE && resultCode==FileSelectorSettings.BACK_WITH_SELECTIONS){
             assert data != null;
             Bundle bundle=data.getExtras();
             assert bundle != null;
@@ -244,7 +253,7 @@ public class NovelSourceManageActivity extends AppCompatActivity {
             if (FilePathSelected!=null && FilePathSelected.size()!=0) {
                 String path=FilePathSelected.get(0);
                 File local_source = new File(path);
-                addNovelRequire(local_source);
+                addNovelRequireFromFile(local_source);
             }
         }
         //二维码导入回调
@@ -263,19 +272,32 @@ public class NovelSourceManageActivity extends AppCompatActivity {
         }
     }
 
-    private void addNovelRequire(File local_source) {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!intent_handling)handleSourceFileFromOuter();
+        System.out.println("on resume");
+    }
+
+    private void addNovelRequireFromFile(File local_source) {
         if (local_source.exists()){
             try {
-                String sourceJSON = FileIOUtils.read_line(local_source.getPath());
+                //String sourceJSON = FileIOUtils.read_line(local_source.getPath());
+                String sourceJSON = FileUtils.readZnrFile(local_source.getPath());
                 NovelRequire[] novelRequire = NovelRequire.getNovelRequireBeans(sourceJSON);
-                NovelSourceDBTools sourceDBTools=new NovelSourceDBTools(context);
-                sourceDBTools.InsertNovelSources(novelRequire);
-                //check source
-                for (NovelRequire rule : novelRequire) {
-                    CheckRespondThread thread = new CheckRespondThread(rule,sourceDBTools);
-                    thread.start();
-                }
-                add_source_flag = true;
+                List<NovelRequire> novelRequires = Arrays.asList(novelRequire);
+                //CollectionUtils<NovelRequire> collectionUtil = new CollectionUtils<>();
+                List<NovelRequire> diffList = CollectionUtils.diffListByStringKey(novelRequireList, novelRequires);
+                if(diffList.size()>0) {
+                    NovelSourceDBTools sourceDBTools = new NovelSourceDBTools(context);
+                    sourceDBTools.InsertNovelSources(novelRequire);
+                    //check source
+                    for (NovelRequire rule : novelRequire) {
+                        CheckRespondThread thread = new CheckRespondThread(rule, sourceDBTools);
+                        thread.start();
+                    }
+                    add_source_flag = true;
+                }else Toast.makeText(context, "导入的书源已存在", Toast.LENGTH_SHORT).show();
             }catch (JsonSyntaxException e){
                 e.printStackTrace();
                 Toast.makeText(context, "文件不符合书源格式", Toast.LENGTH_SHORT).show();
@@ -287,23 +309,40 @@ public class NovelSourceManageActivity extends AppCompatActivity {
         source_manage_menu = new NovelSourceMenu(context,adapter.isDelete_mode());
         source_manage_menu.setMenuClickListener(new NovelSourceMenu.MenuClickListener() {
             @Override
-            public void doInternetImport() {
-                showEditTextForURL();
+            public void onImportSource() {
+                BottomSheetDialog dialog = new BottomSheetDialog(context,R.style.NormalBottomDialog);
+                dialog.addSheetItem("通过书源链接导入", R.mipmap.internet_icon, () -> {
+                    showEditTextForURL();
+                });
+                dialog.addSheetItem("通过本地文件导入", R.mipmap.local_icon, () -> {
+                    if (StorageUtils.isStoragePermissionGranted(context,activity)) {
+                        showFileSelector();
+                    }
+                });
+                dialog.addSheetItem("在源仓库扫码导入", R.mipmap.qr_icon, () -> {
+                    if(CameraManager.checkPermission(activity,context)) {
+                        Intent intent = new Intent(NovelSourceManageActivity.this, CaptureActivity.class);
+                        startActivityForResult(intent, Constant.REQ_QR_CODE);
+                    }
+                });
+                dialog.show();
             }
 
             @Override
-            public void doLocalImport() {
-                if (StorageUtils.isStoragePermissionGranted(context,activity)) {
-                    showFileSelector();
-                }
-            }
+            public void onExportSource() {
+                BottomSheetDialog dialog = new BottomSheetDialog(context,R.style.NormalBottomDialog);
+                dialog.addSheetItem("导出为本地文件", R.mipmap.local_icon, () -> {
+                    String source_output = NovelRequire.toJsonList(novelRequireList);
+                    SimpleDateFormat formatter = new SimpleDateFormat("yyMMddHHmmss",Locale.US); //设置时间格式
+                    Date curDate = new Date(System.currentTimeMillis()); //获取当前时间
+                    String createDate = formatter.format(curDate);   //格式转换
+                    boolean isOK = FileUtils.outputZnrFile(source_output,StorageUtils.getDownloadPath(),"Source"+createDate);
+                    if(isOK) Toast.makeText(context, "文件已保存："+StorageUtils.getDownloadPath()+"Source"+createDate, Toast.LENGTH_SHORT).show();
+                });
+                dialog.addSheetItem("通过第三方分享", R.mipmap.share_icon, () -> {
 
-            @Override
-            public void doQRImport() {
-                if(CameraManager.checkPermission(activity,context)) {
-                    Intent intent = new Intent(NovelSourceManageActivity.this, CaptureActivity.class);
-                    startActivityForResult(intent, Constant.REQ_QR_CODE);
-                }
+                });
+                dialog.show();
             }
 
             @Override
@@ -313,41 +352,45 @@ public class NovelSourceManageActivity extends AppCompatActivity {
 
             @Override
             public void doCheckSource() {
-                BasicCounterHandler<Long> counterHandler = new BasicCounterHandler<>(
-                        new BasicCounterHandler.BasicCounterHandlerListener<Long>() {
-                    @Override
-                    public void onSuccess(Long result) {
-
-                    }
-
-                    @Override
-                    public void onError() {
-
-                    }
-
-                    @Override
-                    public void onAllProcessDone(ArrayList<Long> results) {
-                        int disable_num = 0;
-                        for (Long time : results) {
-                            if (time >= 99999)disable_num++;
-                        }
-                        String info = "书源校验完成";
-                        if (disable_num!=0)info += String.format(Locale.CHINA,",%d个书源失效",disable_num);
-                        Toast.makeText(context, info, Toast.LENGTH_SHORT).show();
-                        waitDialog.dismiss();
-                    }
-                });
-                counterHandler.setTotal_count(novelRequireList.size(),true);
-                waitDialog.setTitle("书源校验中");
-                waitDialog.show();
-                for (NovelRequire rule : novelRequireList) {
-                    CheckRespondThread check = new CheckRespondThread(rule,sourceDBTools);
-                    check.setHandler(counterHandler);
-                    check.start();
-                }
+                checkSourceValidity();
             }
         });
         source_manage_menu.show(im_manage);
+    }
+
+    private void checkSourceValidity() {
+        BasicCounterHandler<CheckRespondThread.ResourceCheckResult> counterHandler = new BasicCounterHandler<>(
+                new BasicCounterHandler.BasicCounterHandlerListener<CheckRespondThread.ResourceCheckResult>() {
+            @Override
+            public void onSuccess(CheckRespondThread.ResourceCheckResult ignore) {}
+
+            @Override
+            public void onError() {}
+
+            @Override
+            public void onAllProcessDone(ArrayList<CheckRespondThread.ResourceCheckResult> results) {
+                int disable_num = 0;
+                for (CheckRespondThread.ResourceCheckResult result: results) {
+                    if (result.isEnabled && (!result.isValid)){
+                        disable_num++;
+                        sourceDBTools.UpdateSourceVisibility(result.resourceID,false);
+                    }
+                    sourceDBTools.UpdateSourceRespondTime(result.resourceID,result.respondTime);
+                }
+                String info = "书源校验完成";
+                if (disable_num!=0)info += String.format(Locale.CHINA,",%d个书源失效",disable_num);
+                Toast.makeText(context, info, Toast.LENGTH_SHORT).show();
+                waitDialog.dismiss();
+            }
+        });
+        counterHandler.setTotal_count(novelRequireList.size(),true);
+        waitDialog.setTitle("书源校验中");
+        waitDialog.show();
+        for (NovelRequire rule : novelRequireList) {
+            CheckRespondThread check = new CheckRespondThread(rule,sourceDBTools);
+            check.setHandler(counterHandler);
+            check.start();
+        }
     }
 
     private void showEditTextForURL() {
@@ -407,12 +450,17 @@ public class NovelSourceManageActivity extends AppCompatActivity {
     }
 
     private void showFileSelector() {
+        FileSelectorTheme theme = new FileSelectorTheme();
+        theme.setThemeColor("#1E90FF");
+
         FileSelectorSettings settings=new FileSelectorSettings();
         settings.setRootPath(FileSelectorSettings.getSystemRootPath())
                 .setMaxFileSelect(1)
-                .setTitle("请选择书源文件")
-                .setThemeColor("#1E90FF")
-                .setFileTypesToSelect(FileInfo.FileType.Unknown)
+                .setTitle("请选择书源文件(.znr)")
+                .setTheme(theme)
+                .setFileTypesToSelect(FileInfo.FileType.File)
+                .setCustomizedIcons(new String[]{".znr"},context,R.mipmap.book_source_file_icon)
+                .setFileTypesToShow(".znr")
                 .show(NovelSourceManageActivity.this);
     }
 

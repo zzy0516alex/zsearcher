@@ -134,7 +134,6 @@ public class AlterSourceService extends Service {
     @Override
     public void onDestroy() {
         Log.d("ALterSourceService","service destroy");
-        Toast.makeText(getApplicationContext(), "service destroy", Toast.LENGTH_SHORT).show();
         notificationManager.cancel(5160);
         super.onDestroy();
     }
@@ -259,6 +258,7 @@ public class AlterSourceService extends Service {
                         @Override
                         public void onSearchFinish(int total_num, int num_no_internet, int num_not_found) {
                             Log.d("AlterSource service","available source found:"+searchResult.size());
+                            if (searchResult.isEmpty() && listener!=null)listener.onAllProcessDone(new HashMap<>());
                             for (NovelSearchBean searchBean : searchResult) {
                                 NovelRequire novelRequire = novelRequireMap.get(searchBean.getSource());
                                 if (novelRequire == null) continue;

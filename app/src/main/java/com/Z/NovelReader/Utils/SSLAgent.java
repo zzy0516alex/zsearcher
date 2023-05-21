@@ -13,6 +13,7 @@ import javax.net.ssl.X509TrustManager;
 
 /**
  * 解决：Trust anchor for certification path not found 问题
+ * 解决：CertificateExpiredException: Certificate expired at xxx (compared to xxx) 问题
  */
 public class SSLAgent {
 

@@ -139,6 +139,18 @@ public class StringUtils {
         return result.toString();
     }
 
+    public static String getUrlWithoutHttpHeader(String origin_url){
+        String[] split = origin_url.split("://");
+        if (split.length>1)return split[1];
+        else return origin_url;
+    }
+
+    public static String addHttpHeaderToUrl(String origin_url, boolean isSafeMode){
+        String header = isSafeMode?"https://":"http://";
+        if (!origin_url.contains("http"))return header+origin_url;
+        else return origin_url;
+    }
+
     /**
      * 通过正则表达式判断字符串是否为数字
      * @param str

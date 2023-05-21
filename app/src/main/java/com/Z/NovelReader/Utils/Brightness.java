@@ -12,13 +12,16 @@ import android.view.Window;
 import android.view.WindowManager;
 
 public class Brightness {
+    public static final int MAX_SYSTEM_BRIGHTNESS = 255;
     /*
     * 获取系统亮度
+    * (0~1f)
     * */
-    public static int getSystemBrightness(ContentResolver cr){
-        int systemBrightness=0;
+    public static float getSystemBrightness(ContentResolver cr){
+        float systemBrightness = -1;
         try {
-            systemBrightness = Settings.System.getInt(cr,Settings.System.SCREEN_BRIGHTNESS);
+            int brightness = Settings.System.getInt(cr,Settings.System.SCREEN_BRIGHTNESS);
+            systemBrightness = brightness*1.0f/MAX_SYSTEM_BRIGHTNESS;
         } catch (Settings.SettingNotFoundException e) {
             e.printStackTrace();
         }
@@ -26,22 +29,24 @@ public class Brightness {
     }
 
 
-    /*
-    * 更改当前界面亮度
-    * */
-    public static void changeAppBrightness(Activity activity,int brightness){
+    /**
+     * 更改当前界面亮度
+     * @param activity 要更改亮度的界面
+     * @param brightness 亮度值(0.0~1.0f)
+     */
+    public static void changeActivityBrightness(Activity activity,float brightness){
         Window window = activity.getWindow();
         WindowManager.LayoutParams layoutParams=window.getAttributes();
         if (brightness==-1){
             layoutParams.screenBrightness=WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
         }else {
-            layoutParams.screenBrightness=(brightness<=0 ? 1:brightness)/4095f;
+            layoutParams.screenBrightness = brightness;
         }
         window.setAttributes(layoutParams);
     }
 
     /**
-     * 更改系统亮度
+     * 更改系统亮度,尽量不使用
      * @param context
      * @param systemBrightness
      * @return
@@ -99,11 +104,15 @@ public class Brightness {
 
         @Override
         public void onChange(boolean selfChange) {
-            listener.onChange(getSystemBrightness(mActivity.getContentResolver()));
+            float systemBrightness = getSystemBrightness(mActivity.getContentResolver());
+            if(systemBrightness!=-1)listener.onChange(systemBrightness);
         }
     }
     public interface BrightnessChangeListener{
-        void onChange(int brightness);
+        /**
+         * @param brightness (0.0~1.0f) 系统亮度
+         */
+        void onChange(float brightness);
     }
 
     public static void CheckAutoBrightnessPermission(Activity activity) {

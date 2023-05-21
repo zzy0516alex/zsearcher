@@ -4,15 +4,14 @@ import java.util.List;
 
 public class ElementBean {
     private NovelRuleAnalyzer.RuleType type;
-    private String ruleContent;//js中的label
-    private List<Integer> exclusions;//需要剔除的元素索引
+    private String ruleContent;//html中的label
+    private List<Integer> exclusions;//需要剔除的元素索引,0是第1个,负数为倒数序号,-1最后一个
     private int element_index=9999;//同名元素索引,用"." 隔开，在最后一位
     private String attr = "";
-    private String bound = ".";//为rulecontent添加结尾符，如：#
+    private String bound = ".";//为rule content添加结尾符，如：#或.
     private String[] replacement=new String[2];
     private boolean need_advanced_match = false;// 当存在##[patten1]##[patten2]###时，且此时bean不是匹配element的类型，且包含$，为真
     private boolean need_advanced_replace = false;// 当存在##[patten1]##[patten2]###时，且此时bean不是匹配element的类型，为真
-    private boolean hasJs = false;
 
     public NovelRuleAnalyzer.RuleType getType() {
         return type;
@@ -97,13 +96,5 @@ public class ElementBean {
 
     public void setNeed_advanced_replace(boolean need_advanced_replace) {
         this.need_advanced_replace = need_advanced_replace;
-    }
-
-    public boolean isHasJs() {
-        return hasJs;
-    }
-
-    public void setHasJs(boolean hasJs) {
-        this.hasJs = hasJs;
     }
 }

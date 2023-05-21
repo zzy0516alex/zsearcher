@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 
 import com.Z.NovelReader.Global.MyApplication;
 import com.Z.NovelReader.NovelRoom.Novels;
+import com.Z.NovelReader.Processors.CommonUrlProcessor;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.StringUtils;
@@ -53,11 +54,11 @@ public class GetCoverThread extends Thread {
             connect.timeout(20000);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
             Document document = connect.get();
-            NovelRuleAnalyzer coverSRCAnalyzer = new NovelRuleAnalyzer();
-            List<String> src = coverSRCAnalyzer.getObjectFromElements(new Elements(document), rule_cover);
-            if (src != null && src.size() != 0) {
-                String picUrl=StringUtils.completeUrl(src.get(0),novelRequire.getBookSourceUrl());
-                PictureThread thread = new PictureThread(picUrl);
+//            NovelRuleAnalyzer coverSRCAnalyzer = new NovelRuleAnalyzer();
+//            List<String> src = coverSRCAnalyzer.getObjectFromElements(new Elements(document), rule_cover);
+            String src_url = CommonUrlProcessor.getUrl(document, novelRequire, rule_cover);
+            if (src_url != null) {
+                PictureThread thread = new PictureThread(src_url);
                 thread.start();
                 Bitmap mbitmap = (Bitmap) thread.getMyBitmap();
                 if (mbitmap!=null)

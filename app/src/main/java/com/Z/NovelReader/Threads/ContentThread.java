@@ -1,7 +1,10 @@
 package com.Z.NovelReader.Threads;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
+
+import androidx.annotation.RequiresApi;
 
 import com.Z.NovelReader.Basic.IterationThread;
 import com.Z.NovelReader.Global.MyApplication;
@@ -11,19 +14,24 @@ import com.Z.NovelReader.Objects.beans.NovelContentBean;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.Processors.ContentProcessor;
 import com.Z.NovelReader.Utils.FileIOUtils;
+import com.Z.NovelReader.Utils.StringUtils;
 
 import org.jsoup.nodes.Document;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ContentThread extends IterationThread {
 
     private String file_path;
     private NovelRequire novelRequire;
     private NovelContentBean novelContent;
+    private String startURL;
     private String rootURL;
     private StringBuilder content = new StringBuilder();
-    private String trigger_name = "";
+    //private String trigger_name = "";
+    private List<String> catalogLinks;
 
     private boolean need_update_rootURL = false;
     private Novels novel;
@@ -31,8 +39,13 @@ public class ContentThread extends IterationThread {
 
     public ContentThread(String startLink, NovelRequire novelRequire,String root_url) {
         super(startLink, 10);
+        this.startURL = startLink;
         this.novelRequire = novelRequire;
         this.rootURL = root_url;
+    }
+
+    public void setCatalogLinks(List<String> links){
+        this.catalogLinks = links;
     }
 
     public void setUpdateRootURL(Novels novel,Context context){
@@ -55,23 +68,30 @@ public class ContentThread extends IterationThread {
 
     @Override
     public void resultProcess() {
-        trigger_name = novelContent.getTriggerName();
+        //trigger_name = novelContent.getTriggerName();
+        //content.append(novelContent.getContent());
         Log.d("content thread","获取下一页");
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public Object preProcess(Document document) throws Exception {
-        if ("".equals(rootURL))return null;
+        if (rootURL==null||"".equals(rootURL)){
+            //need_update_rootURL = true;
+            rootURL = StringUtils.getRootUrl(startURL);
+        }
         novelContent = ContentProcessor.getNovelContent(document, novelRequire,rootURL);
-        if ("".equals(trigger_name))trigger_name = novelContent.getTriggerName();
+//        if ("".equals(trigger_name))trigger_name = novelContent.getTriggerName();
         content.append(novelContent.getContent());
         return novelContent;
     }
 
     @Override
     public boolean canBreakIterate(Object o) {
-        return "".equals(novelContent.getNextPageURL()) ||
-                !trigger_name.equals(novelContent.getTriggerName());
+        boolean noNextPage = "".equals(novelContent.getNextPageURL());
+        //boolean duplicateContent = !trigger_name.equals(novelContent.getTriggerName());
+        boolean overflow = catalogLinks.contains(novelContent.getNextPageURL());
+        return overflow || noNextPage;
     }
 
     @Override

@@ -6,17 +6,16 @@ import android.util.Log;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 新文件类型.znr
- */
 public class FileUtils {
 
     public static String getRootPath(){
@@ -29,12 +28,12 @@ public class FileUtils {
      * @param file_parent_path 文件存储路径
      * @param filename 文件名
      */
-    public static void outputFile(String content,String file_parent_path,String filename){
+    public static boolean outputZnrFile(String content,String file_parent_path,String filename){
         byte[] b_content=content.getBytes();//utf-8
         BufferedInputStream bis = null;
         FileOutputStream fos = null;
         BufferedOutputStream output = null;
-
+        boolean isDone = false;
         try {
             File file=new File(file_parent_path+File.separator+filename+".znr");
             ByteArrayInputStream byteInputStream = new ByteArrayInputStream(b_content);
@@ -50,7 +49,7 @@ public class FileUtils {
             while ((len=bis.read(buffer))!=-1){
                 output.write(buffer,0,len);
             }
-
+            isDone = true;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -61,17 +60,38 @@ public class FileUtils {
                 }catch (IOException e){
                     e.printStackTrace();
                 }
-//                try {
-//                    if (fos!=null)fos.close();
-//                }catch (IOException e){
-//                    e.printStackTrace();
-//                }
                 try {
                     if (output!=null)output.close();
                 }catch (IOException e){
                     e.printStackTrace();
                 }
         }
+        return isDone;
+    }
+
+    public static String readZnrFile(String file_path){
+        File file=new File(file_path);
+        if(!file.exists())return "";
+        try {
+            FileInputStream inputStream = new FileInputStream(file);
+            byte[] header = new byte[2];
+            int size = inputStream.read(header);
+            if(size!=2)return "";
+            if(header[0]!=0x05 || header[1]!=0x16)return "";
+
+            ByteArrayOutputStream result = new ByteArrayOutputStream();
+            byte[] buff = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buff)) != -1) {
+                result.write(buff, 0, length);
+            }
+            return result.toString(StandardCharsets.UTF_8.name());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     /**

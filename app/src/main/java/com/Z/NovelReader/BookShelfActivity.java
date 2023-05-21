@@ -45,6 +45,7 @@ import com.Z.NovelReader.Utils.TimeUtil;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Objects.NovelChap;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.views.Dialog.BottomSheetDialog;
 import com.Z.NovelReader.views.Dialog.WaitDialog;
 
 import java.io.File;
@@ -117,8 +118,6 @@ public class BookShelfActivity extends AppCompatActivity {
         //init basic params
         BookCover=new ArrayList<>();
         BookName=new ArrayList<>();
-//        item_suspend_list =new ArrayList<>();
-//        item_disabled_list=new ArrayList<>();
         context=this;
         activity=this;
         content="缓存读取失败";
@@ -218,14 +217,14 @@ public class BookShelfActivity extends AppCompatActivity {
                         StorageUtils.getBookCoverPath(novel.getBookName(), novel.getWriter()));
                 BookCover.add(adjustedCover);
             }
-            if(bookNum!=0) {
-                if (adapter == null)
-                    adapter=new BookshelfAdapter(BookCover,AllNovelList,context);
-                adapter.setBooks(AllNovelList);
-                adapter.setBookCovers(BookCover);
-                adapter.notifyDataSetChanged();
-                bookShelf.setAdapter(adapter);
-            }
+
+            if (adapter == null)
+                adapter=new BookshelfAdapter(BookCover,AllNovelList,context);
+            adapter.setBooks(AllNovelList);
+            adapter.setBookCovers(BookCover);
+            adapter.notifyDataSetChanged();
+            bookShelf.setAdapter(adapter);
+
             if (TimeUtil.getDifference(updateTime,current_time,3)>=1){
                 swipeRefresh.setRefreshing(true);
                 onRefreshListener.onRefresh();
@@ -240,79 +239,77 @@ public class BookShelfActivity extends AppCompatActivity {
         });
 
         //书架点击
-        if(bookNum!=0){
-            bookShelf.setOnItemClickListener((parent, view, position, id) -> {
-                if(!in_select_mode){
-                    //移除更新
-                    if (swipeRefresh.isRefreshing())swipeRefresh.setRefreshing(false);
-                    //获取当前书本
-                    current_book=AllNovelList.get(position);
-                    Log.d("book shelf","打开书籍："+current_book.toString());
-                    if (current_book.isRecover()|| current_book.isSpoiled()){
-                        Toast.makeText(context, "该书正在修复中", Toast.LENGTH_SHORT).show();
-                        return;
+        bookShelf.setOnItemClickListener((parent, view, position, id) -> {
+            if(!in_select_mode){
+                //移除更新
+                if (swipeRefresh.isRefreshing())swipeRefresh.setRefreshing(false);
+                //获取当前书本
+                current_book=AllNovelList.get(position);
+                Log.d("book shelf","打开书籍："+current_book.toString());
+                if (current_book.isRecover()|| current_book.isSpoiled()){
+                    Toast.makeText(context, "该书正在修复中", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                //读取章节缓存
+                content= FileIOUtils.read_line(
+                        StorageUtils.getBookContentPath(current_book.getBookName(),current_book.getWriter()));
+                //获取当前目录
+                Catalog= FileIOUtils.read_catalog(
+                        StorageUtils.getBookCatalogPath(current_book.getBookName(),current_book.getWriter()));
+                //获取当前书源规则
+                if (novelRequireMap!=null)
+                    current_rule = novelRequireMap.get(current_book.getSource());
+                if (!Catalog.isEmpty() && current_rule!=null) {
+                    Log.d("book shelf",current_book.getBookName()+":目录打开成功");
+                    startReadPage(context, content, current_book, Catalog,current_rule);
+                }
+                else if (novelRequireMap!=null) {
+                    if (current_rule == null) {
+                        Toast.makeText(context, "该书书源被禁用，请先启用", Toast.LENGTH_SHORT).show();
                     }
-                    //读取章节缓存
-                    content= FileIOUtils.read_line(
-                            StorageUtils.getBookContentPath(current_book.getBookName(),current_book.getWriter()));
-                    //获取当前目录
-                    Catalog= FileIOUtils.read_catalog(
-                            StorageUtils.getBookCatalogPath(current_book.getBookName(),current_book.getWriter()));
-                    //获取当前书源规则
-                    if (novelRequireMap!=null)
-                        current_rule = novelRequireMap.get(current_book.getSource());
-                    if (!Catalog.isEmpty() && current_rule!=null) {
-                        Log.d("book shelf",current_book.getBookName()+":目录打开成功");
-                        startReadPage(context, content, current_book, Catalog,current_rule);
-                    }
-                    else if (novelRequireMap!=null) {
-                        if (current_rule == null) {
-                            Toast.makeText(context, "该书书源被禁用，请先启用", Toast.LENGTH_SHORT).show();
-                        }
-                        else {
-                            //重新下载目录
-                            reloadCatalog();
-                        }
+                    else {
+                        //重新下载目录
+                        reloadCatalog();
                     }
                 }
-                else {
-                    if (!isItemChosen(position))item_chosen.add(position);
-                    else item_chosen.remove((Integer) position);
-                    adapter.updateSelectItems(item_chosen);
-                }
-            });
+            }
+            else {
+                if (!isItemChosen(position))item_chosen.add(position);
+                else item_chosen.remove((Integer) position);
+                adapter.updateSelectItems(item_chosen);
+            }
+        });
 
-            //书架长按，打开底部按钮
-            bookShelf.setOnItemLongClickListener((parent, view, position, id) -> {
-                if(!in_select_mode) {
-                    item_chosen.clear();
-                    item_chosen.add(position);
-                    adapter.updateSelectItems(item_chosen);
-                    in_select_mode = true;
-                    adapter.notifyDataSetChanged();
-                    delete.setVisibility(View.VISIBLE);
-                }else {
-                    quitSelectMode();
-                }
-                return true;
-            });
+        //书架长按，打开底部按钮
+        bookShelf.setOnItemLongClickListener((parent, view, position, id) -> {
+            if(!in_select_mode) {
+                item_chosen.clear();
+                item_chosen.add(position);
+                adapter.updateSelectItems(item_chosen);
+                in_select_mode = true;
+                adapter.notifyDataSetChanged();
+                delete.setVisibility(View.VISIBLE);
+            }else {
+                quitSelectMode();
+            }
+            return true;
+        });
 
-            //删除按钮点击
-            delete.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                   //remove from database
-                   for (int i = 0; i < item_chosen.size(); i++) {
-                       Novels novel_remove=AllNovelList.get(item_chosen.get(i));
-                       novelDBTools.deleteNovel(novel_remove.getBookName(),novel_remove.getWriter());
-                       //删除缓存的文件
-                       File dir_to_delete=new File(StorageUtils.getBookStoragePath(novel_remove.getBookName(),novel_remove.getWriter()));
-                       FileUtils.deleteAllFiles(dir_to_delete);
-                   }
-                   quitSelectMode();
+        //删除按钮点击
+        delete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //remove from database
+                for (int i = 0; i < item_chosen.size(); i++) {
+                    Novels novel_remove=AllNovelList.get(item_chosen.get(i));
+                    novelDBTools.deleteNovel(novel_remove.getBookName(),novel_remove.getWriter());
+                    //删除缓存的文件
+                    File dir_to_delete=new File(StorageUtils.getBookStoragePath(novel_remove.getBookName(),novel_remove.getWriter()));
+                    FileUtils.deleteAllFiles(dir_to_delete);
                 }
-            });
-        }
+                quitSelectMode();
+            }
+        });
 
     }
 

@@ -344,6 +344,7 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
             auto_download=false;
             ContentThread contentThread = new ContentThread(currentChap.getLast_link(),
                     novelRequire,contentRoot);
+            contentThread.setCatalogLinks(getCatalog().getLink());
             contentThread.setOutputParams(StorageUtils.getBookContentPath(novelName,writer));
             contentThread.setHandler(lastChapHandler);
             contentThread.start();
@@ -360,6 +361,7 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
             auto_download=false;
             ContentThread contentThread = new ContentThread(currentChap.getNext_link(),
                     novelRequire,contentRoot);
+            contentThread.setCatalogLinks(getCatalog().getLink());
             contentThread.setOutputParams(StorageUtils.getBookContentPath(novelName,writer));
             contentThread.setHandler(nextChapHandler);
             contentThread.start();
@@ -374,9 +376,10 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
         readingListener.waitDialogControl(true);
         auto_download=false;
         chap_catalog_index = chap_pos;
-        Log.d("novel view","skip to chap:"+catalog.getTitle().get(chap_catalog_index));
+        Log.d("novel view","skip to chap:"+catalog.toString(chap_catalog_index));
         ContentThread contentThread = new ContentThread(catalog.getLink().get(chap_catalog_index),
                 novelRequire,contentRoot);
+        contentThread.setCatalogLinks(getCatalog().getLink());
         contentThread.setOutputParams(StorageUtils.getBookContentPath(novelName,writer));
         contentThread.setHandler(jumpChapHandler);
         contentThread.start();

@@ -8,6 +8,8 @@ import androidx.annotation.NonNull;
 
 import com.Z.NovelReader.Basic.BasicHandlerThread;
 import com.Z.NovelReader.Objects.MapElement;
+import com.Z.NovelReader.Processors.CommonUrlProcessor;
+import com.Z.NovelReader.Processors.JavaScriptEngine;
 import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
@@ -28,6 +30,7 @@ public class CatalogURLThread extends BasicHandlerThread {
     private String bookInfoLink;
     private String bookCatalogLink;
     private NovelRequire novelRequire;
+    private Document document;
 
     public CatalogURLThread(String bookInfoLink, NovelRequire novelRequire) {
         this.bookInfoLink = bookInfoLink;
@@ -41,15 +44,14 @@ public class CatalogURLThread extends BasicHandlerThread {
         try {
             Connection connect = Jsoup.connect(bookInfoLink);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
-            Document document= connect.get();
-
-            NovelRuleAnalyzer catalogUrlAnalyzer=new NovelRuleAnalyzer();
-            catalogUrlAnalyzer.setDocumentSource(document.toString());
-            List<String> urls = catalogUrlAnalyzer.getObjectFromElements(new Elements(document),
-                    novelRequire.getRuleBookInfo().getTocUrl());
-            if (urls!=null && urls.size()!=0) {
-                bookCatalogLink = StringUtils.completeUrl(urls.get(0),
-                        novelRequire.getBookSourceUrl());
+            document = connect.get();
+//            NovelRuleAnalyzer catalogUrlAnalyzer=new NovelRuleAnalyzer();
+//            catalogUrlAnalyzer.setEngine(createJsEngine());
+//            List<String> urls = catalogUrlAnalyzer.getObjectFromElements(new Elements(document),
+//                    novelRequire.getRuleBookInfo().getTocUrl());
+            String catalog_url = CommonUrlProcessor.getUrl(document, novelRequire, novelRequire.getRuleBookInfo().getTocUrl());
+            if (catalog_url!=null) {
+                bookCatalogLink = catalog_url;
                 Log.d("catalog url thread","目录链接："+bookCatalogLink);
                 MapElement element = new MapElement(novelRequire.getId(),bookCatalogLink);
                 callback(PROCESS_DONE,element);
@@ -64,6 +66,13 @@ public class CatalogURLThread extends BasicHandlerThread {
             report(PROCESSOR_ERROR);
         }
 
+    }
+
+    public JavaScriptEngine createJsEngine(){
+        JavaScriptEngine engine = new JavaScriptEngine(novelRequire);
+        engine.preDefine("baseUrl",bookInfoLink);
+        engine.preDefine("result",document.toString());
+        return engine;
     }
 
     public static class CatalogUrlHandler extends Handler{

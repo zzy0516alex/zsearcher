@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey;
 import com.google.gson.Gson;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Entity(tableName = "novel_source",indices = {@Index(value = {"book_source_url"},
         unique = true)})
@@ -126,6 +127,14 @@ public class NovelRequire implements Serializable {
         this.ruleContent = ruleContent;
     }
 
+    public String toJson(){
+        return new Gson().toJson(this);
+    }
+
+    public static String toJsonList(List<NovelRequire> novelRequires){
+        return new Gson().toJson(novelRequires);
+    }
+
     public static NovelRequire getNovelRequireBean(String json){
         return new Gson().fromJson(json, NovelRequire[].class)[0];
     }
@@ -138,7 +147,7 @@ public class NovelRequire implements Serializable {
         return "书源ID：" + id +
                 "\n 名称：" + bookSourceName +
                 "\n 网址：" + bookSourceUrl +
-                "\n 书籍封面：" +ruleBookInfo.getCoverUrl() +
+                "\n 书籍封面：" +((ruleBookInfo!=null)?ruleBookInfo.getCoverUrl():"") +
                 "\n 搜索规则：" +
                 "\n    结果列表：" + ruleSearch.getBookList() +
                 "\n    书名：" + ruleSearch.getName() +
@@ -154,4 +163,6 @@ public class NovelRequire implements Serializable {
                 "\n    替换正则：" + ruleContent.getReplaceRegex()
                 ;
     }
+
+
 }

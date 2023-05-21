@@ -354,7 +354,7 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
     }
 
     public SweetAlertDialog setCustomImage(int resourceId) {
-        return setCustomImage(getContext().getResources().getDrawable(resourceId));
+        return setCustomImage(getContext().getResources().getDrawable(resourceId,null));
     }
 
     public String getContentText() {

@@ -11,12 +11,13 @@
         android:layout_height="60dp"
         android:background="@color/DoderBlue"
         android:id="@+id/top_layout">
+
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@mipmap/my_ic_launcher_foreground"
-            android:paddingStart="-20dp"
-            android:paddingEnd="0dp"/>
+            android:layout_centerVertical="true"
+            android:layout_marginStart="10dp"
+            android:src="@mipmap/book_source_file_icon" />
 
         <LinearLayout
             android:id="@+id/search_bar"
@@ -63,20 +64,21 @@
         android:backgroundTint="@color/skyBlue"/>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_update"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/swipe_update"
         android:layout_below="@+id/separator"
-        android:layout_marginTop="15dp"
+        android:layout_centerHorizontal="true"
         android:layout_marginStart="15dp"
-        android:layout_centerHorizontal="true">
-    <GridView
-        android:id="@+id/BookShelf"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:numColumns="3"
-        android:horizontalSpacing="10dp"
-        android:verticalSpacing="20dp" />
+        android:layout_marginTop="15dp">
+
+        <GridView
+            android:id="@+id/BookShelf"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:horizontalSpacing="10dp"
+            android:numColumns="3"
+            android:verticalSpacing="20dp" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <Button

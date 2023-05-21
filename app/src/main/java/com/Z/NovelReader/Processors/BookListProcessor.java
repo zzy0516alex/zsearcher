@@ -1,5 +1,7 @@
 package com.Z.NovelReader.Processors;
 
+import com.Z.NovelReader.Objects.beans.ruleSearch;
+import com.Z.NovelReader.Processors.Analyzers.MainAnalyzer;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelSearchBean;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
@@ -11,17 +13,21 @@ import java.util.ArrayList;
 
 public class BookListProcessor {
     public synchronized static ArrayList<NovelSearchBean> getSearchList(Document document, NovelRequire novelRequire) throws Exception {
-        NovelRuleAnalyzer SearchListAnalyser=new NovelRuleAnalyzer();
-        Elements searchListElement = SearchListAnalyser.getElementsByRules(document, novelRequire.getRuleSearch().getBookList());
+        ruleSearch ruleSearch = novelRequire.getRuleSearch();
+        MainAnalyzer searchListAnalyser = new MainAnalyzer();
+        AnalyseResult result_search_list = searchListAnalyser.analyze(document, ruleSearch.getBookList());
 
-        NovelRuleAnalyzer BookNameAnalyser=new NovelRuleAnalyzer();
-        ArrayList<String>BookNames = (ArrayList<String>) BookNameAnalyser.getObjectFromElements(searchListElement, novelRequire.getRuleSearch().getName());
+        MainAnalyzer bookNameAnalyser = new MainAnalyzer();
+        AnalyseResult result_book_name = bookNameAnalyser.analyze(result_search_list, ruleSearch.getName());
+        ArrayList<String>BookNames = (ArrayList<String>) result_book_name.asStringList();
 
-        NovelRuleAnalyzer BookLinkAnalyser=new NovelRuleAnalyzer();
-        ArrayList<String>BookLinks = (ArrayList<String>) BookLinkAnalyser.getObjectFromElements(searchListElement, novelRequire.getRuleSearch().getBookUrl());
+        MainAnalyzer bookLinkAnalyser = new MainAnalyzer();
+        AnalyseResult result_book_link = bookLinkAnalyser.analyze(result_search_list, ruleSearch.getBookUrl());
+        ArrayList<String>BookLinks = (ArrayList<String>) result_book_link.asStringList();
 
-        NovelRuleAnalyzer BookAuthorAnalyser=new NovelRuleAnalyzer();
-        ArrayList<String>authors = (ArrayList<String>) BookAuthorAnalyser.getObjectFromElements(searchListElement, novelRequire.getRuleSearch().getAuthor());
+        MainAnalyzer bookAuthorAnalyser = new MainAnalyzer();
+        AnalyseResult result_book_author = bookAuthorAnalyser.analyze(result_search_list, ruleSearch.getAuthor());
+        ArrayList<String>authors = (ArrayList<String>) result_book_author.asStringList();
 
         ArrayList<NovelSearchBean>searchResult=new ArrayList<>();
         for (int i=0;i<BookNames.size();i++) {

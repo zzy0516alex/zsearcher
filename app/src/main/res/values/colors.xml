@@ -23,6 +23,7 @@
     <color name="night_background">#181818</color>
     <color name="blue_gray">#6A5ACD</color>
     <color name="white_smoke">#33F5F5F5</color>
+    <color name="white_thumb_color">#fbf7eb</color>
     <color name="btn_click_gray">#e6e6e6</color>
     <color name="text_gray">#DCDCDC</color>
     <color name="system_gray">#808080</color>
@@ -80,4 +81,8 @@
     <color name="main_disabled_color">#838383</color>
     <color name="main_disabled_stroke_color">#707070</color>
     <!-- SweetDialog color end-->
+
+    <!--    Slider Bar color begin-->
+    <color name="nifty_slider_thumb_shadow_color">#FF666666</color>
+    <!--    Slider Bar color end-->
 </resources>

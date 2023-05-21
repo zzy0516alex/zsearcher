@@ -66,15 +66,20 @@ public class SwitchSourceThread extends BasicHandlerThread {
             backupNovel.setCurrentChap(currentUsingChap.getCurrentChap());
         else backupNovel.setCurrentChap(0);
 
+        //download content and save to file
+        //提取父链接
         String contentRootUrl;
         if (catalog.getSize() > 1)contentRootUrl = StringUtils.getSharedURL(
                 catalog.getLink().get(0),catalog.getLink().get(1));
         else contentRootUrl = StringUtils.getRootUrl(catalog.getLink().get(0));
         backupNovel.setContentRootLink(contentRootUrl);
-        dbUpdater.updateNovels(backupNovel);
+        dbUpdater.updateNovels(backupNovel);//更新父链接
+        //开始下载章节内容
         ContentThread contentThread = new ContentThread(catalog.getLink().get(backupNovel.getCurrentChap()),
                 backupRule,contentRootUrl);
+        contentThread.setCatalogLinks(catalog.getLink());
         contentThread.setUpdateRootURL(backupNovel,context);
+        contentThread.setOutputParams(StorageUtils.getBookContentPath(backupNovel.getBookName(),backupNovel.getWriter()));
         BasicHandler<String> contentHandler = new BasicHandler<>(
                 new BasicHandler.BasicHandlerListener<String>() {
                     @Override

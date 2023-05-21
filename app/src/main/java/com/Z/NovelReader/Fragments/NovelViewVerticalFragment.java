@@ -142,7 +142,7 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
                     //得到当前章节的阅读进度
                     setCurrent_chap_progress(Math.abs((double)current_offset/(double) view_height));
                     Log.d("vertical view","progress: "+getCurrent_chap_progress());
-                    //setCurrent_chap_progress(lastChildView.getTop());
+
                     //获取可见的最后一个view的位置
                     int lastChildViewPosition = recyclerView.getChildAdapterPosition(lastChildView);
                     if(getChap_cache_index() != lastChildViewPosition){
@@ -162,12 +162,6 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
                             NextChapDownloader(getCurrentChap());
                         }
                     }
-//                    int bottom= Objects.requireNonNull(recyclerView.getLayoutManager().getChildAt(visible_chap_num-1)).getBottom();
-//                    int view_bottom = recyclerView.getHeight();
-//                    if (bottom <= view_bottom && chap_index==chapList.size()-1 && auto_download) {
-//                        Log.d("novel view", "reach bottom at:" + bottom);
-//                        NextChapDownloader(chapList.get(chap_index));
-//                    }
 
                     //防止溢出
                     if (item_count>50){
@@ -176,7 +170,6 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
                             Log.d("outflow", "cache is too big, refresh cache"+new_item_top);
                             offset_located =true;
                             setCurrent_chap_progress(new_item_top);
-                            //offset=new_item_top;
                             refreshChapCache(getCurrentChap());
                             adapter.updateChapList(getChapCache());
                         }

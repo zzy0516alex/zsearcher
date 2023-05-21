@@ -36,9 +36,8 @@ public class NovelSourceMenu extends PopupWindow {
         //加载布局
         layout = (RelativeLayout) LayoutInflater.from(context).inflate(R.layout.novel_source_manage_popup, null);
         //找到布局的控件
-        final LinearLayout ll_internet_import = layout.findViewById(R.id.import_from_internet);
-        final LinearLayout ll_local_import = layout.findViewById(R.id.import_from_local);
-        final LinearLayout ll_QR_import = layout.findViewById(R.id.import_from_QRcode);
+        final LinearLayout ll_source_import = layout.findViewById(R.id.import_source);
+        final LinearLayout ll_source_export = layout.findViewById(R.id.export_source);
         final LinearLayout ll_delete_select = layout.findViewById(R.id.delete_select);
         final LinearLayout ll_check_source = layout.findViewById(R.id.check_source);
         final TextView delete_select_title = ll_delete_select.findViewById(R.id.delete_select_title);
@@ -57,19 +56,17 @@ public class NovelSourceMenu extends PopupWindow {
         layout.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         this.setBackgroundDrawable(ContextCompat.getDrawable(context,R.drawable.popwindow_white));
         //点击事件
-        //网络导入
-        ll_internet_import.setOnClickListener(v -> {
-            if (menuClickListener!=null)menuClickListener.doInternetImport();
-        });
-        ll_local_import.setOnClickListener(v -> {
-            if (menuClickListener!=null)menuClickListener.doLocalImport();
+        //导入书源
+        ll_source_import.setOnClickListener(v -> {
+            if (menuClickListener!=null)menuClickListener.onImportSource();
             if (isShowing())dismiss();
         });
-        ll_QR_import.setOnClickListener(v -> {
-            // 二维码扫码
-            if (menuClickListener!=null)menuClickListener.doQRImport();
+        //导出书源
+        ll_source_export.setOnClickListener(v -> {
+            if (menuClickListener!=null)menuClickListener.onExportSource();
             if (isShowing())dismiss();
         });
+        //删除书源
         ll_delete_select.setOnClickListener(v -> {
             if (!isDeleteMode){
                 delete_select_title.setText("退出删除");
@@ -80,6 +77,7 @@ public class NovelSourceMenu extends PopupWindow {
             if (menuClickListener!=null)menuClickListener.onDeleteModeChange(isDeleteMode);
             if (isShowing())dismiss();
         });
+        //检查书源
         ll_check_source.setOnClickListener(v -> {
             if (menuClickListener!=null)menuClickListener.doCheckSource();
             if (isShowing())dismiss();
@@ -91,9 +89,8 @@ public class NovelSourceMenu extends PopupWindow {
     }
 
     public interface MenuClickListener{
-        void doInternetImport();
-        void doLocalImport();
-        void doQRImport();
+        void onImportSource();
+        void onExportSource();
         void onDeleteModeChange(boolean isDeleteMode);
         void doCheckSource();
     }

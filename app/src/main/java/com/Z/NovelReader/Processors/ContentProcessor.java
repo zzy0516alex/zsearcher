@@ -2,50 +2,62 @@ package com.Z.NovelReader.Processors;
 
 import com.Z.NovelReader.Objects.beans.NovelContentBean;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.Objects.beans.ruleContent;
+import com.Z.NovelReader.Processors.Analyzers.MainAnalyzer;
 import com.Z.NovelReader.Processors.Exceptions.RuleProcessorException;
 import com.Z.NovelReader.Utils.StringUtils;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.mozilla.javascript.tools.jsc.Main;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ContentProcessor {
 
     public static NovelContentBean getNovelContent(Document document, NovelRequire novelRequire,String root_url) throws Exception {
-        NovelRuleAnalyzer contentAnalyzer=new NovelRuleAnalyzer();
-        contentAnalyzer.setContent(true);
-        List<String> content_list = contentAnalyzer.getObjectFromElements(new Elements(document),
-                novelRequire.getRuleContent().getContent());
+        ruleContent content_rule = novelRequire.getRuleContent();
+
+        MainAnalyzer contentAnalyzer = new MainAnalyzer();
+        AnalyseResult content_result = contentAnalyzer.analyze(document, content_rule.getContent());
+//        NovelRuleAnalyzer contentAnalyzer=new NovelRuleAnalyzer();
+//        contentAnalyzer.isContent(true);
+//        List<String> content_list = contentAnalyzer.getObjectFromElements(new Elements(document),
+//                novelRequire.getRuleContent().getContent());
 
         NovelContentBean contentBean = new NovelContentBean();
-        if (content_list.size()!=0) contentBean.setContent(content_list.get(0));
+        String content = content_result.asString();
+        if (!"".equals(content)) contentBean.setContent(content);
         else throw new RuleProcessorException("解析返回内容为空");
 
-        String next_page_rule = novelRequire.getRuleContent().getNextContentUrl();
+        String next_page_rule = content_rule.getNextContentUrl();
         if (next_page_rule!=null && !"".equals(next_page_rule)) {
-            NovelRuleAnalyzer nextPageAnalyzer = new NovelRuleAnalyzer();
-            List<String> nextPage_list = nextPageAnalyzer.getObjectFromElements(new Elements(document), next_page_rule);
-            ArrayList<Elements> next_page_trigger = nextPageAnalyzer.getSelected_elements();
-            if (nextPage_list.size()!=0 && next_page_trigger.size()!=0) {
-                if (!"".equals(nextPage_list.get(0))) {
-                    String url = StringUtils.completeUrl(nextPage_list.get(0), root_url);
-                    contentBean.setNextPageURL(url);
-                    contentBean.setTriggerName(next_page_trigger.get(0).text());
-                }
+            MainAnalyzer nextPageUrlAnalyzer = new MainAnalyzer();
+            AnalyseResult nextPageResult = nextPageUrlAnalyzer.analyze(document, next_page_rule);
+//            NovelRuleAnalyzer nextPageAnalyzer = new NovelRuleAnalyzer();
+//            List<String> nextPage_list = nextPageAnalyzer.getObjectFromElements(new Elements(document), next_page_rule);
+//            ArrayList<Elements> next_page_trigger = nextPageAnalyzer.getSelected_elements();
+            if (!"".equals(nextPageResult.asString())) {
+                String url = StringUtils.completeUrl(nextPageResult.asString(), root_url);
+                contentBean.setNextPageURL(url);
+//                if (!"".equals(nextPage_list.get(0))) {
+//                    String url = StringUtils.completeUrl(nextPage_list.get(0), root_url);
+//                    contentBean.setNextPageURL(url);
+//                    contentBean.setTriggerName(next_page_trigger.get(0).text());
+//                }
             }
         }
 
         String replacement_rule = novelRequire.getRuleContent().getReplaceRegex();
         if (replacement_rule!=null && !"".equals(replacement_rule)) {
-            ElementBean bean = new ElementBean();
-            NovelRuleAnalyzer replacementAnalyzer = new NovelRuleAnalyzer();
-            replacementAnalyzer.getContentReplacement(bean,replacement_rule);
-            String replacedContent = replacementAnalyzer.getReplacedItem(bean, contentBean.getContent());
-            contentBean.setContent(replacedContent);
+            MainAnalyzer contentReplaceAnalyzer = new MainAnalyzer();
+            AnalyseResult content_replaced_result = contentReplaceAnalyzer.analyze(content_result, replacement_rule);
+//            ElementBean bean = new ElementBean();
+//            NovelRuleAnalyzer replacementAnalyzer = new NovelRuleAnalyzer();
+//            replacementAnalyzer.getContentReplacement(bean,replacement_rule);
+//            String replacedContent = replacementAnalyzer.getReplacedItem(bean, contentBean.getContent());
+            contentBean.setContent(content_replaced_result.asString());
         }
         //去空行优化
         contentBean.setContent(

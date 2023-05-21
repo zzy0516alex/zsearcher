@@ -5,7 +5,7 @@
     <item name="NS_delete_btn" type="id"/>
 
     <item name="NV_refresh_btn" type="id"/>
-    <!-- Messages IDs -->
+    <!--QR code Messages IDs -->
     <item type="id" name="auto_focus"/>
     <item type="id" name="decode"/>
     <item type="id" name="decode_failed"/>
@@ -18,4 +18,7 @@
     <item type="id" name="return_scan_result"/>
     <item type="id" name="search_book_contents_failed"/>
     <item type="id" name="search_book_contents_succeeded"/>
+
+    <!--    Slide bar IDs-->
+    <item name="nifty_slider_tip_view" type="id"/>
 </resources>

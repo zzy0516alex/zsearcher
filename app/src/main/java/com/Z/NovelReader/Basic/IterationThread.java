@@ -2,18 +2,23 @@ package com.Z.NovelReader.Basic;
 
 import android.util.Log;
 
+import com.Z.NovelReader.Utils.SSLAgent;
+
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
+import java.net.SocketException;
 
 
 abstract public class IterationThread extends BasicHandlerThread {
 
     private String StartLink;
     private int MaxIterateNum = 500;
+    private int MaxReconnectNum = 10;
     private int IterateCounter;
+    private int reconnectCounter = 0;
 
     public IterationThread(String startLink, int maxIterateNum) {
         StartLink = startLink;
@@ -34,10 +39,11 @@ abstract public class IterationThread extends BasicHandlerThread {
     public void run() {
         super.run();
         try {
+            SSLAgent.getInstance().trustAllHttpsCertificates();
             Connection connect = Jsoup.connect(StartLink);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
             connect.header("Connection", "close");
-            connect.timeout(5000);
+            connect.timeout(20000);
             Document document= connect.get();
             Object o = preProcess(document);
             if (o == null) throw new RuntimeException("IterationThread：初始结果为null,无法迭代");
@@ -51,7 +57,18 @@ abstract public class IterationThread extends BasicHandlerThread {
             }else {
                 onIterativeFinish();
             }
-        } catch (IOException e) {
+        }
+        catch (SocketException e){
+            if (e.getMessage().contains("reset")){
+                if (reconnectCounter<MaxReconnectNum) {
+                    run();reconnectCounter++;
+                }else {
+                    onErrorOccur(NO_INTERNET,e);
+                    report(NO_INTERNET);
+                }
+            }
+        }
+        catch (IOException e) {
             e.printStackTrace();
             onErrorOccur(NO_INTERNET,e);
             report(NO_INTERNET);
@@ -67,12 +84,12 @@ abstract public class IterationThread extends BasicHandlerThread {
     }
 
     /**
-     * 实现当前迭代结果的处理过程
+     * 实现当前迭代结果的处理过程，在预处理之后
      */
     public abstract void resultProcess();
 
     /**
-     * 实现迭代预处理的处理过程
+     * 实现迭代预处理的处理过程, 在判断迭代退出之前
      * @param document 网页
      * @return 预处理结果
      * @throws Exception 预处理过程中的错误
