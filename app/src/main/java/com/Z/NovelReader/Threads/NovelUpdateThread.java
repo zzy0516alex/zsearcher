@@ -28,8 +28,8 @@ public class NovelUpdateThread extends BasicHandlerThread {
     private List<String> catalogLink;
     private ExecutorService threadPool;
 
-    private Context context;
-    private String broadcast_action;
+//    private Context context;
+//    private String broadcast_action;
 
     public NovelUpdateThread(NovelRequire novelRequire, Novels novel) {
         this.novelRequire = novelRequire;
@@ -37,10 +37,10 @@ public class NovelUpdateThread extends BasicHandlerThread {
         threadPool = Executors.newFixedThreadPool(15);
         catalogLink = new ArrayList<>();
     }
-    public void setCatalogLinkCallback(Context context,String action){
-        this.context = context;
-        this.broadcast_action = action;
-    }
+//    public void setCatalogLinkCallback(Context context,String action){
+//        this.context = context;
+//        this.broadcast_action = action;
+//    }
 
     @Override
     public void run() {
@@ -79,7 +79,7 @@ public class NovelUpdateThread extends BasicHandlerThread {
             String subTocUrl = novelRequire.getRuleToc().getNextTocUrl();
             if (subTocUrl!=null && !"".equals(subTocUrl)) {
                 SubCatalogLinkThread subCatalogLinkThread = new SubCatalogLinkThread(catalogLink.get(catalogLink.size() - 1),
-                        novelRequire,true);
+                        novelRequire, novel,true);
                 subCatalogLinkThread.setOutputParams(
                         StorageUtils.getBookCatalogLinkPath(novel.getBookName(),novel.getWriter()));
                 subCatalogLinkThread.start();
@@ -128,22 +128,19 @@ public class NovelUpdateThread extends BasicHandlerThread {
         joinCatalogThread.setCountDownLatch(countDownLatch);
         joinCatalogThread.start();
         for (int i = start_sequence; i < total_count; i++) {
-            GetCatalogThread catalogThread = new GetCatalogThread(catalogLink.get(i),novelRequire,i);
+            GetCatalogThread catalogThread = new GetCatalogThread(catalogLink.get(i),novelRequire,novel,i);
             catalogThread.setOutput(StorageUtils.getSubCatalogPath(novel.getBookName(),novel.getWriter(),i));
             catalogThread.setCountDownLatch(countDownLatch);
             threadPool.execute(catalogThread);
         }
     }
 
-    public static class NovelUpdaterHandler<T> extends Handler {
-        private final WeakReference<T> mActivity;
+    public static class NovelUpdaterHandler extends Handler {
         private int fail_counter=0;
         private int success_counter=0;
         private NovelUpdateListener novelUpdateListener;
 
-        public NovelUpdaterHandler(T activity) {
-            mActivity = new WeakReference<T>(activity);
-        }
+        public NovelUpdaterHandler(){}
 
         public void setOverride(NovelUpdateListener novelUpdateListener) {
             this.novelUpdateListener = novelUpdateListener;
@@ -155,26 +152,23 @@ public class NovelUpdateThread extends BasicHandlerThread {
 
         @Override
         public void handleMessage(Message msg) {
-            T activity = mActivity.get();
-            if (activity != null) {
-                synchronized (this) {
-                    switch (msg.what) {
-                        case NovelUpdateThread.PROCESS_DONE:
-                            Log.d("NovelUpdaterHandler", "成功");
-                            success_counter++;
-                            break;
-                        case WAITING_KEY_FILES:
-                            fail_counter++;
-                            novelUpdateListener.needRecoverAll((Novels) msg.obj);
-                            break;
-                        case NovelUpdateThread.ERROR_OCCUR:
-                            fail_counter++;
-                            break;
-                        default:
-                    }
+            synchronized (this) {
+                switch (msg.what) {
+                    case NovelUpdateThread.PROCESS_DONE:
+                        Log.d("NovelUpdaterHandler", "成功");
+                        success_counter++;
+                        break;
+                    case WAITING_KEY_FILES:
+                        fail_counter++;
+                        novelUpdateListener.needRecoverAll((Novels) msg.obj);
+                        break;
+                    case NovelUpdateThread.ERROR_OCCUR:
+                        fail_counter++;
+                        break;
+                    default:
                 }
-                novelUpdateListener.handle(msg,success_counter,fail_counter);
             }
+            novelUpdateListener.handle(msg,success_counter,fail_counter);
         }
         public interface NovelUpdateListener {
             void handle(Message msg,int Success,int Fail);

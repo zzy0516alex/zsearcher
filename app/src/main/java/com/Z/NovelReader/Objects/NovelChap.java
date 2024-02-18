@@ -2,9 +2,7 @@ package com.Z.NovelReader.Objects;
 
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
-import com.Z.NovelReader.Objects.beans.NovelContentPage;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
-import com.Z.NovelReader.Threads.NovelSearchThread;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -12,7 +10,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 
 public class NovelChap extends Novels implements Serializable {
     private String title;
@@ -28,7 +25,7 @@ public class NovelChap extends Novels implements Serializable {
     public static final int NO_LINK_AVAILABLE=3;
 
     public NovelChap(Novels novels){
-        super(novels.getId(),novels.getBookName(),novels.getWriter(),
+        super(novels.getId(),novels.getBookName(),novels.getWriter(),novels.getShelfHash(),
                 novels.getTtlChap(),novels.getCurrentChap(),
                 novels.getBookCatalogLink(),novels.getBookInfoLink(),
                 novels.getContentRootLink(),novels.getSource(),
@@ -153,12 +150,12 @@ public class NovelChap extends Novels implements Serializable {
 
     public static String[] getCurrentChapLink(int current_chap, NovelCatalog novelCatalog) {
         String[] result=new String[3];//0:name 1:last_link 2:next_link
-        result[0]= novelCatalog.getTitle().get(current_chap);
+        result[0]= novelCatalog.getTitleList().get(current_chap);
         if(current_chap>0)
-            result[1]= novelCatalog.getLink().get(current_chap-1);
+            result[1]= novelCatalog.getLinkList().get(current_chap-1);
         else result[1]="";
         if(current_chap< novelCatalog.getSize()-1)
-            result[2]= novelCatalog.getLink().get(current_chap+1);
+            result[2]= novelCatalog.getLinkList().get(current_chap+1);
         else result[2]="";
         return result;
     }

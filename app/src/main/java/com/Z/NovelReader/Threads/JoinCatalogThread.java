@@ -1,23 +1,16 @@
 package com.Z.NovelReader.Threads;
 
-import android.content.Context;
-import android.content.Intent;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 
 import com.Z.NovelReader.Basic.BasicHandlerThread;
-import com.Z.NovelReader.BookShelfActivity;
-import com.Z.NovelReader.Global.MyApplication;
-import com.Z.NovelReader.NovelRoom.Novels;
-import com.Z.NovelReader.NovelShowAcitivity;
 import com.Z.NovelReader.Objects.MapElement;
 import com.Z.NovelReader.Utils.FileIOUtils;
-import com.Z.NovelReader.Utils.FileUtils;
+import com.Z.NovelReader.Utils.FileOperateUtils;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Utils.StorageUtils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.concurrent.CountDownLatch;
 
 public class JoinCatalogThread extends BasicHandlerThread {
@@ -80,12 +73,18 @@ public class JoinCatalogThread extends BasicHandlerThread {
         }
         super.run();
         for (int i = 0; i < subCatalog_num; i++) {
-            String sub_catalog_path = inputPath + i +".txt";
-            NovelCatalog sub_catalog = FileIOUtils.read_catalog(sub_catalog_path);
-            joined_catalog.addCatalog(sub_catalog);
+//            String sub_catalog_path = inputPath + i +".txt";
+            NovelCatalog sub_catalog = null;
+            try {
+                sub_catalog = FileIOUtils.readCatalog(StorageUtils.getSubCatalogPath(inputPath,i));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                continue;
+            }
+            joined_catalog.addAll(sub_catalog);
         }
-        FileIOUtils.WriteCatalog(outputPath,joined_catalog);
-        if (isClearTemp)FileUtils.deleteAllFiles(
+        FileIOUtils.writeCatalog(outputPath,joined_catalog);
+        if (isClearTemp) FileOperateUtils.deleteAllFiles(
                 new File(inputPath));
         Log.d("JoinCatalogThread","合并目录完成:"+outputPath);
         MapElement element = new MapElement(sourceID,joined_catalog);

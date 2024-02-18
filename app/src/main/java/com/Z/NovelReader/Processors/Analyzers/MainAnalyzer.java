@@ -2,25 +2,16 @@ package com.Z.NovelReader.Processors.Analyzers;
 
 import static com.Z.NovelReader.Utils.CollectionUtils.castList;
 
-import com.Z.NovelReader.Processors.AnalyseResult;
-import com.Z.NovelReader.Processors.ElementBean;
+import com.Z.NovelReader.Processors.InnerEntities.AnalyseResult;
 import com.Z.NovelReader.Processors.Exceptions.RuleProcessorException;
 import com.Z.NovelReader.Processors.JavaScriptEngine;
-import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
-import com.Z.NovelReader.Utils.CollectionUtils;
-import com.Z.NovelReader.Utils.StringUtils;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonPrimitive;
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.JsonPath;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -28,8 +19,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class MainAnalyzer {
-    //Jsoup表示通过jsoup解析的网页标签规范(默认)，JsoupCss表示以@css开头的网页风格规范，Json表示以$.开头的JsonPath规范
-    public enum RuleType {Jsoup,JsoupCss,Json}
+    //Jsoup表示通过jsoup解析的网页标签规范(默认)，JsoupCss表示以@css开头的网页风格规范，Json表示以$.开头的JsonPath规范，类型间不独立
+    public enum RuleType {Jsoup,JsoupCss,Json,JavaScript,XPath,Regex }
     //only表示有且仅有js代码，follow表示需要对上一步的结果(result变量进行js脚本处理)，fail表示js脚本格式不识别或执行出错
     public enum JSType {SCRIPT_ONLY, SCRIPT_FOLLOW, PARSE_FAIL}
     //NORMAL表示仅利用##后面的内容替换前面的，REGEX MATCH表示使用正则匹配(需要有$匹配符)，REGEX REPLACE表示使用正则替换
@@ -61,12 +52,14 @@ public class MainAnalyzer {
     }
 
     public AnalyseResult analyze(Document doc, String rule) throws Exception {
-        return this.analyze(new Elements(doc),rule);
+        AnalyseResult context = new AnalyseResult(doc, AnalyseResult.ResultType.DOCUMENT);
+        return this.analyze(context, rule);
     }
 
-    public AnalyseResult analyze(AnalyseResult last_result, String rule) throws Exception {
+    public AnalyseResult analyze(AnalyseResult context, String rule) throws Exception {
         //pre-process
         String treated_rule = parseRule(rule);
+        //处理仅js脚本的情况
         if (hasJS && jsType == JSType.SCRIPT_ONLY){
             if (engine == null)throw new RuleProcessorException("js脚本引擎未设置");
             try {
@@ -76,39 +69,44 @@ public class MainAnalyzer {
                 throw new RuleProcessorException("js脚本解析失败: "+e.getMessage());
             }
         }
-
+        if(context.isNull())return new AnalyseResult(null,type);//结果为空
         //main process
         List<AnalyseResult> result_list = new ArrayList<>();
         for (String sub_rule : subRules) {
-            Object result = new Object();
-            switch(last_result.type){
-                case ELEMENT_LIST:
-                    if (type != RuleType.Jsoup)throw new RuleProcessorException("输入类型与规则类型不匹配");
-                    Elements elements = last_result.asElements();
-                    JsoupAnalyzer jsoupAnalyzer = new JsoupAnalyzer();
-                    result = jsoupAnalyzer.getObjectFromElements(elements, sub_rule);
+            Object result;
+            switch(type){
+                case Jsoup:
+                    if (context.type== AnalyseResult.ResultType.DOCUMENT ||
+                            context.type == AnalyseResult.ResultType.ELEMENT_LIST) {
+                        Elements elements = context.asElements();
+                        JsoupAnalyzer jsoupAnalyzer = new JsoupAnalyzer();
+                        result = jsoupAnalyzer.getObjectFromElements(elements, sub_rule);
+                    }
+                    else throw new RuleProcessorException("输入类型与规则类型不匹配");
                     break;
-                case JSON_STRING_LIST:
-                    if (type != RuleType.Json)throw new RuleProcessorException("输入类型与规则类型不匹配");
-                    List<String> json_list = last_result.asStringList();
-                    JsonAnalyzer jsonListAnalyzer = new JsonAnalyzer();
-                    result = jsonListAnalyzer.getObjectFromJsonPath(json_list,sub_rule);
-                    break;
-                case JSON_STRING:
-                    if (type != RuleType.Json)throw new RuleProcessorException("输入类型与规则类型不匹配");
-                    String json_string = last_result.asString();
+                case Json:
                     JsonAnalyzer jsonAnalyzer = new JsonAnalyzer();
-                    result = jsonAnalyzer.getObjectFromJsonPath(json_string,sub_rule);
+                    if (context.type == AnalyseResult.ResultType.JSON_STRING_LIST) {
+                        List<String> json_list = context.asStringList();
+                        result = jsonAnalyzer.getObjectFromJsonPath(json_list, sub_rule);
+                    }
+                    else if(context.type == AnalyseResult.ResultType.DOCUMENT ||
+                            context.type == AnalyseResult.ResultType.JSON_STRING){
+                        String json_string = context.asString();
+                        result = jsonAnalyzer.getObjectFromJsonPath(json_string,sub_rule);
+                    }
+                    else throw new RuleProcessorException("输入类型与规则类型不匹配");
                     break;
-                case STRING:
-                    result = last_result.asString();
+                case Regex:
+                    result = context.asString();//这里先不处理，在后面post process中处理
                     break;
                 default:
+                    throw new RuleProcessorException("未处理的规则类型");
             }
             //pack results
             analyse_result = new AnalyseResult(result,type);
 
-            //post process
+            //post process（正则+js 处理）
             if (analyse_result.type == AnalyseResult.ResultType.STRING){
                 analyse_result.result = handleTextOnlyResult(analyse_result.asString());
                 return analyse_result;
@@ -117,79 +115,79 @@ public class MainAnalyzer {
                 analyse_result.result =
                         analyse_result.asStringList().stream().map(this::handleTextOnlyResult).collect(Collectors.toList());
             }
-
             //collect processed results
             result_list.add(analyse_result);
         }
+
+        //处理列表反转的情况
         if (analyse_result.isList() && needReverseList){
             List<Object> reverseList = analyse_result.toObjectList();
             Collections.reverse(reverseList);
             analyse_result.result = reverseList;
         }
-        if (!hasJointRule)return analyse_result;
-        else{
-            //joint
+        //处理多结果合并的情况
+        if (hasJointRule){
             analyse_result.result = handleJoinedListResult(result_list);
-            return analyse_result;
         }
+        return analyse_result;
     }
 
-    public AnalyseResult analyze(Elements elements, String rule) throws Exception {
-        //pre-process
-        String treated_rule = parseRule(rule);
-        if (hasJS && jsType == JSType.SCRIPT_ONLY){
-            if (engine == null)throw new RuleProcessorException("js脚本引擎未设置");
-            try {
-                String js_result = engine.runScript(jsCode);
-                return new AnalyseResult(js_result, AnalyseResult.ResultType.STRING);
-            }catch (Exception e){
-                throw new RuleProcessorException("js脚本解析失败: "+e.getMessage());
-            }
-        }
-        List<AnalyseResult> result_list = new ArrayList<>();
-        for (String sub_rule : subRules) {
-            //main process
-            Object result = new Object();
-            switch(type){
-                case Jsoup:
-                    JsoupAnalyzer jsoupAnalyzer = new JsoupAnalyzer();
-                    result = jsoupAnalyzer.getObjectFromElements(elements, sub_rule);
-                    break;
-                case Json:
-                    Document document = Jsoup.parse(elements.html());
-                    JsonAnalyzer jsonAnalyzer = new JsonAnalyzer();
-                    result = jsonAnalyzer.getObjectFromJsonPath(document,sub_rule);
-                    break;
-                default:
-            }
-            //pack results
-            analyse_result = new AnalyseResult(result,type);
-
-            //post process
-            if (analyse_result.type == AnalyseResult.ResultType.STRING){
-                analyse_result.result = handleTextOnlyResult(analyse_result.asString());
-                return analyse_result;
-            }
-            else if (analyse_result.type == AnalyseResult.ResultType.STRING_LIST){
-                analyse_result.result =
-                analyse_result.asStringList().stream().map(this::handleTextOnlyResult).collect(Collectors.toList());
-            }
-
-            //collect processed results
-            result_list.add(analyse_result);
-        }
-        if (analyse_result.isList() && needReverseList){
-            List<Object> reverseList = analyse_result.toObjectList();
-            Collections.reverse(reverseList);
-            analyse_result.result = reverseList;
-        }
-        if (!hasJointRule)return analyse_result;
-        else{
-            //joint
-            analyse_result.result = handleJoinedListResult(result_list);
-            return analyse_result;
-        }
-    }
+//    public AnalyseResult analyze(Elements elements, String rule) throws Exception {
+//        //pre-process
+//        String treated_rule = parseRule(rule);
+//        if (hasJS && jsType == JSType.SCRIPT_ONLY){
+//            if (engine == null)throw new RuleProcessorException("js脚本引擎未设置");
+//            try {
+//                String js_result = engine.runScript(jsCode);
+//                return new AnalyseResult(js_result, AnalyseResult.ResultType.STRING);
+//            }catch (Exception e){
+//                throw new RuleProcessorException("js脚本解析失败: "+e.getMessage());
+//            }
+//        }
+//        List<AnalyseResult> result_list = new ArrayList<>();
+//        for (String sub_rule : subRules) {
+//            //main process
+//            Object result = new Object();
+//            switch(type){
+//                case Jsoup:
+//                    JsoupAnalyzer jsoupAnalyzer = new JsoupAnalyzer();
+//                    result = jsoupAnalyzer.getObjectFromElements(elements, sub_rule);
+//                    break;
+//                case Json:
+//                    Document document = Jsoup.parse(elements.html());
+//                    JsonAnalyzer jsonAnalyzer = new JsonAnalyzer();
+//                    result = jsonAnalyzer.getObjectFromJsonPath(document,sub_rule);
+//                    break;
+//                default:
+//            }
+//            //pack results
+//            analyse_result = new AnalyseResult(result,type);
+//
+//            //post process
+//            if (analyse_result.type == AnalyseResult.ResultType.STRING){
+//                analyse_result.result = handleTextOnlyResult(analyse_result.asString());
+//                return analyse_result;
+//            }
+//            else if (analyse_result.type == AnalyseResult.ResultType.STRING_LIST){
+//                analyse_result.result =
+//                analyse_result.asStringList().stream().map(this::handleTextOnlyResult).collect(Collectors.toList());
+//            }
+//
+//            //collect processed results
+//            result_list.add(analyse_result);
+//        }
+//        if (analyse_result.isList() && needReverseList){
+//            List<Object> reverseList = analyse_result.toObjectList();
+//            Collections.reverse(reverseList);
+//            analyse_result.result = reverseList;
+//        }
+//        if (!hasJointRule)return analyse_result;
+//        else{
+//            //joint
+//            analyse_result.result = handleJoinedListResult(result_list);
+//            return analyse_result;
+//        }
+//    }
 
     private List<Object> handleJoinedListResult(List<AnalyseResult> result_list) {
         List<Object> result = new ArrayList<>();
@@ -230,15 +228,17 @@ public class MainAnalyzer {
 
     private String parseRule(String raw_rule) throws Exception {
         String treatedRule;
-        treatedRule = checkListReverse(raw_rule);
+        treatedRule = raw_rule.replace("\n","");//trim
+        treatedRule = checkListReverse(treatedRule);
         treatedRule = checkJsUsage(treatedRule);
         if (hasJS && jsType == JSType.SCRIPT_ONLY)return treatedRule;
+        //以下进入正式规则部分
+        checkJointRules(treatedRule);
         checkJsonUsage(treatedRule);
         if (type == RuleType.Json)return treatedRule;
         treatedRule = checkRegexUsage(treatedRule);
-        checkJointRules(treatedRule);
-        //if (jointType == JointType.FIRST)treatedRule = subRules[0];
-        type = RuleType.Jsoup;
+        if(treatedRule.isEmpty()){type=RuleType.Regex;return treatedRule;}
+        type = RuleType.Jsoup;//都不是，就是默认规则
         return treatedRule;
     }
 
@@ -272,7 +272,7 @@ public class MainAnalyzer {
     public void checkJsonUsage(String rule){
         Pattern pattern = Pattern.compile("^\\$\\.(.)+");
         Matcher matcher = pattern.matcher(rule);
-        if (matcher.matches())
+        if (matcher.matches() || rule.contains("@json:"))
             type = RuleType.Json;
     }
 

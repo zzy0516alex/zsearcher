@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <declare-styleable name="SwitchRopeView">
+        <attr name="rope_width" format="dimension"/>
+        <attr name="rope_height" format="dimension"/>
+        <attr name="ring_radius" format="dimension"/>
+        <attr name="ring_stroke_width" format="dimension"/>
+        <attr name="horizontal_padding" format="dimension"/>
+        <attr name="line_color" format="color"/>
+        <attr name="ring_color" format="color"/>
+    </declare-styleable>
+
     <!--corner_color 边角颜色，
         scanner_color 扫描线颜色
         possible_result_color 扫描点颜色

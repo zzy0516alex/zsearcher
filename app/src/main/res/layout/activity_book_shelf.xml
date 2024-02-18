@@ -66,29 +66,56 @@
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_update"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_below="@+id/separator"
         android:layout_centerHorizontal="true"
         android:layout_marginStart="15dp"
         android:layout_marginTop="15dp">
 
-        <GridView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/BookShelf"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:horizontalSpacing="10dp"
-            android:numColumns="3"
-            android:verticalSpacing="20dp" />
+            android:layout_height="wrap_content" />
+
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <Button
-        android:id="@+id/delete"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:id="@+id/bookshelf_bottom_control"
+        android:orientation="horizontal"
         android:layout_alignParentBottom="true"
-        android:background="@drawable/square_btn_white"
-        android:text="删除"
-        android:textColor="@color/red" />
-
+        android:elevation="2dp">
+        <Button
+            android:id="@+id/bookshelf_cancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingVertical="15dp"
+            android:background="@drawable/square_btn_white"
+            android:text="取消"
+            android:textColor="@color/black"
+            android:textSize="18sp"/>
+        <Button
+            android:id="@+id/bookshelf_download"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingVertical="15dp"
+            android:background="@drawable/square_btn_white"
+            android:text="下载整本"
+            android:textColor="@color/black"
+            android:textSize="18sp"/>
+        <Button
+            android:id="@+id/bookshelf_delete"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingVertical="15dp"
+            android:background="@drawable/square_btn_white"
+            android:text="删除"
+            android:textColor="@color/red"
+            android:textSize="18sp"/>
+    </LinearLayout>
 
 </RelativeLayout>

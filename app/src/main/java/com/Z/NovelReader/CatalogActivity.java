@@ -17,6 +17,7 @@ import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Utils.StorageUtils;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 
 
@@ -56,7 +57,9 @@ public class CatalogActivity extends AppCompatActivity {
         currentTitle=bundle.getString("currentTitle");
 
         //加载目录
-        CatalogListAdapter chapListAdapter=new CatalogListAdapter(ChapList,context,true,currentTitle);
+        CatalogListAdapter chapListAdapter=new CatalogListAdapter(ChapList,context);
+        chapListAdapter.setBasicItemColor(context.getColor(R.color.black));
+        chapListAdapter.setHighlightTitle(context.getColor(R.color.DoderBlue),currentTitle);
         chapList.setAdapter(chapListAdapter);
 
         //控制列表滚动到当前章节附近
@@ -88,10 +91,17 @@ public class CatalogActivity extends AppCompatActivity {
      * 从临时目录中读取目录数据，初始化章节信息
      */
     private void getCatalog() {
-        NovelCatalog result_back = FileIOUtils.read_catalog(StorageUtils.getTempCatalogPath());
+        NovelCatalog result_back = null;
+        try {
+            result_back = FileIOUtils.readCatalog(StorageUtils.getTempCatalogPath());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "目录读取失败", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (!result_back.isEmpty()) {
-            ChapList = result_back.getTitle();
-            ChapLinkList = result_back.getLink();
+            ChapList = result_back.getTitleList();
+            ChapLinkList = result_back.getLinkList();
         }else{
             Toast.makeText(this, "目录读取失败", Toast.LENGTH_SHORT).show();
             Log.d("novel show","目录读取失败");

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/dialog_deepblue">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/download_selector_header"
+        android:layout_marginHorizontal="15dp"
+        android:layout_marginVertical="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="选择下载的章节"
+            android:textSize="22sp"
+            android:textColor="@color/white"/>
+
+        <TextView
+            android:id="@+id/ds_cancel_select"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:text="取消选择"
+            android:textColor="@color/DoderBlue"
+            android:textSize="18sp" />
+    </RelativeLayout>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/drag_select_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/download_selector_control"
+        android:layout_below="@id/download_selector_header"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/download_selector_control"
+        android:orientation="horizontal"
+        android:layout_alignParentBottom="true"
+        android:padding="8dp"
+        android:layout_marginBottom="5dp"
+        android:gravity="center_vertical">
+        <Button
+            android:id="@+id/ds_confirm_download"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/novel_chap_download"
+            android:textColor="@color/white"
+            android:textSize="20sp"/>
+    </LinearLayout>
+</RelativeLayout>

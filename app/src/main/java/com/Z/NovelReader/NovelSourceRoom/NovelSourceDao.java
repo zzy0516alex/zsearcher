@@ -24,6 +24,9 @@ public interface NovelSourceDao {
     @Query("UPDATE novel_source SET enabled=:IsEnabled WHERE id=:id")
     void UpdateVisibility(boolean IsEnabled,int id);
 
+    @Query("UPDATE novel_source SET enabled=:IsEnabled")
+    void UpdateVisibilityAll(boolean IsEnabled);
+
     @Query("UPDATE novel_source SET respond_time=:time WHERE id=:id")
     void UpdateRespondTime(double time, int id);
 
@@ -36,14 +39,19 @@ public interface NovelSourceDao {
     @Query("DELETE FROM novel_source")
     void DeleteAll();
 
+    @Query("DELETE FROM novel_source WHERE id=:id")
+    void DeleteByID(int id);
+
     @Query("SELECT * FROM novel_source ORDER BY ID")
     LiveData<List<NovelRequire>> getAllSources();
 
     @Query("SELECT * FROM novel_source WHERE enabled=1 ORDER BY ID")
     List<NovelRequire> getSources();
 
-    @Query("SELECT * FROM novel_source WHERE id=:id AND enabled=1")
+    @Query("SELECT * FROM novel_source WHERE id=:id")
     NovelRequire getSourcesByID(int id);
+    @Query("SELECT * FROM novel_source WHERE id=:id AND enabled=1")
+    NovelRequire getEnabledSourcesByID(int id);
 
     @Query("SELECT id,search_url,book_source_url From novel_source WHERE enabled=1 ORDER BY ID")
     List<SearchQuery> getSearchUrls();

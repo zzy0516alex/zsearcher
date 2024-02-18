@@ -40,10 +40,10 @@ abstract public class BasicHandlerThread extends Thread {
     }
 
     public static int mergeEvents(int event){
-        if (event > 0x1) return ERROR_OCCUR;
+        if (event > PROCESS_DONE) return ERROR_OCCUR;
         else return PROCESS_DONE;
     }
     public static boolean isErrorOccur(int event){
-        return event > 0x1;
+        return event > PROCESS_DONE;
     }
 }

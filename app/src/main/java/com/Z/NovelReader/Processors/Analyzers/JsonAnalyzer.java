@@ -41,10 +41,10 @@ public class JsonAnalyzer {
         });
     }
 
-    public Object getObjectFromJsonPath(Document jsoup_document, String json_path) throws RuleProcessorException {
-        String json = jsoup_document.body().text();
-        return getObjectFromJsonPath(json,json_path);
-    }
+//    public Object getObjectFromJsonPath(Document jsoup_document, String json_path) throws RuleProcessorException {
+//        String json = jsoup_document.body().text();
+//        return getObjectFromJsonPath(json,json_path);
+//    }
 
     public Object getObjectFromJsonPath(List<String> json_list, String json_path) throws RuleProcessorException {
         List<String> result = new ArrayList<>();

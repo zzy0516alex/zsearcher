@@ -2,10 +2,8 @@ package com.Z.NovelReader.Threads;
 
 import android.graphics.Bitmap;
 
-import com.Z.NovelReader.Global.MyApplication;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Processors.CommonUrlProcessor;
-import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
@@ -23,6 +21,7 @@ public class GetCoverThread extends Thread {
     private String BookName;
     private String infoPageURL;
     private NovelRequire novelRequire;//书源规则类
+    private Novels novel;
     private String coverPath;
 
     /**
@@ -34,6 +33,7 @@ public class GetCoverThread extends Thread {
     public GetCoverThread(Novels novel,NovelRequire novelRequire,String output_path) {
         this.BookName=novel.getBookName();
         this.infoPageURL=novel.getBookInfoLink();
+        this.novel = novel;
         this.novelRequire=novelRequire;
         this.coverPath = output_path;
     }
@@ -56,7 +56,7 @@ public class GetCoverThread extends Thread {
             Document document = connect.get();
 //            NovelRuleAnalyzer coverSRCAnalyzer = new NovelRuleAnalyzer();
 //            List<String> src = coverSRCAnalyzer.getObjectFromElements(new Elements(document), rule_cover);
-            String src_url = CommonUrlProcessor.getUrl(document, novelRequire, rule_cover);
+            String src_url = CommonUrlProcessor.getUrl(document, novelRequire, novel, rule_cover);
             if (src_url != null) {
                 PictureThread thread = new PictureThread(src_url);
                 thread.start();

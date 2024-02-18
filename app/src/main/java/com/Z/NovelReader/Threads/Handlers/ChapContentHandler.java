@@ -32,7 +32,7 @@ public class ChapContentHandler<T> extends Handler {
                     listener.onSuccess((String) msg.obj);
                     break;
                 case BasicHandlerThread.ERROR_OCCUR:
-                    listener.onError(ContentThread.generateErrorContent(msg.what));
+                    listener.onError((String) msg.obj);
                     break;
                 default:
             }

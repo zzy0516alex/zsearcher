@@ -1,15 +1,11 @@
 package com.Z.NovelReader.Processors.Analyzers;
 
-import com.Z.NovelReader.Processors.ElementBean;
 import com.Z.NovelReader.Processors.Exceptions.RuleProcessorException;
-import com.Z.NovelReader.Processors.JsoupSelectorBean;
-import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
+import com.Z.NovelReader.Processors.InnerEntities.JsoupSelectorBean;
 import com.Z.NovelReader.Utils.StringUtils;
 
-import com.Z.NovelReader.Processors.JsoupSelectorBean.SelectorType;
-import com.jayway.jsonpath.JsonPath;
+import com.Z.NovelReader.Processors.InnerEntities.JsoupSelectorBean.SelectorType;
 
-import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
@@ -270,7 +266,7 @@ public class JsoupAnalyzer {
     public Object getObjectFromElements(Elements eles, String raw_rule) throws Exception{
         Object object;
         if (eles.size()==0)
-            throw new RuleProcessorException("Element为空，无法解析内容");
+            return null;
         if (raw_rule.equals("")){
             if (eles.size()==1)return eles.get(0).text();
             else return eles.stream().map(Element::text).collect(Collectors.toList());

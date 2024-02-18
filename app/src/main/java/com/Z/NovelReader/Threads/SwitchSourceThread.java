@@ -11,24 +11,19 @@ import androidx.annotation.RequiresApi;
 
 import com.Z.NovelReader.Basic.BasicHandler;
 import com.Z.NovelReader.Basic.BasicHandlerThread;
-import com.Z.NovelReader.Global.MyApplication;
-import com.Z.NovelReader.NovelRoom.NovelDBUpdater;
+import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Objects.NovelChap;
 import com.Z.NovelReader.Objects.beans.BackupSourceBean;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
-import com.Z.NovelReader.Utils.FileUtils;
+import com.Z.NovelReader.Utils.FileOperateUtils;
 import com.Z.NovelReader.Utils.StorageUtils;
 import com.Z.NovelReader.Utils.StringUtils;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.Comparator;
-
 public class SwitchSourceThread extends BasicHandlerThread {
     private Context context;
-    private NovelDBUpdater dbUpdater;
+    private NovelDBTools dbUpdater;
     private BackupSourceBean backupSource;//用于替换的书籍信息和目录
     private NovelRequire backupRule;//用于替换的书源规则
     private Novels backupNovel;
@@ -46,7 +41,7 @@ public class SwitchSourceThread extends BasicHandlerThread {
     public void run() {
         //super.run();
         Looper.prepare();
-        dbUpdater = new NovelDBUpdater(context);
+        dbUpdater = new NovelDBTools(context);
         if (backupSource == null){
             report(NULL_OBJECT);
             return;
@@ -70,16 +65,16 @@ public class SwitchSourceThread extends BasicHandlerThread {
         //提取父链接
         String contentRootUrl;
         if (catalog.getSize() > 1)contentRootUrl = StringUtils.getSharedURL(
-                catalog.getLink().get(0),catalog.getLink().get(1));
-        else contentRootUrl = StringUtils.getRootUrl(catalog.getLink().get(0));
+                catalog.getLinkList().get(0),catalog.getLinkList().get(1));
+        else contentRootUrl = StringUtils.getRootUrl(catalog.getLinkList().get(0));
         backupNovel.setContentRootLink(contentRootUrl);
         dbUpdater.updateNovels(backupNovel);//更新父链接
         //开始下载章节内容
-        ContentThread contentThread = new ContentThread(catalog.getLink().get(backupNovel.getCurrentChap()),
-                backupRule,contentRootUrl);
-        contentThread.setCatalogLinks(catalog.getLink());
-        contentThread.setUpdateRootURL(backupNovel,context);
-        contentThread.setOutputParams(StorageUtils.getBookContentPath(backupNovel.getBookName(),backupNovel.getWriter()));
+        ContentThread contentThread = new ContentThread(catalog.getLinkList().get(backupNovel.getCurrentChap()),
+                backupRule, backupNovel, contentRootUrl);
+        contentThread.setCatalogLinks(catalog.getLinkList());
+        contentThread.setUpdateRootURL(context);
+        contentThread.setOutputToCache(StorageUtils.getBookContentPath(backupNovel.getBookName(),backupNovel.getWriter()));
         BasicHandler<String> contentHandler = new BasicHandler<>(
                 new BasicHandler.BasicHandlerListener<String>() {
                     @Override
@@ -95,9 +90,9 @@ public class SwitchSourceThread extends BasicHandlerThread {
                         String target_catalog_path = StorageUtils.getBookCatalogPath(chap.getBookName(),chap.getWriter());
                         String target_catalogURL_path = StorageUtils.getBookCatalogLinkPath(chap.getBookName(),chap.getWriter());
                         String target_cover_path = StorageUtils.getBookCoverPath(chap.getBookName(),chap.getWriter());
-                        FileUtils.copyFile(backup_catalog_path,target_catalog_path);
-                        FileUtils.copyFile(backup_catalogURL_path,target_catalogURL_path);
-                        FileUtils.copyFile(backup_cover_path,target_cover_path);
+                        FileOperateUtils.copyFile(backup_catalog_path,target_catalog_path);
+                        FileOperateUtils.copyFile(backup_catalogURL_path,target_catalogURL_path);
+                        FileOperateUtils.copyFile(backup_cover_path,target_cover_path);
                         callback(PROCESS_DONE,chap);
                     }
 

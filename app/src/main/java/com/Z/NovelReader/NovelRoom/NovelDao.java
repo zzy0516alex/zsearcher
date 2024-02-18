@@ -12,8 +12,8 @@ import java.util.List;
 
 @Dao
 public interface NovelDao {
-    @Insert
-    void InsertNovels(Novels...novels);
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    long InsertNovel(Novels novel);
 
     @Update(entity = Novels.class)
     void UpdateNovels(Novels...novels);
@@ -25,7 +25,10 @@ public interface NovelDao {
     void DeleteAll();
 
     @Query("DELETE FROM Novels WHERE book_name=:bookName AND writer=:writer")
-    void DeleteNovel(String bookName,String writer);
+    void DeleteNovelByNameWithWriter(String bookName,String writer);
+
+    @Query("DELETE FROM Novels WHERE shelf_hash=:shelf_hash")
+    void DeleteNovelByShelfHash(int shelf_hash);
 
     @Query("SELECT * FROM NOVELS WHERE is_used=1 ORDER BY ID")
     LiveData<List<Novels>> getAllNovels();
@@ -37,13 +40,19 @@ public interface NovelDao {
     List<Novels> getNovelByID(int id);
 
     @Query("UPDATE Novels SET total_chapter=:totalChap WHERE id=:id")
-    void UpdateTotalChap(int totalChap,int id);
+    void UpdateTotalChap(int totalChap, int id);
 
     @Query("UPDATE Novels SET current_chap=:currentChap WHERE id=:id")
-    void UpdateCurrentChap(int currentChap,int id);
+    void UpdateCurrentChap(int currentChap, int id);
+
+    @Query("UPDATE Novels SET book_catalog_link=:catalog_link WHERE id=:id")
+    void UpdateCatalogLink(String catalog_link, int id);
+
+    @Query("UPDATE Novels SET book_info_link=:info_link WHERE id=:id")
+    void UpdateInfoLink(String info_link, int id);
 
     @Query("UPDATE Novels SET content_root_link =:content_root WHERE id=:id")
-    void UpdateContentRoot(String content_root,int id);
+    void UpdateContentRoot(String content_root, int id);
 
     @Query("UPDATE Novels SET `progress`=:progress WHERE id=:id")
     void UpdateChapOffset(double progress,int id);
@@ -65,5 +74,9 @@ public interface NovelDao {
 
     @Query("SELECT * FROM NOVELS WHERE book_name=:bookName AND writer =:writer")
     List<Novels> getNovelListUnique(String bookName,String writer);
+    @Query("SELECT * FROM NOVELS WHERE shelf_hash =:hash_value")
+    List<Novels> getNovelListByShelfHash(int hash_value);
+    @Query("SELECT * FROM NOVELS WHERE source=:source_id AND shelf_hash =:hash_value")
+    List<Novels> getNovelListBySourceAndHash(int source_id, int hash_value);
 
 }

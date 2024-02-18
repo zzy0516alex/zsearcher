@@ -9,9 +9,17 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.safety.Whitelist;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class StringUtils {
     //获取字符串匹配度
@@ -293,7 +301,89 @@ public class StringUtils {
         return origin.replaceAll("第.+?章","");
     }
 
-//    public static String handleEscapeCharacterInUrl(String url){
-//       return url.replace("#","%23");
-//    }
+    public static String compressInGzip(final String str){
+        if (str == null || "".equals(str)) {
+            return str;
+        }
+
+        String ret = null;
+
+        byte[] compressed;
+        ByteArrayOutputStream out = null;
+        GZIPOutputStream zout = null;
+        try {
+            out = new ByteArrayOutputStream();
+            zout = new GZIPOutputStream(out);
+            zout.write(str.getBytes());
+            zout.close();
+            compressed = out.toByteArray();
+            ret = new String(Base64.getEncoder().encode(compressed), StandardCharsets.UTF_8);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (final IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static String decompressInGzip(final String compressedStr){
+        if (null == compressedStr || "".equals(compressedStr)) {
+            return compressedStr;
+        }
+
+        String ret = null;
+
+        ByteArrayOutputStream out = null;
+        ByteArrayInputStream in = null;
+        GZIPInputStream zin = null;
+        try {
+            final byte[] compressed = Base64.getDecoder().decode(compressedStr.getBytes());
+            out = new ByteArrayOutputStream();
+            in = new ByteArrayInputStream(compressed);
+            zin = new GZIPInputStream(in);
+            final byte[] buffer = new byte[1024];
+            int offset = -1;
+            while ((offset = zin.read(buffer)) != -1) {
+                out.write(buffer, 0, offset);
+            }
+
+            ret = out.toString(String.valueOf(StandardCharsets.UTF_8));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (zin != null) {
+                try {
+                    zin.close();
+                } catch (final IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (final IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (final IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return ret;
+    }
 }

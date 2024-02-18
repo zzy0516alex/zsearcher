@@ -1,4 +1,4 @@
-package com.Z.NovelReader.Processors;
+package com.Z.NovelReader.Processors.InnerEntities;
 
 import static com.Z.NovelReader.Utils.CollectionUtils.castList;
 
@@ -6,6 +6,7 @@ import com.Z.NovelReader.Processors.Analyzers.MainAnalyzer;
 import com.Z.NovelReader.Processors.Exceptions.RuleProcessorException;
 import com.google.gson.Gson;
 
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
@@ -13,9 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AnalyseResult {
-    public enum ResultType{STRING,ELEMENT,JSON_STRING,STRING_LIST,ELEMENT_LIST,JSON_STRING_LIST}
+    public enum ResultType{NULL,STRING,DOCUMENT,ELEMENT,JSON_STRING,STRING_LIST,ELEMENT_LIST,JSON_STRING_LIST}
     public Object result;
     public ResultType type;
+    private List<AnalyseResult> tempResults;
 
     public AnalyseResult(Object result, MainAnalyzer.RuleType ruleType){
         this.result = result;
@@ -32,10 +34,12 @@ public class AnalyseResult {
     }
 
     public static ResultType judgeType(Object result, MainAnalyzer.RuleType ruleType) throws RuleProcessorException {
+        if(result==null) return ResultType.NULL;
         switch(ruleType){
             case Jsoup:
                 if (result instanceof String)return ResultType.STRING;
                 if (result instanceof Element)return ResultType.ELEMENT;
+                if (result instanceof Document)return ResultType.DOCUMENT;
                 if (result instanceof Elements)return ResultType.ELEMENT_LIST;
                 if (result instanceof List)return ResultType.STRING_LIST;
                 break;
@@ -51,15 +55,25 @@ public class AnalyseResult {
                     else return ResultType.STRING_LIST;
                 }
                 break;
+            case Regex:
+                if(result instanceof  String)return ResultType.STRING;
+                break;
         }
         throw new RuleProcessorException("未知的返回值类型");
     }
+
+    public boolean isNull(){return type==ResultType.NULL;}
 
     public boolean isList(){
         return type.ordinal() > 2;
     }
 
     public static boolean isJson(String s) {
+        //首先检查是不是json
+        String pattern ="^\\{.*\\}$";// 匹配以{开头，以}结尾的字符串
+        boolean isJson = s.matches(pattern);
+        if(!isJson)return false;
+        //再检查json是否合法
         Gson gson = new Gson();
         try {
             gson.fromJson(s, Object.class);
@@ -75,8 +89,9 @@ public class AnalyseResult {
     }
 
     public String asString(){
-        if (!(result instanceof String))return null;
-        return (String) result;
+        if (result instanceof String) return (String) result;
+        else if(result instanceof Document) return ((Document) result).body().text();
+        else return null;
     }
     public List<String> asStringList(){
         if (result instanceof List)
@@ -86,10 +101,10 @@ public class AnalyseResult {
             single_result.add(result.toString());
             return single_result;
         }
-        else return null;
-
+        else return new ArrayList<>();
     }
     public Elements asElements(){
+        if(result instanceof Document)return new Elements((Document)result);
         if (result instanceof Elements)return (Elements) result;
         if (result instanceof List){
             List<Element> elements = castList(result, Element.class);

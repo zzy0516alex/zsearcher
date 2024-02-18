@@ -59,18 +59,18 @@
     <LinearLayout
         android:id="@+id/ssd_control"
         android:layout_width="match_parent"
-        android:layout_height="55dp"
+        android:layout_height="65dp"
         android:background="@color/deepBlue"
         android:orientation="horizontal"
         android:layout_alignParentBottom="true"
-        android:padding="5dp"
+        android:padding="10dp"
         android:gravity="center_vertical">
         <Button
             android:id="@+id/ssd_confirm"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@drawable/half_radius_btn_left"
+            android:padding="5dp"
             android:text="确定"
             android:textColor="@color/white"
             android:textSize="15sp" />
@@ -79,7 +79,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@drawable/half_radius_btn_right"
+            android:padding="5dp"
             android:text="取消"
             android:textColor="@color/white"
             android:textSize="15sp" />

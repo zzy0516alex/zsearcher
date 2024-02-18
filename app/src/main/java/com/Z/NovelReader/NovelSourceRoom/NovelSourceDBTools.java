@@ -27,6 +27,10 @@ public class NovelSourceDBTools {
     public void DeleteAllSource(){
         new DeleteAllAsyncTask(Dao).execute();
     }
+    //删除指定ID的书源
+    public void DeleteByID(int id){
+        new DeleteByIDTask(Dao,id).execute();
+    }
     //获取所有书源的搜索规则
     public void getSearchUrlList(QueryListener listener){
         new SearchQueryAsyncTask(Dao,listener).execute();
@@ -37,8 +41,8 @@ public class NovelSourceDBTools {
         return getAllQueryThread.getSearchQueries();
     }
     //获取指定ID的书源规则
-    public void getNovelRequireById(int id,QueryListener listener){
-        new RulesQueryAsyncTask(Dao,id,listener).execute();
+    public void getNovelRequireById(int id, boolean ignoreEnable,QueryListener listener){
+        new RulesQueryAsyncTask(Dao,id, ignoreEnable, listener).execute();
     }
     //更新书源的启用情况
     public void UpdateSourceVisibility(int id,boolean IsEnabled){
@@ -90,6 +94,22 @@ public class NovelSourceDBTools {
         }
     }
 
+    static class DeleteByIDTask extends AsyncTask<Void,Void,Void>{
+
+        private NovelSourceDao novelSourceDao;
+        private int id;
+
+        public DeleteByIDTask(NovelSourceDao dao,int id) {
+            this.novelSourceDao = dao;
+            this.id=id;
+        }
+        @Override
+        protected Void doInBackground(Void... voids) {
+            novelSourceDao.DeleteByID(id);
+            return null;
+        }
+    }
+
     static class SearchQueryAsyncTask extends AsyncTask<Void,Void, List<SearchQuery>>{
 
         private NovelSourceDao novelSourceDao;
@@ -116,16 +136,21 @@ public class NovelSourceDBTools {
         private NovelSourceDao novelSourceDao;
         private QueryListener listener;
         private int id;
+        private boolean ignoreEnable;
 
-        public RulesQueryAsyncTask(NovelSourceDao novelSourceDao,int id,QueryListener listener) {
+        public RulesQueryAsyncTask(NovelSourceDao novelSourceDao, int id, boolean ignore_enable, QueryListener listener) {
             this.novelSourceDao = novelSourceDao;
             this.listener=listener;
             this.id=id;
+            this.ignoreEnable = ignore_enable;
         }
 
         @Override
         protected NovelRequire doInBackground(Void... voids) {
-            return novelSourceDao.getSourcesByID(id);
+            if(!ignoreEnable) {
+                return novelSourceDao.getEnabledSourcesByID(id);
+            }
+            else return novelSourceDao.getSourcesByID(id);
         }
 
         @Override
@@ -147,7 +172,8 @@ public class NovelSourceDBTools {
 
         @Override
         protected Void doInBackground(Void... voids) {
-            novelSourceDao.UpdateVisibility(IsEnabled,id);
+            if(id!=-1)novelSourceDao.UpdateVisibility(IsEnabled,id);
+            else novelSourceDao.UpdateVisibilityAll(IsEnabled);
             return null;
         }
     }

@@ -93,7 +93,8 @@ public class PrepareCatalogService extends Service {
             current_book = new NovelSearchBean(novel,novelRule);
         }
         if (this.Novel == null){
-            this.Novel = new Novels(-1,current_book.getBookName(),current_book.getWriter(),0,0,current_book.getBookCatalogLink(),current_book.getBookInfoLink(),"",current_book.getNovelRule().getId(),0);
+            //this.Novel = new Novels(-1,current_book.getBookName(),current_book.getWriter(),0,0,current_book.getBookCatalogLink(),current_book.getBookInfoLink(),"",current_book.getNovelRule().getId(),0);
+            this.Novel = new Novels(current_book);
         }
         novelRequire = current_book.getNovelRule();
         //初始化线程池,最高并发15线程
@@ -115,7 +116,7 @@ public class PrepareCatalogService extends Service {
             if (subTocUrl!=null && !"".equals(subTocUrl)) {
                 //存在子目录
                 SubCatalogLinkThread subCatalogLinkThread = new SubCatalogLinkThread(finalCurrent_book.getBookCatalogLink(),
-                        novelRequire,false);
+                        novelRequire, Novel,false);
                 subCatalogLinkThread.setOutputParams(catalogLinkPath);
                 subCatalogLinkThread.setHandler(subCatalog_Handler);
                 subCatalogLinkThread.start();
@@ -123,7 +124,7 @@ public class PrepareCatalogService extends Service {
                 ArrayList<String> subCatalogLinkList = new ArrayList<>();
                 subCatalogLinkList.add(finalCurrent_book.getBookCatalogLink());
                 FileIOUtils.WriteList(catalogLinkPath, subCatalogLinkList,false);
-                GetCatalogThread catalogThread = new GetCatalogThread(finalCurrent_book.getBookCatalogLink(),novelRequire,0);
+                GetCatalogThread catalogThread = new GetCatalogThread(finalCurrent_book.getBookCatalogLink(),novelRequire, Novel,0);
                 catalogHandler.setTotal_count(1);
                 catalogThread.setHandler(catalogHandler);
                 catalogThread.start();
@@ -144,7 +145,7 @@ public class PrepareCatalogService extends Service {
                 listener.onProcessStart("生成目录…");
                 catalogHandler.setTotal_count(result.size());
                 for (int i = 0; i < result.size(); i++) {
-                    GetCatalogThread catalogThread = new GetCatalogThread(result.get(i),novelRequire,i);
+                    GetCatalogThread catalogThread = new GetCatalogThread(result.get(i),novelRequire,Novel,i);
                     catalogThread.setHandler(catalogHandler);
                     threadPool.execute(catalogThread);
                 }
@@ -166,10 +167,10 @@ public class PrepareCatalogService extends Service {
             public void onAllProcessDone(NovelCatalog catalog) {
                 isAllProcessDone = true;
                 generalCatalog = catalog;
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < 20; i++) {
                     getApplicationContext().sendBroadcast(new Intent(BasicUpdaterBroadcast.CATALOG_NOVELSHOW));
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(5000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

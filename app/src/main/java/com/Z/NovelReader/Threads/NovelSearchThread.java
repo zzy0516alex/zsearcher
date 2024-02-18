@@ -2,12 +2,18 @@ package com.Z.NovelReader.Threads;
 
 import android.content.Context;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import android.webkit.ValueCallback;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import androidx.annotation.NonNull;
 
 import com.Z.NovelReader.Basic.BasicHandlerThread;
+import com.Z.NovelReader.NovelSearchActivity;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.Processors.BookListProcessor;
 import com.Z.NovelReader.Processors.NovelSearchProcessor;
@@ -51,7 +57,6 @@ public class NovelSearchThread extends BasicHandlerThread {
 //        sourceDBTools=new NovelSourceDBTools(context);
     }
 
-
     @Override
     public void run() {
         super.run();
@@ -63,7 +68,8 @@ public class NovelSearchThread extends BasicHandlerThread {
             connect.timeout(20000);
             connect.ignoreHttpErrors(true);
             connect.followRedirects(true);
-            connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
+            connect.userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 Edg/109.0.1518.61");
+            connect.referrer("https://www.baidu.com/");
             Document doc=null;
             if ("GET".equalsIgnoreCase(completedSearchQuery.getMethod()))doc= connect.get();
             else if ("POST".equalsIgnoreCase(completedSearchQuery.getMethod())){
@@ -74,9 +80,9 @@ public class NovelSearchThread extends BasicHandlerThread {
                 for (String header : headers) {
                     String[] key_value = header.split("=");
                     if (key_value.length>1) {
-                        byte[] bytes = key_value[1].getBytes(completedSearchQuery.getCharset());
-                        String trans = new String(bytes, completedSearchQuery.getCharset());
-                        connect.data(key_value[0], trans);
+//                        byte[] bytes = key_value[1].getBytes(completedSearchQuery.getCharset());
+//                        String trans = new String(bytes, completedSearchQuery.getCharset());
+                        connect.data(key_value[0], key_value[1]);
                     }
                     else if (header.contains("="))connect.data(key_value[0],"");
                 }
@@ -95,7 +101,6 @@ public class NovelSearchThread extends BasicHandlerThread {
             else callback(PROCESS_DONE,searchResult);
 
         }catch (SSLHandshakeException e){
-            //e.printStackTrace();
             Log.e("err",novelRequire.getBookSourceUrl() + " not trusted link: " + e.getMessage());
             report(ERROR_OCCUR);
         } catch (IOException e) {

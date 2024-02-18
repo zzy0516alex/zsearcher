@@ -91,7 +91,7 @@ public class SwitchSourceAdapter extends BaseAdapter {
         holder.tv_bookName.setText(bookName);
         holder.tv_sourceName.setText(backupSourceBean.getSourceName());
         int catalog_length = backupSourceBean.getCatalog().getSize();
-        String latestChapName = StringUtils.simplifyChapName(backupSourceBean.getCatalog().getTitle().get(catalog_length-1));
+        String latestChapName = StringUtils.simplifyChapName(backupSourceBean.getCatalog().getTitleList().get(catalog_length-1));
         String catalogInfo = String.format(Locale.CHINA,"共%d章 最新章节: %s",catalog_length, latestChapName);
         holder.tv_catalogInfo.setText(catalogInfo);
 

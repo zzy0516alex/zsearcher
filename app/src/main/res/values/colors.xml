@@ -9,15 +9,20 @@
     <color name="red">#DC143C</color>
     <color name="backgroundBlue">#C8E0F8</color>
     <color name="skyBlue">#87CEFA</color>
+    <color name="CyanShadow">#FE00FFFF</color>
     <color name="CornBlue">#6495ED</color>
     <color name="DoderBlue">#1E90FF</color>
+    <color name="transparentDoderBlue">#dd1E90FF</color>
     <color name="SelectorBlue">#2E7FE1</color>
     <color name="RoyalBlue">#4169E1</color>
+    <color name="SteelBlue">#4682B4</color>
     <color name="NavyBlue">#000080</color>
     <color name="deepBlue">#00001E</color>
     <color name="transparentDeepBlue">#dd00001E</color>
     <color name="comfortGreen">#CCE8CF</color>
     <color name="deepGreen">#759C6B</color>
+    <color name="PaleGreen">#98FB98</color>
+    <color name="downloadGreen">#3CB371</color>
     <color name="day_text">#2D4D35</color>
     <color name="night_text">#FFC8C8C8</color>
     <color name="night_background">#181818</color>
@@ -28,6 +33,22 @@
     <color name="text_gray">#DCDCDC</color>
     <color name="system_gray">#808080</color>
     <color name="disable_black">#aa000000</color>
+    <color name="select_black">#55000000</color>
+    <color name="almost_transparent">#01000000</color>
+    <!--    白色背景强对比度区分色-->
+    <color name="BlueViolet">#8A2BE2</color>
+    <color name="MediumVioletRed">#C71585</color>
+    <color name="MediumBlue">#0000CD</color>
+    <color name="DarkCyan">#008B8B</color>
+    <color name="Olive">#808000</color>
+    <color name="Peru">#CD853F</color>
+    <color name="FireBrick">#B22222</color>
+    <color name="Tomato">#FF6347</color>
+
+    <!--    较深的三原色-->
+    <color name="deep_rgy_r">#8B0000</color>
+    <color name="deep_rgy_g">#008577</color>
+    <color name="deep_rgy_y">#DAA520</color>
 
     <!-- QRCode scanner color begin -->
     <color name="viewfinder_mask">#60000000</color>

@@ -25,11 +25,12 @@ public class NovelSearchProcessor {
             if (search_detail.hasCharset())completedURL.setCharset(search_detail.getCharset());
             if (search_detail.hasMethod()){
                 completedURL.setMethod(search_detail.getMethod());
-                completedURL.setBody(search_detail.getBody().replace("{{key}}",key));
+                completedURL.setBody(search_detail.getBody());
             }
         }
-        key= URLEncoder.encode(key,completedURL.getCharset());
-        temp=s[0].replace("{{page}}","0").replace("{{key}}",key);
+        String encoded_key= URLEncoder.encode(key,completedURL.getCharset());
+        temp=s[0].replace("{{page}}","0").replace("{{key}}",encoded_key);
+        if(completedURL.hasMethod()) completedURL.setBody(completedURL.getBody().replace("{{key}}",key));//post方法会自动编码request内容，无需再次编码
         completedURL.setSearch_url(temp);
         completedURL.setId(rawURL.getId());
         completedURL.setBook_source_url(rawURL.getBook_source_url());

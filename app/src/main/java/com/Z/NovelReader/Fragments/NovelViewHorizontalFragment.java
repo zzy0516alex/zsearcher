@@ -17,7 +17,6 @@ import android.widget.RelativeLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.Z.NovelReader.Adapters.RecyclerPageAdapter;
@@ -26,9 +25,11 @@ import com.Z.NovelReader.Objects.beans.NovelContentPage;
 import com.Z.NovelReader.Objects.beans.NovelPageWindow;
 import com.Z.NovelReader.Objects.beans.NovelViewTheme;
 import com.Z.NovelReader.R;
+import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.views.Dialog.ViewerSettingDialog;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
 
@@ -108,9 +109,10 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
 
                 switch(windowType){
                     case left:case both:{
-                        if (!hasLastChap())break;
-                        NovelPageWindow left_chap = windowList.get(getChap_cache_index()-1);
-                        window_page_index = chap_page_index + left_chap.getPageNum();
+                        if (hasLastChap()) {
+                            NovelPageWindow left_chap = windowList.get(getChapCacheIndex() - 1);
+                            window_page_index = chap_page_index + left_chap.getPageNum();
+                        }
                     }
                     break;
                     case right:{
@@ -185,9 +187,17 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
                 window_page_index = position;
                 switch(windowType){
                     case left:case both:{
-                        if (!hasLastChap())break;
-                        NovelPageWindow left_chap = windowList.get(getChap_cache_index()-1);
-                        chap_page_index = position - left_chap.getPages().size();
+                        if (hasLastChap()) {
+                            try {
+                                NovelPageWindow left_chap = windowList.get(getChapCacheIndex() - 1);
+                                chap_page_index = position - left_chap.getPages().size();
+                            }
+                            catch (Exception e){
+                                FileIOUtils.WriteErrReport(e,"ViewerFragment|IndexError:"+String.format(Locale.CHINA,"%d/%d",getChapCacheIndex(),windowList.size()));
+                                NovelPageWindow left_chap = windowList.get(getChapCacheIndex() - 1);
+                                chap_page_index = position - left_chap.getPages().size();
+                            }
+                        }
                     }
                     break;
                     case right:case match:{
@@ -217,23 +227,23 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
                     int total_chap_pages = currentNovelChap.getPages().size();
 
                     if (chap_page_index == total_chap_pages){
-                        Log.d("page change","start the new chap (next)"+(getChap_cache_index()+1));
+                        Log.d("page change","start the new chap (next)"+(getChapCacheIndex()+1));
                         if (!hasNextChap())return;
-                        updateReadingChap(getChap_cache_index()+1);
-                        currentNovelChap = windowList.get(getChap_cache_index());
+                        updateReadingChap(getChapCacheIndex()+1);
+                        currentNovelChap = windowList.get(getChapCacheIndex());
                         chap_page_index = 0;
                         windowType = WindowType.left;
-                        if (isAuto_download() && getChap_cache_index()==getChapCache().size()-1)
+                        if (isAuto_download() && getChapCacheIndex()==getChapCache().size()-1)
                             NextChapDownloader(getCurrentChap());
                     }
                     if (chap_page_index == -1){
-                        Log.d("page change","start the new chap (last)"+(getChap_cache_index()-1));
+                        Log.d("page change","start the new chap (last)"+(getChapCacheIndex()-1));
                         if (!hasLastChap())return;
-                        updateReadingChap(getChap_cache_index()-1);
-                        currentNovelChap = windowList.get(getChap_cache_index());
+                        updateReadingChap(getChapCacheIndex()-1);
+                        currentNovelChap = windowList.get(getChapCacheIndex());
                         chap_page_index = currentNovelChap.getPages().size()-1;
                         windowType = WindowType.right;
-                        if (isAuto_download() && getChap_cache_index()==0)
+                        if (isAuto_download() && getChapCacheIndex()==0)
                             LastChapDownloader(getCurrentChap());
                     }
 
@@ -243,13 +253,17 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
                             Log.d("page change","also the last chap of the book!");
                             return;
                         }
-                        if (getChap_cache_index()+1 >= getChapCache().size()){
+                        if (getChapCacheIndex()+1 >= getChapCache().size()){
                             Log.d("page change","next chap not ready!");
+                            getReadingListener().waitDialogControl(true);
+                            if(!isDownloaderRunning()){
+                                NextChapDownloader(getCurrentChap());
+                            }
                             return;
                         }
                         window_page_index = chap_page_index;
                         ArrayList<NovelContentPage> temp_pages = new ArrayList<>(currentNovelChap.getPages());
-                        temp_pages.addAll(windowList.get(getChap_cache_index()+1).getPages());//single page
+                        temp_pages.addAll(windowList.get(getChapCacheIndex()+1).getPages());//single page
                         NovelPageWindow window = new NovelPageWindow();
                         window.setPages(temp_pages);window.setSingleWindow(false);
                         after_update = true;
@@ -262,11 +276,16 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
                             Log.d("page change","also the first chap of the book!");
                             return;
                         }
-                        if (getChap_cache_index()-1 < 0){
+                        if (getChapCacheIndex()-1 < 0){
                             Log.d("page change","last chap not ready!");
+                            getReadingListener().waitDialogControl(true);
+                            //若章节下载线程异常未启动，则重新启动
+                            if(!isDownloaderRunning()){
+                                LastChapDownloader(getCurrentChap());
+                            }
                             return;
                         }
-                        ArrayList<NovelContentPage> temp_pages = new ArrayList<>(windowList.get(getChap_cache_index() - 1).getPages());
+                        ArrayList<NovelContentPage> temp_pages = new ArrayList<>(windowList.get(getChapCacheIndex() - 1).getPages());
                         window_page_index += temp_pages.size();
                         temp_pages.addAll(currentNovelChap.getPages());
                         NovelPageWindow window = new NovelPageWindow();
@@ -286,15 +305,15 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
                         boolean added = false;
                         int add_in_front = 0;
                         //存在右页
-                        if (hasNextChap() && (getChap_cache_index()+1 < getChapCache().size())){
-                            ArrayList<NovelContentPage> next_pages = windowList.get(getChap_cache_index() + 1).getPages();
+                        if (hasNextChap() && (getChapCacheIndex()+1 < getChapCache().size())){
+                            ArrayList<NovelContentPage> next_pages = windowList.get(getChapCacheIndex() + 1).getPages();
                             temp_pages.addAll(next_pages);
                             added = true;
                             windowType = WindowType.right;
                         }
                         //存在左页
-                        if (hasLastChap() && (getChap_cache_index()-1 >= 0)){
-                            ArrayList<NovelContentPage> last_pages = windowList.get(getChap_cache_index() - 1).getPages();
+                        if (hasLastChap() && (getChapCacheIndex()-1 >= 0)){
+                            ArrayList<NovelContentPage> last_pages = windowList.get(getChapCacheIndex() - 1).getPages();
                             temp_pages.addAll(0,last_pages);
                             added = true;
                             add_in_front = last_pages.size();
@@ -389,15 +408,15 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
             boolean added = false;
             int add_in_front = 0;
             //存在右页
-            if (hasNextChap() && (getChap_cache_index()+1 < getChapCache().size())){
-                ArrayList<NovelContentPage> next_pages = windowList.get(getChap_cache_index() + 1).getPages();
+            if (hasNextChap() && (getChapCacheIndex()+1 < getChapCache().size())){
+                ArrayList<NovelContentPage> next_pages = windowList.get(getChapCacheIndex() + 1).getPages();
                 temp_pages.addAll(next_pages);
                 added = true;
                 windowType = WindowType.right;
             }
             //存在左页
-            if (hasLastChap() && (getChap_cache_index()-1 >= 0)){
-                ArrayList<NovelContentPage> last_pages = windowList.get(getChap_cache_index() - 1).getPages();
+            if (hasLastChap() && (getChapCacheIndex()-1 >= 0)){
+                ArrayList<NovelContentPage> last_pages = windowList.get(getChapCacheIndex() - 1).getPages();
                 temp_pages.addAll(0,last_pages);
                 added = true;
                 add_in_front = last_pages.size();
@@ -416,7 +435,7 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
             Log.d("cache init","start from the first page of a chap");
             if (hasLastChap()) {
                 ArrayList<NovelContentPage> temp_pages =
-                        new ArrayList<>(windowList.get(getChap_cache_index() - 1).getPages());
+                        new ArrayList<>(windowList.get(getChapCacheIndex() - 1).getPages());
                 window_page_index += temp_pages.size();
                 temp_pages.addAll(currentNovelChap.getPages());
                 NovelPageWindow window = new NovelPageWindow();
@@ -437,7 +456,7 @@ public class NovelViewHorizontalFragment extends NovelViewBasicFragment {
             if (hasNextChap()) {
                 window_page_index = chap_page_index;
                 ArrayList<NovelContentPage> temp_pages = new ArrayList<>(currentNovelChap.getPages());
-                temp_pages.addAll(windowList.get(getChap_cache_index() + 1).getPages());//single page
+                temp_pages.addAll(windowList.get(getChapCacheIndex() + 1).getPages());//single page
                 NovelPageWindow window = new NovelPageWindow();
                 window.setPages(temp_pages);
                 window.setSingleWindow(false);

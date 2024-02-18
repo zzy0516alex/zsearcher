@@ -2,6 +2,9 @@ package com.Z.NovelReader;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.app.Activity;
@@ -21,16 +24,16 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.Z.NovelReader.Adapters.BookshelfAdapter;
+import com.Z.NovelReader.NovelRoom.NovelDBLiveData;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
-import com.Z.NovelReader.NovelRoom.NovelDBUpdater;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
+import com.Z.NovelReader.Objects.beans.BookShelfItem;
 import com.Z.NovelReader.Service.PrepareCatalogService;
 import com.Z.NovelReader.Threads.GetCatalogThread;
 import com.Z.NovelReader.Threads.GetCoverThread;
@@ -38,44 +41,46 @@ import com.Z.NovelReader.Threads.Handlers.GetCatalogHandler;
 import com.Z.NovelReader.Threads.NovelUpdateThread;
 import com.Z.NovelReader.Utils.BitmapUtils;
 import com.Z.NovelReader.Utils.FileIOUtils;
-import com.Z.NovelReader.Utils.FileUtils;
+import com.Z.NovelReader.Utils.FileOperateUtils;
 import com.Z.NovelReader.Utils.StatusBarUtil;
 import com.Z.NovelReader.Utils.StorageUtils;
 import com.Z.NovelReader.Utils.TimeUtil;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Objects.NovelChap;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
-import com.Z.NovelReader.views.Dialog.BottomSheetDialog;
 import com.Z.NovelReader.views.Dialog.WaitDialog;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static com.Z.NovelReader.Objects.NovelChap.getCurrentChapLink;
 import static com.Z.NovelReader.Objects.NovelChap.initNovelChap;
 
 public class BookShelfActivity extends AppCompatActivity {
     //书架数据
-    private List<Bitmap> BookCover;
-    private List<String> BookName;
-    private List<Novels> AllNovelList;//所有书籍列表
+    private List<BookShelfItem> shelfItems = new ArrayList<>();//用于交互与展示的书架书籍类集合
+    private Map<Integer,Novels> NovelMap = new HashMap<>();//所有书籍以ID为索引的map
     //外部数据源
     private SharedPreferences myInfo;//用户信息存储
-    private NovelDBTools novelDBTools;//书籍信息数据库DAO
-    private NovelDBUpdater novelDBUpdater;//书籍信息数据库更新DAO
+    private NovelDBLiveData novelDBLiveData;//书籍信息数据库DAO
+    private NovelDBTools novelDBTools;//书籍信息数据库更新DAO
     private Map<Integer,NovelRequire> novelRequireMap;//书源ID-规则对应表
     private NovelSourceDBTools sourceDBTools;//书源数据库DAO
     //views
     private BookshelfAdapter adapter;//书籍grid适配器
-    private GridView bookShelf;
+    private RecyclerView bookShelf;
     private SwipeRefreshLayout swipeRefresh;
-    private Button delete;
+    private LinearLayout bottom_controller;
+    private Button btn_delete_book;
+    private Button btn_cancel_selection;
+    private Button btn_download_all;
     private WaitDialog waitDialog;
     private Window window;
     private ImageView menu;
@@ -84,13 +89,12 @@ public class BookShelfActivity extends AppCompatActivity {
     Context context;
     Activity activity;
     //线程&handler
-    private NovelUpdateThread.NovelUpdaterHandler<BookShelfActivity> updaterHandler;//目录更新线程 handler
+    private NovelUpdateThread.NovelUpdaterHandler updaterHandler;//目录更新线程 handler
     private GetCatalogHandler reloadHandler;//目录恢复 handler
     private SwipeRefreshLayout.OnRefreshListener onRefreshListener;//书籍刷新 handler
     private ExecutorService threadPool;//控制书籍更新的并发数
     //基本变量
     private Bitmap default_cover;//默认的书籍封面
-    private boolean in_select_mode =false;//是否处于多选状态
     private List<Integer> item_chosen = new ArrayList<>();//被选中书籍的索引,多选
     private boolean refresh_TimeUp=false;
     private boolean refresh_Done=false;
@@ -116,8 +120,6 @@ public class BookShelfActivity extends AppCompatActivity {
         //建立资源文件夹
         StorageUtils.createResFolders();
         //init basic params
-        BookCover=new ArrayList<>();
-        BookName=new ArrayList<>();
         context=this;
         activity=this;
         content="缓存读取失败";
@@ -125,19 +127,14 @@ public class BookShelfActivity extends AppCompatActivity {
         initDefaultCover();
         //init views
         bookShelf=findViewById(R.id.BookShelf);
-        delete=findViewById(R.id.delete);
-        delete.setVisibility(View.INVISIBLE);
-        swipeRefresh=findViewById(R.id.swipe_update);
-        menu=findViewById(R.id.menu);
-        searchBar=findViewById(R.id.search_bar);
-        searchBar.setOnClickListener(v -> {
-            Intent intent_novel_search=new Intent(BookShelfActivity.this, NovelSearchActivity.class);
-            startActivity(intent_novel_search);
-        });
+        final GridLayoutManager layoutManager = new GridLayoutManager(this, 3);
+        bookShelf.setLayoutManager(layoutManager);
+        initSearchBar();
         initMenu();
         initWaitView();
         initSwipeRefresh();
         initStatusBar();
+        initBottomController();
         //init preference
         myInfo=super.getSharedPreferences("UserInfo",MODE_PRIVATE);
         bookNum = myInfo.getInt("bookNum",0);
@@ -145,18 +142,19 @@ public class BookShelfActivity extends AppCompatActivity {
         updateTime.setTime(update_time);
 
         //init dao
-        novelDBUpdater = new NovelDBUpdater(context);
+        novelDBTools = new NovelDBTools(context);
         //init service
         initService();
 
         // init handler
-        updaterHandler =new NovelUpdateThread.NovelUpdaterHandler<>(this);
+        //updaterHandler =new NovelUpdateThread.NovelUpdaterHandler<>(this);
+        updaterHandler =new NovelUpdateThread.NovelUpdaterHandler();
         updaterHandler.setOverride(new NovelUpdateThread.NovelUpdaterHandler.NovelUpdateListener() {
             @Override
             public void handle(Message msg, int Success, int Fail) {
                 update_success=Success;
                 update_fail=Fail;
-                if (AllNovelList.size()==Success+Fail && !refresh_TimeUp){
+                if (NovelMap.size()==Success+Fail && !refresh_TimeUp){
                     if (swipeRefresh != null)swipeRefresh.setRefreshing(false);
                     String feedback = "成功：" + update_success + "\t 失败：" + update_fail;
                     Toast.makeText(context, "章节同步完成, " + feedback, Toast.LENGTH_SHORT).show();
@@ -166,7 +164,7 @@ public class BookShelfActivity extends AppCompatActivity {
 
             @Override
             public void needRecoverAll(Novels novel) {
-                novelDBUpdater.updateRecoverStatus(novel.getId(),true);
+                novelDBTools.updateRecoverStatus(novel.getId(),true);
                 service_intent.putExtra("Novel",novel);
                 service_intent.putExtra("NovelRule",novelRequireMap.get(novel.getSource()));
                 service_intent.putExtra("catalogPath",StorageUtils.getBookCatalogPath(novel.getBookName(),novel.getWriter()));
@@ -177,7 +175,8 @@ public class BookShelfActivity extends AppCompatActivity {
         reloadHandler = new GetCatalogHandler(new GetCatalogHandler.GetCatalogListener() {
             @Override
             public void onError() {
-
+                waitDialog.dismiss();
+                novelDBTools.updateSpoiledStatus(current_book.getId(),true);
             }
 
             @Override
@@ -199,31 +198,32 @@ public class BookShelfActivity extends AppCompatActivity {
         final Date current_time=TimeUtil.getCurrentTimeInDate();
 
         //init database
-        novelDBTools= new ViewModelProvider(this,ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication())).get(NovelDBTools.class);
-        novelDBTools.getAllNovelsLD().observe(this, novels -> {
-            AllNovelList=novels;
+        novelDBLiveData = new ViewModelProvider(this,ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication())).get(NovelDBLiveData.class);
+        novelDBLiveData.getAllNovelsLD().observe(this, novels -> {
             SharedPreferences.Editor editor=myInfo.edit();
             editor.putInt("bookNum",novels.size()).apply();
             bookNum=novels.size();
-            BookName.clear();
-            BookCover.clear();
+            NovelMap.clear();
+            List<BookShelfItem> newItemList = new ArrayList<>();
             for (Novels novel : novels) {
                 //检查文件夹
-                File folder = new File(StorageUtils.getBookStoragePath(novel.getBookName(),novel.getWriter()));
-                if (!folder.exists())folder.mkdirs();
+                StorageUtils.createBookFolders(novel.getBookName(),novel.getWriter());
                 //准备书架数据
-                BookName.add(novel.getBookName());
+                NovelMap.put(novel.getId(),novel);
                 Bitmap adjustedCover = getAdjustedCover(
                         StorageUtils.getBookCoverPath(novel.getBookName(), novel.getWriter()));
-                BookCover.add(adjustedCover);
+                BookShelfItem item = new BookShelfItem(novel,adjustedCover);
+                newItemList.add(item);
             }
-
-            if (adapter == null)
-                adapter=new BookshelfAdapter(BookCover,AllNovelList,context);
-            adapter.setBooks(AllNovelList);
-            adapter.setBookCovers(BookCover);
-            adapter.notifyDataSetChanged();
-            bookShelf.setAdapter(adapter);
+            if (adapter == null){
+                shelfItems = newItemList;
+                adapter=new BookshelfAdapter(context,shelfItems);
+                initViewClickListener();
+                bookShelf.setAdapter(adapter);
+            }
+            else{
+                updateAdapterByDiff(newItemList);
+            }
 
             if (TimeUtil.getDifference(updateTime,current_time,3)>=1){
                 swipeRefresh.setRefreshing(true);
@@ -238,24 +238,38 @@ public class BookShelfActivity extends AppCompatActivity {
                 novelRequireMap = (Map<Integer, NovelRequire>) object;
         });
 
-        //书架点击
-        bookShelf.setOnItemClickListener((parent, view, position, id) -> {
-            if(!in_select_mode){
+    }
+
+    private void initViewClickListener() {
+        //书架交互
+        adapter.setClickListener(v -> {
+            int position = bookShelf.getChildAdapterPosition(v);
+            if(!adapter.isSelectionMode()){
+                BookShelfItem item = adapter.getItem(position);
                 //移除更新
                 if (swipeRefresh.isRefreshing())swipeRefresh.setRefreshing(false);
                 //获取当前书本
-                current_book=AllNovelList.get(position);
+                current_book= NovelMap.get(item.getId());
+                if(current_book==null){
+                    Toast.makeText(context, "该书不存在", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 Log.d("book shelf","打开书籍："+current_book.toString());
                 if (current_book.isRecover()|| current_book.isSpoiled()){
                     Toast.makeText(context, "该书正在修复中", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 //读取章节缓存
-                content= FileIOUtils.read_line(
+                content= FileIOUtils.readContent(
                         StorageUtils.getBookContentPath(current_book.getBookName(),current_book.getWriter()));
                 //获取当前目录
-                Catalog= FileIOUtils.read_catalog(
-                        StorageUtils.getBookCatalogPath(current_book.getBookName(),current_book.getWriter()));
+                Catalog = new NovelCatalog();
+                try {
+                    Catalog= FileIOUtils.readCatalog(
+                            StorageUtils.getBookCatalogPath(current_book.getBookName(),current_book.getWriter()));
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
                 //获取当前书源规则
                 if (novelRequireMap!=null)
                     current_rule = novelRequireMap.get(current_book.getSource());
@@ -274,55 +288,33 @@ public class BookShelfActivity extends AppCompatActivity {
                 }
             }
             else {
-                if (!isItemChosen(position))item_chosen.add(position);
-                else item_chosen.remove((Integer) position);
-                adapter.updateSelectItems(item_chosen);
+                adapter.reverseSelection(position);
             }
         });
 
-        //书架长按，打开底部按钮
-        bookShelf.setOnItemLongClickListener((parent, view, position, id) -> {
-            if(!in_select_mode) {
-                item_chosen.clear();
-                item_chosen.add(position);
-                adapter.updateSelectItems(item_chosen);
-                in_select_mode = true;
-                adapter.notifyDataSetChanged();
-                delete.setVisibility(View.VISIBLE);
-            }else {
-                quitSelectMode();
+        adapter.setLongClickListener(v -> {
+            int position = bookShelf.getChildAdapterPosition(v);
+            if (!adapter.isSelectionMode()){
+                adapter.setSelectionMode(true);
+                adapter.select(position,true);
+                bottom_controller.setVisibility(View.VISIBLE);
             }
             return true;
         });
+    }
 
-        //删除按钮点击
-        delete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //remove from database
-                for (int i = 0; i < item_chosen.size(); i++) {
-                    Novels novel_remove=AllNovelList.get(item_chosen.get(i));
-                    novelDBTools.deleteNovel(novel_remove.getBookName(),novel_remove.getWriter());
-                    //删除缓存的文件
-                    File dir_to_delete=new File(StorageUtils.getBookStoragePath(novel_remove.getBookName(),novel_remove.getWriter()));
-                    FileUtils.deleteAllFiles(dir_to_delete);
-                }
-                quitSelectMode();
-            }
+    private void initSearchBar() {
+        searchBar=findViewById(R.id.search_bar);
+        searchBar.setOnClickListener(v -> {
+            Intent intent_novel_search=new Intent(BookShelfActivity.this, NovelSearchActivity.class);
+            startActivity(intent_novel_search);
         });
-
     }
 
     //退出多选模式
     private void quitSelectMode(){
-        in_select_mode = false;
-        item_chosen.clear();
-        adapter.updateSelectItems(item_chosen);
-        delete.setVisibility(View.INVISIBLE);
-    }
-
-    private boolean isItemChosen(int index){
-        return item_chosen.contains(index);
+        adapter.setSelectionMode(false);
+        bottom_controller.setVisibility(View.INVISIBLE);
     }
 
     private void initDefaultCover() {
@@ -343,14 +335,14 @@ public class BookShelfActivity extends AppCompatActivity {
             reloadHandler.setOutput(
                     StorageUtils.getBookCatalogPath(current_book.getBookName(),current_book.getWriter()));
             for (int i=0;i<catalog_links.size();i++) {
-                GetCatalogThread catalogThread = new GetCatalogThread(catalog_links.get(i),current_rule,i);
+                GetCatalogThread catalogThread = new GetCatalogThread(catalog_links.get(i),current_rule,current_book,i);
                 catalogThread.setHandler(reloadHandler);
                 catalog_thread_pool.execute(catalogThread);
             }
         }else {
             Toast.makeText(context, "目录文件缺失,启动自动修复", Toast.LENGTH_SHORT).show();
-            novelDBUpdater.updateRecoverStatus(current_book.getId(),true);
-            adapter.notifyDataSetChanged();
+            novelDBTools.updateRecoverStatus(current_book.getId(),true);
+            //adapter.notifyDataSetChanged();
             service_intent.putExtra("Novel",current_book);
             service_intent.putExtra("NovelRule",novelRequireMap.get(current_book.getSource()));
             service_intent.putExtra("catalogPath",StorageUtils.getBookCatalogPath(current_book.getBookName(),current_book.getWriter()));
@@ -361,7 +353,7 @@ public class BookShelfActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (in_select_mode){
+        if (adapter!=null && adapter.isSelectionMode()){
             quitSelectMode();
         }else super.onBackPressed();
     }
@@ -381,6 +373,7 @@ public class BookShelfActivity extends AppCompatActivity {
     }
 
     private void initMenu() {
+        menu=findViewById(R.id.menu);
         menu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -396,28 +389,54 @@ public class BookShelfActivity extends AppCompatActivity {
         StatusBarUtil.setStatusBarDarkTheme(this,false);
     }
 
+    private void initBottomController(){
+        bottom_controller = findViewById(R.id.bookshelf_bottom_control);
+        bottom_controller.setVisibility(View.INVISIBLE);
+        btn_delete_book =findViewById(R.id.bookshelf_delete);
+        btn_cancel_selection =findViewById(R.id.bookshelf_cancel);
+        //删除按钮点击
+        btn_delete_book.setOnClickListener(v -> {
+            //remove from database
+            for (BookShelfItem item:adapter.getAllSelectedItem()) {
+                novelDBTools.deleteNovelByShelfHash(item.getHash());
+                //删除缓存的文件
+                File dir_to_delete=new File(StorageUtils.getBookStoragePath(item.getBookName(),item.getWriter()));
+                FileOperateUtils.deleteAllFiles(dir_to_delete);
+            }
+        });
+        //取消按钮点击(通过系统返回按钮亦可退出)
+        btn_cancel_selection.setOnClickListener(v -> {
+            quitSelectMode();
+        });
+    }
+
     //初始化下拉刷新功能
     private void initSwipeRefresh() {
+        swipeRefresh=findViewById(R.id.swipe_update);
         onRefreshListener = () -> {
             Date current_time= TimeUtil.getCurrentTimeInDate();
-            if (TimeUtil.getDifference(updateTime,current_time,0)>2 && AllNovelList.size()!=0) {
+            if (TimeUtil.getDifference(updateTime,current_time,0)>2 && NovelMap.size()!=0) {
                 updaterHandler.clearCounter();
                 updateTime=current_time;
                 Log.d("book shelf refresh","start update");
                 //update catalog
-                for (Novels novel : AllNovelList) {
+                for (Novels novel : NovelMap.values()) {
                     if (novel.isRecover())
-                        novelDBUpdater.updateRecoverStatus(novel.getId(),false);
+                        novelDBTools.updateRecoverStatus(novel.getId(),false);
                     if (novel.isSpoiled())
-                        novelDBUpdater.updateSpoiledStatus(novel.getId(),false);
+                        novelDBTools.updateSpoiledStatus(novel.getId(),false);
                     update_catalog(novel);
                 }
                 //check book cover
-                recover_BookCover();
+                try {
+                    recover_BookCover();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
                 refresh_TimeUp=false;
                 timerStart(10000);
-            }else if (AllNovelList.size()==0){
+            }else if (NovelMap.size()==0){
                 Toast.makeText(context, "当前书架没有书籍，可以搜索看看", Toast.LENGTH_SHORT).show();
                 swipeRefresh.setRefreshing(false);
             }
@@ -430,33 +449,41 @@ public class BookShelfActivity extends AppCompatActivity {
     }
 
     //若书籍封面未加载则尝试修复
-    private void recover_BookCover() {
-        for (int i = 0; i < BookCover.size(); i++) {
-            if (BookCover.get(i)==default_cover){
+    private void recover_BookCover() throws Exception {
+        List<BookShelfItem> newShelfItems = new ArrayList<>();
+        for (int i = 0; i < shelfItems.size(); i++) {
+            BookShelfItem current_item = (BookShelfItem) shelfItems.get(i).clone();
+            if (current_item.getBookCover() == default_cover){
                 //check file
-                //String book_name=BookName.get(i);
-                Novels current_novel = AllNovelList.get(i);
-                File pic=new File(StorageUtils.getBookCoverPath(current_novel.getBookName(),current_novel.getWriter()));
+                File pic = new File(StorageUtils.getBookCoverPath(current_item.getBookName(),current_item.getWriter()));
                 if (pic.exists()){
                     //update cover from file storage
                     Bitmap cover = getAdjustedCover(
-                            StorageUtils.getBookCoverPath(current_novel.getBookName(),current_novel.getWriter()));
-                    BookCover.set(i,cover);
-                    adapter.setBookCovers(BookCover);
-                    adapter.notifyDataSetChanged();
+                            StorageUtils.getBookCoverPath(current_item.getBookName(),current_item.getWriter()));
+                    current_item.setBookCover(cover);
+
                 }else if (novelRequireMap!=null){
                     //update cover from internet
-                    Novels novel = AllNovelList.get(i);
+                    Novels novel = NovelMap.get(current_item.getId());
                     NovelRequire novelRequire = novelRequireMap.get(novel.getSource());
                     if (novelRequire!=null) {
-                        String output_path = StorageUtils.getBookCoverPath(current_novel.getBookName(),current_novel.getWriter());
+                        String output_path = StorageUtils.getBookCoverPath(current_item.getBookName(),current_item.getWriter());
                         GetCoverThread update_cover_thread = new GetCoverThread(novel,novelRequire,output_path);
                         update_cover_thread.start();
                     }
                 }
-
+                newShelfItems.add(current_item);
             }
+            else newShelfItems.add(current_item);
         }
+        updateAdapterByDiff(newShelfItems);
+    }
+
+    private void updateAdapterByDiff(List<BookShelfItem> newShelfItems) {
+        DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new BookShelfItem.BookShelfItemDiff(shelfItems, newShelfItems), false);
+        adapter.setItems(newShelfItems);
+        diff.dispatchUpdatesTo(adapter);
+        shelfItems = newShelfItems;
     }
 
     /**
@@ -475,7 +502,7 @@ public class BookShelfActivity extends AppCompatActivity {
                 if (!refresh_Done) {
                     refresh_TimeUp=true;
                     if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
-                    int time_out = AllNovelList.size() - update_fail - update_success;
+                    int time_out = NovelMap.size() - update_fail - update_success;
                     String feedback = "成功：" + update_success + "\t 失败：" + update_fail + "\t 超时：" + time_out;
                     Toast.makeText(context, "章节同步完成, " + feedback, Toast.LENGTH_SHORT).show();
                 }
@@ -529,7 +556,7 @@ public class BookShelfActivity extends AppCompatActivity {
                 service.setListener(new PrepareCatalogService.CatalogServiceListener() {
                     @Override
                     public void onError(String info,Novels target) {
-                        novelDBUpdater.updateSpoiledStatus(target.getId(),true);
+                        novelDBTools.updateSpoiledStatus(target.getId(),true);
                         runOnUiThread(() -> {
                             //todo adapter updata disable list
                             Toast.makeText(context, "目录修复失败:"+info, Toast.LENGTH_SHORT).show();
@@ -546,7 +573,7 @@ public class BookShelfActivity extends AppCompatActivity {
 
                     @Override
                     public void onAllProcessDone(Novels novel) {
-                        novelDBUpdater.updateRecoverStatus(novel.getId(),false);
+                        novelDBTools.updateRecoverStatus(novel.getId(),false);
                         runOnUiThread(() -> {
                             Toast.makeText(context, "目录修复成功", Toast.LENGTH_SHORT).show();
                         });

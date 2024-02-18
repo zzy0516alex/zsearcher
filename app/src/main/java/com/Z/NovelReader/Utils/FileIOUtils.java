@@ -7,23 +7,51 @@ import android.util.Log;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class FileIOUtils {
 
 
+    public static NovelCatalog readCatalog(String catalog_path) throws FileNotFoundException {
+        File csvFile = new File(catalog_path);
+        // 如果文件不存在
+        if (!csvFile.exists()) throw new FileNotFoundException();
+        NovelCatalog catalog = new NovelCatalog();
+        // 将流写在try里面，当try执行完之后，流会自动关闭
+        try (InputStream inputStream = Files.newInputStream(csvFile.toPath());
+             InputStreamReader fileReader = new InputStreamReader(inputStream);
+             BufferedReader buffReader = new BufferedReader(fileReader)) {
+            String line;
+            while ((line = buffReader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if(parts.length<3)throw new RuntimeException("目录文件格式不正确");
+                NovelCatalog.CatalogItem item = new NovelCatalog.CatalogItem();
+                item.Title = parts[0];
+                item.Link = parts[1];
+                item.isDownloaded = Boolean.parseBoolean(parts[2]);//"true"
+                catalog.add(item);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return catalog;
+    }
     /**
      * 从目录文件读取目录链接
      * @param catalog_path 目录文件地址
@@ -33,7 +61,6 @@ public class FileIOUtils {
         File txtDir=new File(catalog_path);
         FileInputStream fis=null;
         int counter=0;
-        HashMap<String,ArrayList<String>> result=new HashMap<>();
         ArrayList<String> ChapName = new ArrayList<>();
         ArrayList<String> ChapLink = new ArrayList<>();
         try {
@@ -81,7 +108,7 @@ public class FileIOUtils {
      * @param content_path ="/ZsearchRes/BookReserve/$book name$/content.txt"
      * @return 文本
      */
-    public static String read_line(String content_path){
+    public static String readContent(String content_path){
         File txtDir=new File(content_path);
         FileInputStream fis=null;
         StringBuilder sb = new StringBuilder("");
@@ -113,27 +140,63 @@ public class FileIOUtils {
     }
 
     /**
+     * 读取文本文件内容，不定后缀(按字节数组读取)
+     * @param file_path 路径
+     * @return 读取的内容
+     */
+    public static String readTextFile(String file_path){
+        File file=new File(file_path);
+        if(!file.exists())return "";
+        try {
+            FileInputStream inputStream = new FileInputStream(file);
+            ByteArrayOutputStream result = new ByteArrayOutputStream();
+            byte[] buff = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buff)) != -1) {
+                result.write(buff, 0, length);
+            }
+            return result.toString(StandardCharsets.UTF_8.name());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    /**
      * 写入章节内容
      * @param path 章节文件地址 /$book reserve$/$book name$/content.txt
      * @param content 内容
      */
-    public static void WriteTXT(String path,String content){
+    public static void writeContent(String path, String content){
         File mk_txt=new File(path);
-        writeToFile(content, mk_txt,false);
+        writeTextFile(content, mk_txt,false);
     }
 
     /**
-     * 输出到TXT
+     * 普通文本文件输出(覆盖)
      * @param content 内容
-     * @param mk_txt 文件名
+     * @param file_path 路径
+     */
+    public static void writeTextFile(String content, String file_path){
+        File file = new File(file_path);
+        writeTextFile(content,file,false);
+    }
+
+    /**
+     * 输出到文本文件
+     * @param content 内容
+     * @param file 文件名
      * @param append 是否追加
      */
-    private static void writeToFile(String content, File mk_txt,boolean append) {
+    public static void writeTextFile(String content, File file, boolean append) {
         FileOutputStream fot = null;
         try {
-            fot = new FileOutputStream(mk_txt,append);
+            fot = new FileOutputStream(file,append);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            return;
         }
         try {
             fot.write(content.getBytes());
@@ -144,12 +207,10 @@ public class FileIOUtils {
             e.printStackTrace();
             Log.e("write file","地址不存在");
         } finally {
-            if (fot != null) {
-                try {
-                    fot.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            try {
+                fot.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -161,16 +222,29 @@ public class FileIOUtils {
      */
     public synchronized static void WriteCatalog(String catalog_path,NovelCatalog novelCatalog){
         StringBuilder content=new StringBuilder();
-        for (int i = 0; i < novelCatalog.getLink().size(); i++) {
-            content.append(novelCatalog.getTitle().get(i));
+        for (int i = 0; i < novelCatalog.getLinkList().size(); i++) {
+            content.append(novelCatalog.getTitleList().get(i));
             content.append('\n');
-            content.append(novelCatalog.getLink().get(i));
+            content.append(novelCatalog.getLinkList().get(i));
             if(i!=novelCatalog.getSize()-1)content.append('\n');
         }
         String content_string=content.toString();
         File mk_txt=new File(catalog_path);
-        writeToFile(content_string, mk_txt,false);
+        writeTextFile(content_string, mk_txt,false);
 
+    }
+
+    public synchronized static void writeCatalog(String catalog_path,NovelCatalog novelCatalog){
+        StringBuilder all_catalog = new StringBuilder();
+        for (int i = 0; i < novelCatalog.getSize(); i++) {
+            NovelCatalog.CatalogItem catalogItem = novelCatalog.get(i);
+            if(catalogItem.Title.contains(","))
+                catalogItem.Title = catalogItem.Title.replace(",","，");//防止影响csv识别
+            all_catalog.append(String.format(Locale.CHINA,"%s,%s,%b",catalogItem.Title,catalogItem.Link,catalogItem.isDownloaded))
+            .append('\r').append('\n');
+        }
+        File mk_csv = new File(catalog_path);
+        writeTextFile(all_catalog.toString(),mk_csv,false);
     }
 
     /**
@@ -186,7 +260,7 @@ public class FileIOUtils {
         }
         String content_string=content.toString();
         File mk_txt=new File(list_path);
-        writeToFile(content_string, mk_txt,append);
+        writeTextFile(content_string, mk_txt,append);
         Log.d("file io utils","已输出链接到文件");
     }
 
@@ -268,7 +342,7 @@ public class FileIOUtils {
         printWriter.close();
         stringBuilder.append(writer.toString());
         stringBuilder.append("-----------------------------------\n");
-        writeToFile(stringBuilder.toString(), mk_txt,true);
+        writeTextFile(stringBuilder.toString(), mk_txt,true);
     }
 
     public static List<String> read_list(File file){

@@ -2,18 +2,13 @@ package com.Z.NovelReader;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,7 +19,6 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.webkit.SslErrorHandler;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -35,14 +29,14 @@ import android.widget.Toast;
 
 import com.Z.NovelReader.Basic.BasicUpdaterBroadcast;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
-import com.Z.NovelReader.NovelRoom.NovelDBUpdater;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
+import com.Z.NovelReader.Processors.OpenEntities.CustomDataHolder;
 import com.Z.NovelReader.Service.AlterSourceService;
 import com.Z.NovelReader.Threads.ContentThread;
 import com.Z.NovelReader.Threads.GetCoverThread;
 import com.Z.NovelReader.Utils.FileIOUtils;
-import com.Z.NovelReader.Utils.FileUtils;
+import com.Z.NovelReader.Utils.FileOperateUtils;
 import com.Z.NovelReader.Utils.StorageUtils;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
@@ -51,6 +45,7 @@ import com.Z.NovelReader.Objects.beans.NovelSearchBean;
 import com.Z.NovelReader.views.Dialog.SweetDialog.SweetAlertDialog;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.List;
 
 import static java.lang.Thread.sleep;
@@ -113,8 +108,8 @@ public class NovelShowAcitivity extends AppCompatActivity {
         NovelCatalog currentChap= (NovelCatalog) bundle.getSerializable("currentChap");
         NovelSearchBean currentBook= (NovelSearchBean) bundle.getSerializable("currentBook");
         if (currentChap!=null && currentBook!=null) {
-            currentURL = currentChap.getLink().get(0);
-            currentTitle = currentChap.getTitle().get(0);
+            currentURL = currentChap.getLinkList().get(0);
+            currentTitle = currentChap.getTitleList().get(0);
             catalogUrl = currentBook.getBookCatalogLink();
             infoUrl = currentBook.getBookInfoLink();
             sourceID = currentBook.getSource();
@@ -130,7 +125,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
 
         //get book source
         sourceDBTools=new NovelSourceDBTools(context);
-        sourceDBTools.getNovelRequireById(sourceID, object -> novelRequire = (NovelRequire) object);
+        sourceDBTools.getNovelRequireById(sourceID, false, object -> novelRequire = (NovelRequire) object);
 
         //get view
         webView=findViewById(R.id.novelpage);
@@ -147,15 +142,7 @@ public class NovelShowAcitivity extends AppCompatActivity {
         myProgress=myInfo.getInt("Progress",10);
 
         //get database
-        novelDBTools= new ViewModelProvider(this,ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication()))
-                .get(NovelDBTools.class);
-        novelDBTools.getAllNovelsLD().observe(this, new Observer<List<Novels>>() {
-            @Override
-            public void onChanged(List<Novels> novels) {
-                SharedPreferences.Editor editor=myInfo.edit();
-                editor.putInt("bookNum",novels.size()).apply();
-            }
-        });
+        novelDBTools = new NovelDBTools(context);
 
         //initiate button
         next.setEnabled(false);
@@ -318,8 +305,6 @@ public class NovelShowAcitivity extends AppCompatActivity {
             webView.reload();
         });
 
-        //debug ContentTextThread t=new ContentTextThread(url,BookName,getExternalFilesDir(null));t.start();
-
     }
 
     private void registerCatalogBroadcast() {
@@ -426,7 +411,16 @@ public class NovelShowAcitivity extends AppCompatActivity {
         Novels novel = new Novels(BookName,writer,ttlChap,currentChap,catalogUrl,infoUrl,sourceID);
         novel.setUsed(true);
         novel.setProgress(Novels.DEFAULT_PROGRESS);
-        novelDBTools.insertNovels(novel);
+        novel.autoSetShelfHash();
+        novelDBTools.insertNovels(result -> {
+            //绑定书籍数据
+            if(CustomDataHolder.tempParam!=null && CustomDataHolder.tempParam.getSourceID() != sourceID){
+                Toast.makeText(context, "临时书籍数据出错，添加失败", Toast.LENGTH_SHORT).show();return;
+            }
+            CustomDataHolder.tempParam.setNovelID(result.getId());
+            novelDBTools.operateNovelParams(NovelDBTools.DBMethods.Insert,CustomDataHolder.tempParam);
+            CustomDataHolder.tempParam = null;
+        }, novel);
         //启动换源服务
         Intent alter_source_intent = new Intent(NovelShowAcitivity.this, AlterSourceService.class);
         alter_source_intent.putExtra("Novel",novel);
@@ -441,14 +435,14 @@ public class NovelShowAcitivity extends AppCompatActivity {
         GetCoverThread thread_cover = new GetCoverThread(novel,novelRequire,output_path);
         thread_cover.start();
         //获取当前章节文本
-        ContentThread thread_content = new ContentThread(currentURL,novelRequire,contentRootUrl);
+        ContentThread thread_content = new ContentThread(currentURL,novelRequire, novel,contentRootUrl);
         thread_content.setCatalogLinks(ChapLinkList);
-        thread_content.setOutputParams(StorageUtils.getBookContentPath(BookName,writer));
-        thread_content.setUpdateRootURL(novel,context);
+        thread_content.setOutputToCache(StorageUtils.getBookContentPath(BookName,writer));
+        thread_content.setUpdateRootURL(context);
         thread_content.start();
         //通过复制获取目录
-        FileUtils.copyFile(StorageUtils.getTempCatalogPath(),StorageUtils.getBookCatalogLinkPath(BookName,writer));
-        FileUtils.copyFile(StorageUtils.getTempCatalogLinkPath(),StorageUtils.getBookCatalogLinkPath(BookName,writer));
+        FileOperateUtils.copyFile(StorageUtils.getTempCatalogPath(),StorageUtils.getBookCatalogPath(BookName,writer));
+        FileOperateUtils.copyFile(StorageUtils.getTempCatalogLinkPath(),StorageUtils.getBookCatalogLinkPath(BookName,writer));
 
         Toast.makeText(NovelShowAcitivity.this, "已放入书架", Toast.LENGTH_SHORT).show();
     }
@@ -460,10 +454,17 @@ public class NovelShowAcitivity extends AppCompatActivity {
     public void getCatalog() {
         Log.d("novel show","收到广播，开始初始化目录");
         //读取临时保存的目录
-        NovelCatalog result_back = FileIOUtils.read_catalog(StorageUtils.getTempCatalogPath());
+        NovelCatalog result_back = null;
+        try {
+            result_back = FileIOUtils.readCatalog(StorageUtils.getTempCatalogPath());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "目录读取失败", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (!result_back.isEmpty()) {
-            ChapList = result_back.getTitle();
-            ChapLinkList = result_back.getLink();
+            ChapList = result_back.getTitleList();
+            ChapLinkList = result_back.getLinkList();
             ttlChap = ChapList.size();
 
             if (ttlChap > 1)contentRootUrl = StringUtils.getSharedURL(

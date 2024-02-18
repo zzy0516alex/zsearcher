@@ -31,8 +31,8 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.Z.NovelReader.Adapters.NovelSearchListAdapter;
-import com.Z.NovelReader.Adapters.SortModeSelectAdapter;
 import com.Z.NovelReader.Basic.BasicHandler;
+import com.Z.NovelReader.NovelRoom.NovelDBLiveData;
 import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
@@ -51,8 +51,9 @@ import com.Z.NovelReader.Objects.NovelSearchResult;
 import com.Z.NovelReader.Objects.beans.SearchQuery;
 import com.Z.NovelReader.views.Dialog.WaitDialog;
 import com.Z.NovelReader.views.LayoutAnimationHelper;
-import com.Z.NovelReader.views.SearchResultSortSelector;
+import com.Z.NovelReader.views.PopupWindow.SearchResultSortSelector;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -381,7 +382,7 @@ public class NovelSearchActivity extends AppCompatActivity {
                         public void onSearchFinish(int total_num, int num_no_internet, int num_not_found) {
                             if (loadView.getVisibility()!=View.GONE)
                                 loadView.setVisibility(View.GONE);
-                            Log.d("Novel Search", "onSearchFinish: not found "+num_not_found);
+                            Log.d("Novel Search", "onSearchFinish: not found num = "+num_not_found);
                             search_key.setCursorVisible(true);
                             novelSearchHandler.clearAllCounters();
                             if (num_not_found==total_num)
@@ -520,7 +521,7 @@ public class NovelSearchActivity extends AppCompatActivity {
             if (tocUrl!=null && !"".equals(tocUrl)){
                 //存在目录页，获取其链接
                 CatalogURLThread catalogURLThread = new CatalogURLThread(current_book.getBookInfoLink(),
-                        current_novelRequire);
+                        current_novelRequire, null);
                 catalogURLThread.setHandler(catalogUrl_Handler);
                 catalogURLThread.start();
             }else {
@@ -533,9 +534,8 @@ public class NovelSearchActivity extends AppCompatActivity {
 
     //跳转至novelshow界面
     private void launchNovelShow(final NovelCatalog newChapter) {
-        NovelDBTools novelDBTools= new ViewModelProvider(this,ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication()))
-                .get(NovelDBTools.class);
-        novelDBTools.findSameBook(current_book.getBookNameWithoutWriter(), current_book.getWriter(),
+        NovelDBTools novelDBTools = new NovelDBTools(context);
+        novelDBTools.queryNovelsByNameAndWriter(current_book.getBookNameWithoutWriter(), current_book.getWriter(),
                 novels -> {
                     //判断所点击的书籍是否已在书架内
                     if (novels.size()!=0){
@@ -543,11 +543,18 @@ public class NovelSearchActivity extends AppCompatActivity {
                         Toast.makeText(context, "该书已在书架内，自动转到书架阅读页", Toast.LENGTH_SHORT).show();
                         Novels current_book = novels.get(0);
                         //读取章节缓存
-                        String content= FileIOUtils.read_line(
+                        String content= FileIOUtils.readContent(
                                 StorageUtils.getBookContentPath(current_book.getBookName(),current_book.getWriter()));
                         //获取当前目录
-                        NovelCatalog catalog= FileIOUtils.read_catalog(
-                                StorageUtils.getBookCatalogPath(current_book.getBookName(),current_book.getWriter()));
+                        NovelCatalog catalog= null;
+                        try {
+                            catalog = FileIOUtils.readCatalog(
+                                    StorageUtils.getBookCatalogPath(current_book.getBookName(),current_book.getWriter()));
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                            Toast.makeText(context, "书籍目录丢失", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
                         //获取当前书源规则
                         NovelRequire current_rule = null;
                         if (novelRequireMap!=null)

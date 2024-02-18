@@ -7,16 +7,13 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.Z.NovelReader.Basic.BasicHandlerThread;
-import com.Z.NovelReader.Global.MyApplication;
 import com.Z.NovelReader.NovelSourceRoom.NovelSourceDBTools;
 import com.Z.NovelReader.Objects.MapElement;
-import com.Z.NovelReader.Objects.NovelChap;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.Utils.FileIOUtils;
 
 import java.util.HashMap;
-import java.util.Locale;
 
 public class GetCatalogHandler extends Handler {
     private int count =0;
@@ -50,10 +47,6 @@ public class GetCatalogHandler extends Handler {
         this.rule = novelRequire;
     }
 
-    /**
-     * 设置输出路径
-     * @param output_path ="$extDir$/ZsearchRes/$book name$/catalog.txt"
-     */
     public void setOutput(String output_path){
         this.catalog_path = output_path;
         need_output = true;
@@ -73,8 +66,7 @@ public class GetCatalogHandler extends Handler {
                     Log.d("updateSourceRespondTime", "rs time: "+uniRespondTime);
                 }
                 NovelCatalog currentChap = new NovelCatalog();
-                currentChap.add(catalog.getTitle().get(0),
-                        catalog.getLink().get(0));
+                currentChap.add(catalog.get(0));
                 listener.onFirstChapReady(currentChap);
             }
         }
@@ -88,10 +80,10 @@ public class GetCatalogHandler extends Handler {
             if (count == total_count && no_error){
                 //join catalog
                 for (int i = 0; i < subCatalogs.size(); i++) {
-                    generalCatalog.addCatalog(subCatalogs.get(i));
+                    generalCatalog.addAll(subCatalogs.get(i));
                 }
                 Log.d("CatalogHandler","process done in thread"+Thread.currentThread());
-                if (need_output)FileIOUtils.WriteCatalog(catalog_path,generalCatalog);
+                if (need_output)FileIOUtils.writeCatalog(catalog_path,generalCatalog);
                 listener.onAllProcessDone(generalCatalog);
             }
         }

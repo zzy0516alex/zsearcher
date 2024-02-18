@@ -1,30 +1,27 @@
 package com.Z.NovelReader.Processors;
 
+import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Objects.beans.NovelContentBean;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 import com.Z.NovelReader.Objects.beans.ruleContent;
 import com.Z.NovelReader.Processors.Analyzers.MainAnalyzer;
 import com.Z.NovelReader.Processors.Exceptions.RuleProcessorException;
+import com.Z.NovelReader.Processors.InnerEntities.AnalyseResult;
 import com.Z.NovelReader.Utils.StringUtils;
 
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-import org.mozilla.javascript.tools.jsc.Main;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class ContentProcessor {
 
-    public static NovelContentBean getNovelContent(Document document, NovelRequire novelRequire,String root_url) throws Exception {
+    public static NovelContentBean getNovelContent(Document document, @NotNull NovelRequire novelRequire, Novels novel, String root_url) throws Exception {
+        JavaScriptEngine engine = new JavaScriptEngine(novelRequire, novel);
+
         ruleContent content_rule = novelRequire.getRuleContent();
 
         MainAnalyzer contentAnalyzer = new MainAnalyzer();
+        contentAnalyzer.setEngine(engine);
         AnalyseResult content_result = contentAnalyzer.analyze(document, content_rule.getContent());
-//        NovelRuleAnalyzer contentAnalyzer=new NovelRuleAnalyzer();
-//        contentAnalyzer.isContent(true);
-//        List<String> content_list = contentAnalyzer.getObjectFromElements(new Elements(document),
-//                novelRequire.getRuleContent().getContent());
 
         NovelContentBean contentBean = new NovelContentBean();
         String content = content_result.asString();
@@ -34,18 +31,11 @@ public class ContentProcessor {
         String next_page_rule = content_rule.getNextContentUrl();
         if (next_page_rule!=null && !"".equals(next_page_rule)) {
             MainAnalyzer nextPageUrlAnalyzer = new MainAnalyzer();
+            nextPageUrlAnalyzer.setEngine(engine);
             AnalyseResult nextPageResult = nextPageUrlAnalyzer.analyze(document, next_page_rule);
-//            NovelRuleAnalyzer nextPageAnalyzer = new NovelRuleAnalyzer();
-//            List<String> nextPage_list = nextPageAnalyzer.getObjectFromElements(new Elements(document), next_page_rule);
-//            ArrayList<Elements> next_page_trigger = nextPageAnalyzer.getSelected_elements();
             if (!"".equals(nextPageResult.asString())) {
                 String url = StringUtils.completeUrl(nextPageResult.asString(), root_url);
                 contentBean.setNextPageURL(url);
-//                if (!"".equals(nextPage_list.get(0))) {
-//                    String url = StringUtils.completeUrl(nextPage_list.get(0), root_url);
-//                    contentBean.setNextPageURL(url);
-//                    contentBean.setTriggerName(next_page_trigger.get(0).text());
-//                }
             }
         }
 
@@ -53,10 +43,6 @@ public class ContentProcessor {
         if (replacement_rule!=null && !"".equals(replacement_rule)) {
             MainAnalyzer contentReplaceAnalyzer = new MainAnalyzer();
             AnalyseResult content_replaced_result = contentReplaceAnalyzer.analyze(content_result, replacement_rule);
-//            ElementBean bean = new ElementBean();
-//            NovelRuleAnalyzer replacementAnalyzer = new NovelRuleAnalyzer();
-//            replacementAnalyzer.getContentReplacement(bean,replacement_rule);
-//            String replacedContent = replacementAnalyzer.getReplacedItem(bean, contentBean.getContent());
             contentBean.setContent(content_replaced_result.asString());
         }
         //去空行优化

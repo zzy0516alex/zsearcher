@@ -7,11 +7,10 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.Z.NovelReader.Basic.BasicHandlerThread;
+import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Objects.MapElement;
 import com.Z.NovelReader.Processors.CommonUrlProcessor;
 import com.Z.NovelReader.Processors.JavaScriptEngine;
-import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
-import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 
 import org.jsoup.Connection;
@@ -30,11 +29,13 @@ public class CatalogURLThread extends BasicHandlerThread {
     private String bookInfoLink;
     private String bookCatalogLink;
     private NovelRequire novelRequire;
+    private Novels novel;
     private Document document;
 
-    public CatalogURLThread(String bookInfoLink, NovelRequire novelRequire) {
+    public CatalogURLThread(String bookInfoLink, NovelRequire novelRequire, Novels novel) {
         this.bookInfoLink = bookInfoLink;
         this.novelRequire = novelRequire;
+        this.novel = novel;
     }
 
 
@@ -45,11 +46,7 @@ public class CatalogURLThread extends BasicHandlerThread {
             Connection connect = Jsoup.connect(bookInfoLink);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
             document = connect.get();
-//            NovelRuleAnalyzer catalogUrlAnalyzer=new NovelRuleAnalyzer();
-//            catalogUrlAnalyzer.setEngine(createJsEngine());
-//            List<String> urls = catalogUrlAnalyzer.getObjectFromElements(new Elements(document),
-//                    novelRequire.getRuleBookInfo().getTocUrl());
-            String catalog_url = CommonUrlProcessor.getUrl(document, novelRequire, novelRequire.getRuleBookInfo().getTocUrl());
+            String catalog_url = CommonUrlProcessor.getUrl(document, novelRequire, novel, novelRequire.getRuleBookInfo().getTocUrl());
             if (catalog_url!=null) {
                 bookCatalogLink = catalog_url;
                 Log.d("catalog url thread","目录链接："+bookCatalogLink);
@@ -66,13 +63,6 @@ public class CatalogURLThread extends BasicHandlerThread {
             report(PROCESSOR_ERROR);
         }
 
-    }
-
-    public JavaScriptEngine createJsEngine(){
-        JavaScriptEngine engine = new JavaScriptEngine(novelRequire);
-        engine.preDefine("baseUrl",bookInfoLink);
-        engine.preDefine("result",document.toString());
-        return engine;
     }
 
     public static class CatalogUrlHandler extends Handler{

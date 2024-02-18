@@ -1,45 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <ImageButton
-        android:layout_marginTop="20dp"
-        android:layout_marginStart="20dp"
+    <RelativeLayout
+        android:id="@+id/novel_source_start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@mipmap/more_info"
-        android:background="#00000000"
-        android:id="@+id/more_info"
-        android:layout_centerVertical="true"/>
-    <TextView
-        android:layout_marginTop="20dp"
-        android:id="@+id/novel_source_name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/more_info"
-        android:layout_marginStart="6dp"
-        android:layout_centerVertical="true"
-        android:text="书源1"
-        android:textColor="@color/black"
-        android:textSize="20sp"/>
-    <ImageButton
-        android:id="@+id/novel_source_delete"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="25dp"
-        android:src="@mipmap/delete_icon"
-        android:background="#00000000"/>
+        android:layout_centerVertical="true">
 
-    <com.suke.widget.SwitchButton
-        android:id="@+id/novel_source_enable"
-        android:layout_width="45dp"
-        android:layout_height="27dp"
-        android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
+        <ImageButton
+            android:id="@+id/more_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="20dp"
+            android:background="#00000000"
+            android:src="@drawable/show_info" />
+    </RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/novel_source_body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/novel_source_start"
+        android:layout_toStartOf="@+id/novel_source_end"
+        android:layout_marginStart="6dp"
+        android:layout_marginVertical="10dp">
+        <RelativeLayout
+            android:id="@+id/novel_source_body_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/novel_source_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="书源1"
+                android:textColor="@color/black"
+                android:textSize="20sp"/>
+            <TextView
+                android:id="@+id/novel_source_res_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/novel_source_name"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="5dp"
+                android:text=""
+                android:textColor="@color/deep_rgy_g"
+                android:textSize="12sp" />
+        </RelativeLayout>
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/novel_source_tag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/novel_source_body_top"
+            android:layout_marginTop="5dp"
+            app:flexWrap="wrap"
+            app:flexDirection="row" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/novel_source_end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginEnd="20dp"
-        app:sb_checked_color="@color/DoderBlue"
-        app:sb_show_indicator="false" />
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true">
+        <ImageButton
+            android:id="@+id/novel_source_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/icon_delete"
+            android:layout_alignEnd="@id/novel_source_enable"
+            android:background="#00000000"/>
+
+        <com.kyleduo.switchbutton.SwitchButton
+            android:id="@+id/novel_source_enable"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:kswThumbHeight="18dp"
+            app:kswThumbRangeRatio="2"
+            app:kswThumbWidth="18dp"
+            app:kswThumbDrawable="@drawable/swbtn_thumb_white"
+            app:kswBackDrawable="@drawable/swbtn_background_blue"
+            tools:ignore="RelativeOverlap" />
+    </RelativeLayout>
+
 </RelativeLayout>

@@ -1,11 +1,16 @@
 package com.Z.NovelReader.Processors;
 
+import com.Z.NovelReader.Global.MyApplication;
+import com.Z.NovelReader.NovelRoom.NovelDBTools;
+import com.Z.NovelReader.NovelRoom.NovelParams;
+import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
-import com.Z.NovelReader.Utils.StringUtils;
+import com.Z.NovelReader.Processors.OpenEntities.CustomDataHolder;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
@@ -13,33 +18,28 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class JavaScriptEngine {
     private Context ctx;
     private Scriptable scope;
     private NovelRequire rule;
+    private Novels novel;
     private Java java;
     private Book book;
 
-    public JavaScriptEngine(NovelRequire rule) {
+    public JavaScriptEngine(NovelRequire rule, Novels novel) {
         ctx = Context.enter();
         scope = ctx.initStandardObjects();
         ctx.setOptimizationLevel(-1);
-        java = new Java();
+        java = new Java(rule.getId(), novel!=null?novel.getId():-1);
         book = new Book(rule);
         ScriptableObject.putProperty(scope,"java",java);
         ScriptableObject.putProperty(scope,"book",book);
         this.rule = rule;
-        preDefine();
-    }
-    public void preDefine(){
-        scope.put("basicUrl",scope,rule.getBookSourceUrl());
-        //scope.put("baseUrl",scope,rule.getBookSourceUrl());
-        //scope.put("result",scope,result);
     }
     public void preDefine(String key, String value){
         scope.put(key,scope,value);
@@ -47,6 +47,7 @@ public class JavaScriptEngine {
 
     public String runScript(String jsCode) throws Exception {
         Object result = ctx.evaluateString(scope, jsCode, null, 0,null);
+        java.done();//更新部分需要记忆的参数
         if (result instanceof String) return (String) result;
         else if (result instanceof NativeJavaObject) {
             return (String) ((NativeJavaObject) result).getDefaultValue(String.class);
@@ -57,7 +58,46 @@ public class JavaScriptEngine {
 
     //用户自定义java函数
     public static class Java{
-        Map<String,String> info = new HashMap<>();
+        private int source_id;//当前调用js的书源id
+        private int novel_id;
+        private NovelDBTools dbTools;
+        private Map<String,String> custom_params;
+        private boolean new_item = false;//是否是新创建的书籍参数
+        /**
+         * @param source_id 书源规则的ID
+         * @param novel_id 当前书籍的ID，不存在则为-1
+         */
+        public Java(int source_id, int novel_id) {
+            this.source_id = source_id;
+            this.novel_id = novel_id;
+            if(novel_id==-1){
+                //-1表示临时书，不在数据库中
+                if(CustomDataHolder.tempParam!=null) {
+                    Gson gson = new Gson();
+                    Type type = new TypeToken<HashMap<String, String>>() {
+                    }.getType();
+                    custom_params = gson.fromJson(CustomDataHolder.tempParam.getCustomParam(), type);
+                }
+                else custom_params = new HashMap<>();
+                return;
+            }
+            dbTools = new NovelDBTools(MyApplication.getAppContext());
+            dbTools.getNovelParamsByIds(novel_id, source_id, result -> {
+                if(result==null){custom_params = new HashMap<>();this.new_item = true;return;}
+                Gson gson = new Gson();
+                Type type = new TypeToken<HashMap<String, String>>(){}.getType();
+                custom_params = gson.fromJson(result.getCustomParam(), type);
+            });
+        }
+        public void done(){
+            String param_json = new Gson().toJson(custom_params);
+            NovelParams novelParams = new NovelParams(novel_id, source_id, param_json);
+            if(novel_id==-1)
+                CustomDataHolder.tempParam = novelParams;
+            else if(new_item)
+                dbTools.operateNovelParams(NovelDBTools.DBMethods.Insert, novelParams);
+            else dbTools.operateNovelParams(NovelDBTools.DBMethods.Update, novelParams);
+        }
         public String ajax(String url){
             ConnectThread t = new ConnectThread(url);
             t.start();
@@ -70,7 +110,11 @@ public class JavaScriptEngine {
         }
 
         public void put(String key,String value){
-            info.put(key,value);
+            custom_params.put(key,value);
+        }
+        public String get(String key){
+            if(!custom_params.containsKey(key))throw new RuntimeException("找不到书源自定义变量，书源解析异常");
+            return custom_params.get(key);
         }
     }
     //用户自定义Book类

@@ -1,6 +1,7 @@
 package com.Z.NovelReader.Global;
 
 import android.app.Application;
+import android.content.Context;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Option;
@@ -19,15 +20,18 @@ import java.util.Set;
  */
 public class MyApplication extends Application {
     private static File ExternalDir;
+    private static Context AppContext;
     @Override
     public void onCreate() {
         super.onCreate();
         CrashHandler crashHandler = CrashHandler.getInstance();
         crashHandler.init(getApplicationContext());
         ExternalDir = getExternalFilesDir(null);
+        AppContext = getApplicationContext();
     }
 
     public static File getExternalDir() {
         return ExternalDir;
     }
+    public static Context getAppContext(){return AppContext;}
 }

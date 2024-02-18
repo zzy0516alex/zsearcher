@@ -8,18 +8,15 @@ import android.os.Message;
 import androidx.annotation.NonNull;
 
 import com.Z.NovelReader.Basic.IterationThread;
-import com.Z.NovelReader.Global.MyApplication;
+import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Objects.MapElement;
 import com.Z.NovelReader.Processors.CommonUrlProcessor;
-import com.Z.NovelReader.Processors.NovelRuleAnalyzer;
 import com.Z.NovelReader.Utils.FileIOUtils;
 import com.Z.NovelReader.Utils.StringUtils;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
 
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +28,7 @@ public class SubCatalogLinkThread extends IterationThread {
 
     private ArrayList<String> subCatalogLinkList = new ArrayList<>();
     private NovelRequire novelRequire;
+    private Novels novel;
     private String catalogLinkPath;
     private String newLink = "";
     private boolean isUpdate = false;//是否是更新模式，即：取已有链接的最后一项进行迭代
@@ -40,9 +38,10 @@ public class SubCatalogLinkThread extends IterationThread {
      * @param startLink 开始迭代的链接
      * @param novelRequire 书源
      */
-    public SubCatalogLinkThread(String startLink, NovelRequire novelRequire,boolean isUpdate) {
+    public SubCatalogLinkThread(String startLink, NovelRequire novelRequire, Novels novel, boolean isUpdate) {
         super(startLink);
         this.novelRequire = novelRequire;
+        this.novel = novel;
         this.isUpdate = isUpdate;
         if (!isUpdate)subCatalogLinkList.add(startLink);
         else subCatalogLinkList.add("");
@@ -62,10 +61,7 @@ public class SubCatalogLinkThread extends IterationThread {
 
     @Override
     public Object preProcess(Document document) throws Exception {
-//        NovelRuleAnalyzer subCatalogAnalyzer = new NovelRuleAnalyzer();
-//        List<String> subLinks = subCatalogAnalyzer.getObjectFromElements(new Elements(document),
-//                    novelRequire.getRuleToc().getNextTocUrl());
-        List<String> subLinks = CommonUrlProcessor.getUrls(document, novelRequire, novelRequire.getRuleToc().getNextTocUrl());
+        List<String> subLinks = CommonUrlProcessor.getUrls(document, novelRequire, novel, novelRequire.getRuleToc().getNextTocUrl());
         return subLinks;
     }
 

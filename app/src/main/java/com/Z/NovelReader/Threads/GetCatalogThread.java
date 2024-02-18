@@ -6,6 +6,7 @@ import androidx.annotation.RequiresApi;
 
 import com.Z.NovelReader.Basic.BasicHandlerThread;
 import com.Z.NovelReader.Global.MyApplication;
+import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Objects.MapElement;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
@@ -27,6 +28,7 @@ public class GetCatalogThread extends BasicHandlerThread {
 
     private String url;
     private NovelRequire novelRequire;
+    private Novels novel;
     private int sub_sequence = 0;
     private MapElement sub_catalog;//enabled only sequense!=-1
     private NovelCatalog catalog;
@@ -37,14 +39,17 @@ public class GetCatalogThread extends BasicHandlerThread {
     private int MaxReconnectNum = 10;
     private int reconnectCounter = 0;
 
-    public GetCatalogThread(String url, NovelRequire novelRequire, int sequence) {
+    public GetCatalogThread(String url, NovelRequire novelRequire, Novels novel, int sequence) {
         this.url = url;
         this.novelRequire = novelRequire;
+        this.novel = novel;
         this.sub_sequence = sequence;
     }
 
     /**
-     * @param output_path 输出子目录文件路径
+     * 设置输出路径
+     * @param output_path ="$extDir$/ZsearchRes/$book name$/catalog.txt"
+     * {@link com.Z.NovelReader.Utils.StorageUtils#getBookCatalogPath(String, String)}
      */
     public void setOutput(String output_path){
         this.sub_catalog_path = output_path;
@@ -68,7 +73,7 @@ public class GetCatalogThread extends BasicHandlerThread {
                     .timeout(80000)
                     .ignoreContentType(true).get();
             long cost_time = Duration.between(beginTime, LocalDateTime.now()).toMillis();
-            catalog = CatalogProcessor.getCatalog(document, novelRequire);
+            catalog = CatalogProcessor.getCatalog(document, novelRequire, novel);
             catalog.setRespondingTime(cost_time);
             if (catalog.getSize()!=0)isSuccess = true;
             sub_catalog = new MapElement(sub_sequence,catalog);
@@ -98,7 +103,7 @@ public class GetCatalogThread extends BasicHandlerThread {
         }
 
         if (needOutput && isSuccess){
-            FileIOUtils.WriteCatalog(sub_catalog_path,catalog);
+            FileIOUtils.writeCatalog(sub_catalog_path,catalog);
         }
         if (countDownLatch!=null)countDownLatch.countDown();
     }

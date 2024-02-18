@@ -11,11 +11,12 @@ import androidx.fragment.app.FragmentActivity;
 
 import com.Z.NovelReader.Global.OnReadingListener;
 import com.Z.NovelReader.Global.OnSettingChangeListener;
-import com.Z.NovelReader.NovelRoom.NovelDBUpdater;
+import com.Z.NovelReader.NovelRoom.NovelDBTools;
 import com.Z.NovelReader.NovelRoom.Novels;
 import com.Z.NovelReader.Objects.NovelChap;
 import com.Z.NovelReader.Objects.beans.NovelCatalog;
 import com.Z.NovelReader.Objects.beans.NovelRequire;
+import com.Z.NovelReader.Threads.ContentLoadThread;
 import com.Z.NovelReader.Threads.ContentThread;
 import com.Z.NovelReader.Threads.Handlers.ChapContentHandler;
 import com.Z.NovelReader.Utils.FileIOUtils;
@@ -57,10 +58,11 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
     private int chap_catalog_index = 0;//相对于目录的序号
     private double current_chap_progress = DEFAULT_CHAP_PROGRESS;//当前章节的阅读进度
     private boolean auto_download = true;//是否自动下载下一章
-    private int initCacheCount = 2;//检查章节缓存初始化是否完成
+    private int thead_counter = 0;//检查章节缓存初始化是否完成
+    private boolean init = true;//是否处于初始状态
     private DNMod initViewMod;
     //database update
-    private NovelDBUpdater updater;
+    private NovelDBTools updater;
     //listener
     private OnReadingListener readingListener;
 
@@ -74,24 +76,24 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
         return chapCache;
     }
 
-    public NovelChap getCurrentChap(){
+    public synchronized NovelChap getCurrentChap(){
         return chapCache.get(chap_cache_index);
     }
 
     public boolean hasLastChap(){
-        return chap_catalog_index-1 >= 0;
+        return (chap_catalog_index-1) >= 0;
     }
 
-    public NovelChap getLastChap(){
+    public synchronized NovelChap getLastChap(){
         if (!hasLastChap())return null;
         return chapCache.get(chap_cache_index-1);
     }
 
     public boolean hasNextChap(){
-        return chap_catalog_index+1 < catalog.getSize();
+        return (chap_catalog_index+1) < catalog.getSize();
     }
 
-    public NovelChap getNextChap(){
+    public synchronized NovelChap getNextChap(){
         if (!hasNextChap())return null;
         return chapCache.get(chap_cache_index+1);
     }
@@ -104,12 +106,20 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
         return catalog;
     }
 
-    public int getChap_cache_index() {
+    public synchronized int getChapCacheIndex() {
         return Math.max(chap_cache_index, 0);
     }
 
-    public void setChap_cache_index(int chap_cache_index) {
+    public synchronized void setChapCacheIndex(int chap_cache_index) {
         this.chap_cache_index = chap_cache_index;
+    }
+
+    public synchronized void incChapCacheIndex() {
+        this.chap_cache_index++;
+    }
+
+    public synchronized void decChapCacheIndex() {
+        this.chap_cache_index--;
     }
 
     public int getChap_catalog_index() {
@@ -179,7 +189,7 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
     }
     /**初始化数据库更新器*/
     public void initDBUpdater(){
-        updater = new NovelDBUpdater(getContext());
+        updater = new NovelDBTools(getContext());
     }
     /**初始化章节缓存的线程回调处理器*/
     public void initHandlers(){
@@ -190,7 +200,7 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
                 NovelChap newChap = packChap(chap_content, chap_catalog_index - 1,false);
                 chapCache.add(0, newChap);
                 auto_download = true;
-                chap_cache_index++;
+                incChapCacheIndex();
                 downloadReady(DOWNLOAD_TYPE_LAST_CHAP,false);
                 checkCacheSize();
             }
@@ -200,15 +210,15 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
                 NovelChap newChap = packChap(error_content, chap_catalog_index - 1,true);
                 chapCache.add(0, newChap);
                 auto_download = false;
-                chap_cache_index++;
+                incChapCacheIndex();
                 downloadReady(DOWNLOAD_TYPE_LAST_CHAP,true);
                 checkCacheSize();
             }
 
             @Override
             public void onFinish() {
-                checkCacheInit();
-                readingListener.waitDialogControl(false);
+                checkThreadStatus();
+                //readingListener.waitDialogControl(false);
             }
         });
 
@@ -234,7 +244,7 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
 
             @Override
             public void onFinish() {
-                checkCacheInit();
+                checkThreadStatus();
                 //readingListener.waitDialogControl(false);
             }
         });
@@ -256,7 +266,8 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
 
             @Override
             public void onFinish() {
-                readingListener.waitDialogControl(false);
+                checkThreadStatus();
+                //readingListener.waitDialogControl(false);
             }
 
         });
@@ -264,28 +275,34 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
     /**由章节列表中第一个章节缓存前后的章节*/
     public void initCache(){
         NovelChap currentChap= chapCache.get(0);
-        if (currentChap.hasLastLink() && currentChap.hasNextLink())
-            initCacheCount = 2;
-        else initCacheCount = 1;
+        this.init = true;
         LastChapDownloader(currentChap);
         NextChapDownloader(currentChap);
+        readingListener.waitDialogControl(true);
     }
 
-    public void checkCacheInit(){
+    public void checkThreadStatus(){
         synchronized (this){
-            if (initCacheCount==0)return;
-            initCacheCount--;
-            if (initCacheCount == 0){
+            if (thead_counter ==0)return;
+            thead_counter--;
+            if (thead_counter == 0){
                 readingListener.waitDialogControl(false);
-                cacheInitReady();
+                if (init){
+                    cacheInitReady();
+                    init = false;
+                }
             }
         }
+    }
+
+    public synchronized boolean isDownloaderRunning(){
+        return (this.thead_counter!=0);
     }
 
     /**
      * 当章节缓存过大时，进行裁剪
      */
-    public void checkCacheSize(){
+    public synchronized void checkCacheSize(){
         if (chapCache.size() > MAX_CHAP_CACHE){
             boolean isDown =true;//是向下翻阅的
             if (chap_cache_index < (MAX_CHAP_CACHE/2))isDown = false;
@@ -309,7 +326,7 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
      * 更新章节索引
      * @param new_pos 新章节在章节缓存列表中的索引
      */
-    public void updateReadingChap(int new_pos){
+    public synchronized void updateReadingChap(int new_pos){
         chap_cache_index = new_pos;
         chap_catalog_index = chapCache.get(chap_cache_index).getCurrentChap();
         readingListener.onReadNewChap(chap_catalog_index);
@@ -339,15 +356,27 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
     public void LastChapDownloader(NovelChap currentChap) {
         chap_catalog_index = currentChap.getCurrentChap();
         if(currentChap.hasLastLink()){
-            readingListener.waitDialogControl(true);
-            Log.d("novel view","开始缓存上一章："+(chap_catalog_index -1));
-            auto_download=false;
-            ContentThread contentThread = new ContentThread(currentChap.getLast_link(),
-                    novelRequire,contentRoot);
-            contentThread.setCatalogLinks(getCatalog().getLink());
-            contentThread.setOutputParams(StorageUtils.getBookContentPath(novelName,writer));
-            contentThread.setHandler(lastChapHandler);
-            contentThread.start();
+            int last_chap_index = chap_catalog_index - 1;
+            boolean isDownloaded = catalog.get(last_chap_index).isDownloaded;
+            if(!isDownloaded) {
+                Log.d("novel view", "开始缓存上一章：" + last_chap_index);
+                auto_download = false;
+                ContentThread contentThread = new ContentThread(currentChap.getLast_link(),
+                        novelRequire, currentBook, contentRoot);
+                contentThread.setCatalogLinks(getCatalog().getLinkList());
+                contentThread.setOutputToCache(StorageUtils.getBookContentPath(novelName, writer));
+                contentThread.setHandler(lastChapHandler);
+                contentThread.start();
+            }
+            else{
+                Log.d("novel view", "从下载的章节中读取上一章：" + last_chap_index);
+                ContentLoadThread contentLoadThread = new ContentLoadThread(last_chap_index);
+                contentLoadThread.setDownloadFilePath(StorageUtils.getDownloadContentPath(novelName, writer,last_chap_index));
+                contentLoadThread.setCacheFilePath(StorageUtils.getBookContentPath(novelName, writer));
+                contentLoadThread.setHandler(lastChapHandler);
+                contentLoadThread.start();
+            }
+            synchronized (this){this.thead_counter++;}
         }
     }
 
@@ -357,14 +386,27 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
      */
     public void NextChapDownloader(NovelChap currentChap) {
         if(currentChap.hasNextLink()){
-            Log.d("novel view","开始缓存下一章:"+(chap_catalog_index +1));
-            auto_download=false;
-            ContentThread contentThread = new ContentThread(currentChap.getNext_link(),
-                    novelRequire,contentRoot);
-            contentThread.setCatalogLinks(getCatalog().getLink());
-            contentThread.setOutputParams(StorageUtils.getBookContentPath(novelName,writer));
-            contentThread.setHandler(nextChapHandler);
-            contentThread.start();
+            int next_chap_index = chap_catalog_index + 1;
+            boolean isDownloaded = catalog.get(next_chap_index).isDownloaded;
+            if(!isDownloaded) {
+                Log.d("novel view", "开始缓存下一章:" + next_chap_index);
+                auto_download = false;
+                ContentThread contentThread = new ContentThread(currentChap.getNext_link(),
+                        novelRequire, currentBook, contentRoot);
+                contentThread.setCatalogLinks(getCatalog().getLinkList());
+                contentThread.setOutputToCache(StorageUtils.getBookContentPath(novelName, writer));
+                contentThread.setHandler(nextChapHandler);
+                contentThread.start();
+            }
+            else {
+                Log.d("novel view", "从下载的章节中读取下一章：" + next_chap_index);
+                ContentLoadThread contentLoadThread = new ContentLoadThread(next_chap_index);
+                contentLoadThread.setDownloadFilePath(StorageUtils.getDownloadContentPath(novelName, writer,next_chap_index));
+                contentLoadThread.setCacheFilePath(StorageUtils.getBookContentPath(novelName, writer));
+                contentLoadThread.setHandler(nextChapHandler);
+                contentLoadThread.start();
+            }
+            synchronized (this){this.thead_counter++;}
         }
     }
 
@@ -376,13 +418,24 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
         readingListener.waitDialogControl(true);
         auto_download=false;
         chap_catalog_index = chap_pos;
+        boolean isDownloaded = catalog.get(chap_pos).isDownloaded;
         Log.d("novel view","skip to chap:"+catalog.toString(chap_catalog_index));
-        ContentThread contentThread = new ContentThread(catalog.getLink().get(chap_catalog_index),
-                novelRequire,contentRoot);
-        contentThread.setCatalogLinks(getCatalog().getLink());
-        contentThread.setOutputParams(StorageUtils.getBookContentPath(novelName,writer));
-        contentThread.setHandler(jumpChapHandler);
-        contentThread.start();
+        if(!isDownloaded) {
+            ContentThread contentThread = new ContentThread(catalog.getLinkList().get(chap_catalog_index),
+                    novelRequire, currentBook, contentRoot);
+            contentThread.setCatalogLinks(getCatalog().getLinkList());
+            contentThread.setOutputToCache(StorageUtils.getBookContentPath(novelName, writer));
+            contentThread.setHandler(jumpChapHandler);
+            contentThread.start();
+        }
+        else {
+            ContentLoadThread contentLoadThread = new ContentLoadThread(chap_catalog_index);
+            contentLoadThread.setDownloadFilePath(StorageUtils.getDownloadContentPath(novelName, writer,chap_catalog_index));
+            contentLoadThread.setCacheFilePath(StorageUtils.getBookContentPath(novelName, writer));
+            contentLoadThread.setHandler(jumpChapHandler);
+            contentLoadThread.start();
+        }
+        synchronized (this){this.thead_counter++;}
     }
 
     /**
@@ -395,7 +448,7 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
                 currentChap.getTitle(),current_chap_progress * 100.0));
         updater.updateChapOffset(novelID,current_chap_progress);
         updater.updateCurrentChap(novelID,currentChap.getCurrentChap());
-        Thread thread =new Thread(() -> FileIOUtils.WriteTXT(StorageUtils.getBookContentPath(novelName,writer),
+        Thread thread =new Thread(() -> FileIOUtils.writeContent(StorageUtils.getBookContentPath(novelName,writer),
                 currentChap.getContent()));
         thread.start();
     }
@@ -409,12 +462,13 @@ public abstract class NovelViewBasicFragment extends Fragment implements OnSetti
         chapCache.clear();
         chapCache.add(reservedChap);
         chap_catalog_index =reservedChap.getCurrentChap();
-        chap_cache_index =0;
+        setChapCacheIndex(0);
         readingListener.onJumpToNewChap(true,reservedChap);
         downloadReady(DOWNLOAD_TYPE_SKIP_CHAP,false);
 
         LastChapDownloader(reservedChap);
         NextChapDownloader(reservedChap);
+        readingListener.waitDialogControl(true);
     }
 
     //章节缓存完成

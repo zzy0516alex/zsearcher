@@ -51,9 +51,10 @@ public class CheckRespondThread extends BasicHandlerThread {
                 Document doc= connect.get();
                 timeSum += Duration.between(beginTime,LocalDateTime.now()).toMillis();
                 connect_count++;
-            }catch (IOException ignored){}
+            }catch (IOException e){}
         }
         if (connect_count!=0)timeConsuming = timeSum/(long) connect_count;
+        long connection_time = timeConsuming;
         Log.d(TAG, rule.getBookSourceName()+ " | connect time: " +timeConsuming);
 
         //存在额外目录页
@@ -66,22 +67,44 @@ public class CheckRespondThread extends BasicHandlerThread {
         DBUpdater.UpdateSourceRespondTime(rule.getId(),timeConsuming);
 //        if (timeConsuming>=DEFAULT_TIME_CONSUME_MS)
 //            DBUpdater.UpdateSourceVisibility(rule.getId(),false);
-        ResourceCheckResult result = new ResourceCheckResult(rule.getId(),timeConsuming,(timeConsuming < DEFAULT_TIME_CONSUME_MS),rule.isEnabled());
+        ResourceCheckResult result = new ResourceCheckResult()
+                                    .setResourceID(rule.getId())
+                                    .setRespondTime(timeConsuming)
+                                    .setConnectionTime(connection_time)
+                                    .setTimeout((timeConsuming >= DEFAULT_TIME_CONSUME_MS))
+                                    .setEnabled(rule.isEnabled());
 
         callback(PROCESS_DONE,result);
     }
 
     public static class ResourceCheckResult{
         public int resourceID;
-        public long respondTime;
-        public boolean isValid;
-        public boolean isEnabled;
+        public long respondTime;//考虑规则复杂度的综合响应时间
+        public long connectionTime;//单次访问的响应时间，用于简单判断源网站是否还存在
+        public boolean isTimeout;//是否超时
+        public boolean isEnabled;//是否正在使用
 
-        public ResourceCheckResult(int resourceID, long respondTime, boolean isValid, boolean isEnabled) {
-            this.resourceID = resourceID;
-            this.respondTime = respondTime;
-            this.isValid = isValid;
-            this.isEnabled = isEnabled;
+        public ResourceCheckResult() {
+        }
+
+        public ResourceCheckResult setResourceID(int resourceID) {
+            this.resourceID = resourceID;return this;
+        }
+
+        public ResourceCheckResult setRespondTime(long respondTime) {
+            this.respondTime = respondTime;return this;
+        }
+
+        public ResourceCheckResult setConnectionTime(long connectionTime) {
+            this.connectionTime = connectionTime;return this;
+        }
+
+        public ResourceCheckResult setTimeout(boolean timeout) {
+            isTimeout = timeout;return this;
+        }
+
+        public ResourceCheckResult setEnabled(boolean enabled) {
+            isEnabled = enabled;return this;
         }
     }
 }

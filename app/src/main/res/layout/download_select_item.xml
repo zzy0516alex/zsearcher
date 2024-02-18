@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_margin="8dp"
+    android:padding="5dp"
+    android:orientation="horizontal"
+    android:id="@+id/ds_item_parent">
+
+    <TextView
+        android:id="@+id/ds_item_id"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginHorizontal="5dp"
+        android:paddingHorizontal="5dp"
+        android:paddingVertical="5dp"
+        android:text="0001"
+        android:textColor="@color/DoderBlue"
+        android:textSize="16sp" />
+    <com.github.ybq.android.spinkit.SpinKitView
+        android:id="@+id/ds_item_downloading"
+        style="@style/SpinKitView.Circle"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginEnd="3dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center"
+        app:SpinKit_Color="@color/transparentDoderBlue" />
+</RelativeLayout>

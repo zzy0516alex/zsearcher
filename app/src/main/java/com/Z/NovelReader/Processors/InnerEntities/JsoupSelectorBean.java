@@ -1,4 +1,4 @@
-package com.Z.NovelReader.Processors;
+package com.Z.NovelReader.Processors.InnerEntities;
 
 import java.util.List;
 

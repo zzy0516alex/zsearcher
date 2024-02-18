@@ -16,19 +16,16 @@ import com.Z.NovelReader.Objects.NovelChap;
 
 import java.util.ArrayList;
 
-public class NovelViewAdapter extends RecyclerView.Adapter {
+public class NovelVerticalViewAdapter extends RecyclerView.Adapter {
     private Context context;
     private ArrayList<NovelChap> mNovelChap;
     private ViewCallbackListener viewCallbackListener;
     private int text_size = 20;
     private float line_space = 1.0f;
-//    public enum DNMod {
-//        NIGHT_MOD,
-//        DAY_MOD
-//    }
+
     private NovelViewBasicFragment.DNMod Mod;
 
-    public NovelViewAdapter(Context c, ArrayList<NovelChap> n) {
+    public NovelVerticalViewAdapter(Context c, ArrayList<NovelChap> n) {
         context = c;
         mNovelChap = n;
     }

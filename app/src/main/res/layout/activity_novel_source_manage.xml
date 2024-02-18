@@ -45,10 +45,45 @@
             android:layout_marginEnd="15dp"
             android:id="@+id/NSM_manage"/>
     </RelativeLayout>
-    <ListView
+    <RelativeLayout
+        android:id="@+id/NSM_general_manage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/NSM_top"
+        android:layout_margin="5dp">
+        <TextView
+            android:id="@+id/NSM_general_num"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:text="@string/novel_source_manage_general"
+            android:textSize="15sp"/>
+        <com.kyleduo.switchbutton.SwitchButton
+            android:id="@+id/NSM_control_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="15dp"
+            app:kswThumbHeight="18dp"
+            app:kswThumbRangeRatio="2"
+            app:kswThumbWidth="18dp"
+            app:kswThumbDrawable="@drawable/swbtn_thumb_white"
+            app:kswBackDrawable="@drawable/swbtn_background_blue"
+            tools:ignore="RelativeOverlap" />
+        <TextView
+            android:id="@+id/NSM_control_all_tag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全选"
+            android:textSize="15sp"
+            android:layout_toStartOf="@+id/NSM_control_all"
+            android:layout_marginEnd="8dp"/>
+    </RelativeLayout>
+    <androidx.recyclerview.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/NSM_top"
+        android:layout_below="@+id/NSM_general_manage"
         android:id="@+id/novel_source_list" />
 
 </RelativeLayout>

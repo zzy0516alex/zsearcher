@@ -7,43 +7,82 @@ import java.util.ArrayList;
 
 public class NovelCatalog implements Serializable {
     private static final long serialVersionUID = 1L;
-    private ArrayList<String> Title;
-    private ArrayList<String> Link;
+    private ArrayList<String> Titles;
+    private ArrayList<String> Links;
+    private ArrayList<Boolean> isDownload;
+
+    public static class CatalogItem{
+        public int index;
+        public String Title;
+        public String Link;
+        public boolean isDownloading;
+        public boolean isDownloaded;
+        public boolean isSelected;
+    }
 
     private long respondingTime;//获取目录的响应时间
 
-    public NovelCatalog(ArrayList<String> title, ArrayList<String> link) {
-        Title = title;
-        Link = link;
+    public NovelCatalog(ArrayList<String> titles, ArrayList<String> links) {
+        Titles = titles;
+        Links = links;
     }
 
     public NovelCatalog() {
-        Title=new ArrayList<>();
-        Link=new ArrayList<>();
+        Titles =new ArrayList<>();
+        Links =new ArrayList<>();
+        isDownload = new ArrayList<>();
     }
 
-    public ArrayList<String> getTitle() {
-        return Title;
+    public ArrayList<String> getTitleList() {
+        return Titles;
     }
 
-    public void setTitle(ArrayList<String> title) {
-        Title = title;
+    public ArrayList<String> getLinkList() {
+        return Links;
     }
 
-    public ArrayList<String> getLink() {
-        return Link;
+    public ArrayList<Boolean> getIsDownload() {
+        return isDownload;
     }
 
-    public void setLink(ArrayList<String> link) {
-        Link = link;
+    public void setDownloaded(int id, boolean isDownloaded){
+        this.isDownload.set(id,isDownloaded);
     }
 
-    public void add(String title,String link){
-        Title.add(title);
-        Link.add(link);
+    public boolean isDownloaded(int id){
+        return this.isDownload.get(id);
     }
+
+    public void setDownloadedChaps(ArrayList<Integer> ids) {
+        for (Integer id : ids) {
+            setDownloaded(id,true);
+        }
+    }
+
+    public void add(CatalogItem item){
+        item.index = Titles.size();
+        Titles.add(item.Title);
+        Links.add(item.Link);
+        isDownload.add(item.isDownloaded);
+    }
+
+    public void addAll(NovelCatalog sub_catalog){
+        this.Links.addAll(sub_catalog.getLinkList());
+        this.Titles.addAll(sub_catalog.getTitleList());
+        this.isDownload.addAll(sub_catalog.getIsDownload());
+    }
+
+    public CatalogItem get(int i) throws IndexOutOfBoundsException{
+        CatalogItem item = new CatalogItem();
+        item.index = i;
+        item.Title = this.Titles.get(i);
+        item.Link = this.Links.get(i);
+        item.isDownloaded = this.isDownload.get(i);
+        return item;
+    }
+
     public boolean isEmpty(){
-        return Title.isEmpty()||Link.isEmpty();
+        return Titles.isEmpty()|| Links.isEmpty();
     }
 
     public void setRespondingTime(long respondingTime) {
@@ -53,9 +92,9 @@ public class NovelCatalog implements Serializable {
     public void completeCatalog(String book_source_link){
         ArrayList<String>newLink = new ArrayList<>();
         ArrayList<String>newTitle = new ArrayList<>();
-        for (int i = 0; i < Link.size(); i++) {
-            String link = Link.get(i);
-            String title = Title.get(i);
+        for (int i = 0; i < Links.size(); i++) {
+            String link = Links.get(i);
+            String title = Titles.get(i);
             if (link.equals("") || title.equals("")){
                 continue;
             }
@@ -63,15 +102,15 @@ public class NovelCatalog implements Serializable {
             newLink.add(link);
             newTitle.add(title);
         }
-        Link = newLink;
-        Title = newTitle;
+        Links = newLink;
+        Titles = newTitle;
     }
 
     public int findMatch(String ref_title){
         double top_score = 0;
         int top_index = -1;
-        for (int i = 0; i < Link.size(); i++) {
-            String s = StringUtils.simplifyChapName(Title.get(i));
+        for (int i = 0; i < Links.size(); i++) {
+            String s = StringUtils.simplifyChapName(Titles.get(i));
             String ref = StringUtils.simplifyChapName(ref_title);
             if ("".equals(s))
                 continue;
@@ -86,12 +125,8 @@ public class NovelCatalog implements Serializable {
     }
 
     public int getSize(){
-        return Title.size();
-    }
-
-    public void addCatalog(NovelCatalog sub_catalog){
-        this.Link.addAll(sub_catalog.getLink());
-        this.Title.addAll(sub_catalog.getTitle());
+        if(Titles.size() != Links.size())throw new RuntimeException("目录标题与链接不对应");
+        return Titles.size();
     }
 
     /**
@@ -110,6 +145,6 @@ public class NovelCatalog implements Serializable {
     }
 
     public String toString(int index){
-        return String.format("[%s] %s",Title.get(index),Link.get(index));
+        return String.format("[%s] %s", Titles.get(index), Links.get(index));
     }
 }

@@ -5,11 +5,13 @@ import android.util.Log;
 import com.Z.NovelReader.Utils.SSLAgent;
 
 import org.jsoup.Connection;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 
 abstract public class IterationThread extends BasicHandlerThread {
@@ -43,6 +45,7 @@ abstract public class IterationThread extends BasicHandlerThread {
             Connection connect = Jsoup.connect(StartLink);
             connect.userAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
             connect.header("Connection", "close");
+            connect.followRedirects(true);
             connect.timeout(20000);
             Document document= connect.get();
             Object o = preProcess(document);
@@ -59,13 +62,19 @@ abstract public class IterationThread extends BasicHandlerThread {
             }
         }
         catch (SocketException e){
-            if (e.getMessage().contains("reset")){
+            String eMessage = e.getMessage();
+            if(eMessage!=null)
+            if (eMessage.contains("reset") || eMessage.contains("timeout")){
                 if (reconnectCounter<MaxReconnectNum) {
-                    run();reconnectCounter++;
+                    reconnectCounter++;run();
                 }else {
                     onErrorOccur(NO_INTERNET,e);
                     report(NO_INTERNET);
                 }
+            }
+            else{
+                onErrorOccur(NO_INTERNET,e);
+                report(NO_INTERNET);
             }
         }
         catch (IOException e) {
@@ -76,7 +85,7 @@ abstract public class IterationThread extends BasicHandlerThread {
             e.printStackTrace();
             onErrorOccur(TARGET_NOT_FOUND,e);
             report(TARGET_NOT_FOUND);
-        } catch (Exception e) {
+        }catch (Exception e) {
             e.printStackTrace();
             onErrorOccur(PROCESSOR_ERROR,e);
             report(PROCESSOR_ERROR);

@@ -19,7 +19,7 @@ import androidx.core.view.GestureDetectorCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.Z.NovelReader.Adapters.NovelViewAdapter;
+import com.Z.NovelReader.Adapters.NovelVerticalViewAdapter;
 import com.Z.NovelReader.Objects.NovelChap;
 import com.Z.NovelReader.Objects.beans.NovelViewTheme;
 import com.Z.NovelReader.views.Dialog.ViewerSettingDialog;
@@ -35,7 +35,7 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
     //views
     private RecyclerView contentView;//文本内容
     private RelativeLayout rl_background;//阅读背景
-    private NovelViewAdapter adapter;
+    private NovelVerticalViewAdapter adapter;
     private View view;
     //basic params
     private int myTextSize=20;//字体大小
@@ -74,7 +74,7 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
         initCache();
 
         //初始化viewer
-        adapter=new NovelViewAdapter(getActivity(), getChapCache());
+        adapter=new NovelVerticalViewAdapter(getActivity(), getChapCache());
         adapter.setTextSize(myTextSize);
         adapter.setLine_space(myLineSpace);
 
@@ -82,7 +82,7 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
         contentView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
 
         //重新载入章节
-        adapter.setViewCallbackListener(new NovelViewAdapter.ViewCallbackListener() {
+        adapter.setViewCallbackListener(new NovelVerticalViewAdapter.ViewCallbackListener() {
             @Override
             public void onRefreshClick(NovelChap chap) {
                 SkipChapDownloader(chap.getCurrentChap());
@@ -145,20 +145,20 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
 
                     //获取可见的最后一个view的位置
                     int lastChildViewPosition = recyclerView.getChildAdapterPosition(lastChildView);
-                    if(getChap_cache_index() != lastChildViewPosition){
+                    if(getChapCacheIndex() != lastChildViewPosition){
                         updateReadingChap(lastChildViewPosition);
                         Log.d("novel view","章节可见："+visible_chap_num);
                     }
                     if (isAuto_download()) {
-                        if ((getChap_cache_index()+1-visible_chap_num) == 0) {
+                        if ((getChapCacheIndex()+1-visible_chap_num) == 0) {
                             int top= Objects.requireNonNull(recyclerView.getLayoutManager().getChildAt(0)).getTop();
                             int Y=recyclerView.getScrollY();
                             if(top==Y){
-                                setChap_cache_index(0);
+                                setChapCacheIndex(0);
                                 Log.d("novel view","reachTop");
                                 LastChapDownloader(getChapCache().get(0));
                             }
-                        }else if (getChap_cache_index() == getChapCache().size()-1){
+                        }else if (getChapCacheIndex() == getChapCache().size()-1){
                             NextChapDownloader(getCurrentChap());
                         }
                     }
@@ -260,7 +260,7 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
             }
             LinearLayoutManager linearLayoutManager= (LinearLayoutManager) contentView.getLayoutManager();
             assert linearLayoutManager != null;
-            linearLayoutManager.scrollToPositionWithOffset(getChap_cache_index(),m_offset);
+            linearLayoutManager.scrollToPositionWithOffset(getChapCacheIndex(),m_offset);
         }
         adapter.updateChapList(getChapCache());
     }
@@ -275,6 +275,6 @@ public class NovelViewVerticalFragment extends NovelViewBasicFragment /*implemen
         adapter.updateChapList(getChapCache());
         LinearLayoutManager linearLayoutManager = (LinearLayoutManager) contentView.getLayoutManager();
         assert linearLayoutManager != null;
-        linearLayoutManager.scrollToPositionWithOffset(getChap_cache_index(), current_offset);
+        linearLayoutManager.scrollToPositionWithOffset(getChapCacheIndex(), current_offset);
     }
 }
